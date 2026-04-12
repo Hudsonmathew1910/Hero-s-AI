@@ -1,0 +1,70 @@
+# ── Secrets & Environment ───────────────────────────────────────────────────
+.env
+*.env
+*.env.*
+!.env.example
+
+# ── Python ───────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+.Python
+
+# ── Virtual Environment ───────────────────────────────────────────────────────
+.venv/
+venv/
+env/
+ENV/
+Lib/
+Scripts/
+
+# ── Django ────────────────────────────────────────────────────────────────────
+*.log
+logs/
+db.sqlite3
+db.sqlite3-journal
+staticfiles/
+mediafiles/
+media/
+
+# ── Distribution / Packaging ───────────────────────────────────────────────
+dist/
+build/
+*.egg-info/
+*.egg
+.eggs/
+site-packages/
+
+# ── Testing & Coverage ────────────────────────────────────────────────────────
+.tox/
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/
+nosetests.xml
+coverage.xml
+*.cover
+
+# ── IDEs & Editors ────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ── Mypy / Type Checking ──────────────────────────────────────────────────────
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# ── Jupyter Notebooks ─────────────────────────────────────────────────────────
+.ipynb_checkpoints/
+
+# ── Temporary / Scratch ───────────────────────────────────────────────────────
+scratch/
+*.tmp
+*.bak

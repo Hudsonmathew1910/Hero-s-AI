@@ -1,0 +1,580 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Hero's AI | Home</title>
+  <link rel="icon" type="image/png" href="{% static 'images/Hero_ai.png' %}" sizes="128x128"/>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+
+  <style>
+    /* ── Welcome screen watermark ── */
+    .welcome { position: relative; overflow: hidden; }
+    .welcome-bg-logo {
+      position: absolute; inset: 0; display: flex; align-items: center;
+      justify-content: center; pointer-events: none; z-index: 0; opacity: 0.07;
+      transition: opacity 0.6s ease;
+    }
+    .welcome-bg-logo img {
+      width: 340px; max-width: 60vw; filter: blur(1px);
+      transition: transform 0.6s cubic-bezier(0.34,1.56,0.64,1), opacity 0.6s ease;
+      animation: bgLogoFloat 6s ease-in-out infinite;
+    }
+    @keyframes bgLogoFloat { 0%,100%{transform:translateY(0px) scale(1);}50%{transform:translateY(-12px) scale(1.04);} }
+    .welcome-glow img {
+      transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1), filter 0.35s ease, box-shadow 0.35s ease;
+      border-radius: 24px;
+    }
+    .welcome-glow img:hover {
+      transform: scale(1.12) rotate(-3deg);
+      filter: drop-shadow(0 0 24px rgba(25,195,125,0.6));
+    }
+    .welcome.chat-bg {
+      position: absolute; inset: 0; display: flex !important;
+      opacity: 1; z-index: 0; pointer-events: none;
+    }
+    .welcome.chat-bg .welcome-bg-logo { opacity: 0.04; }
+    .welcome.chat-bg .welcome-glow,
+    .welcome.chat-bg h1,
+    .welcome.chat-bg p,
+    .welcome.chat-bg .suggestion-chips { opacity: 0; transition: opacity 0.4s ease; }
+    .messages { position: relative; z-index: 1; }
+    .voice-msg-badge {
+      display: inline-flex; align-items: center; gap: 5px; font-size: 0.7rem;
+      padding: 2px 8px; border-radius: 6px; margin-bottom: 6px; font-weight: 600;
+      background: rgba(25,195,125,0.12); color: var(--accent);
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════════════════
+     AUTH SCREEN
+══════════════════════════════ -->
+<div class="auth-screen" id="authScreen">
+  <div class="auth-card">
+    <div class="auth-logo"><div class="auth-logo-dot"></div>Hero's</div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tabLogin" onclick="switchAuthTab('login')">Sign In</button>
+      <button class="auth-tab" id="tabSignup" onclick="switchAuthTab('signup')">Create Account</button>
+    </div>
+    <!-- Login Form -->
+    <div id="loginForm" class="auth-form">
+      <div class="auth-input-group">
+        <label class="auth-label">Email</label>
+        <input class="auth-input" type="email" id="loginEmail" placeholder="you@example.com"/>
+      </div>
+      <div class="auth-input-group">
+        <label class="auth-label">Password</label>
+        <input class="auth-input" type="password" id="loginPassword" placeholder="••••••••"/>
+      </div>
+      <button class="auth-btn" onclick="handleLogin()">Sign In <i class="fa-solid fa-arrow-right"></i></button>
+      <div class="auth-divider"><span>or continue with</span></div>
+      <button class="auth-google-btn" onclick="handleGoogleAuth()">
+        <svg width="16" height="16" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+        Continue with Google
+      </button>
+    </div>
+    <!-- Signup Form -->
+    <div id="signupForm" class="auth-form" style="display:none;">
+      <div class="auth-input-group">
+        <label class="auth-label">Full Name</label>
+        <input class="auth-input" type="text" id="signupName" placeholder="Your name"/>
+      </div>
+      <div class="auth-input-group">
+        <label class="auth-label">Email</label>
+        <input class="auth-input" type="email" id="signupEmail" placeholder="you@example.com"/>
+      </div>
+      <div class="auth-input-group">
+        <label class="auth-label">Password</label>
+        <input class="auth-input" type="password" id="signupPassword" placeholder="Create a strong password"/>
+      </div>
+      <button class="auth-btn" onclick="handleSignup()">Create Account <i class="fa-solid fa-arrow-right"></i></button>
+      <div class="auth-divider"><span>or continue with</span></div>
+      <button class="auth-google-btn" onclick="handleGoogleAuth()">
+        <svg width="16" height="16" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+        Continue with Google
+      </button>
+    </div>
+    <div class="auth-footer">
+      By continuing you agree to our <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>.
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════
+     HEADER
+══════════════════════════════ -->
+<header>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <button class="menu-toggle" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i></button>
+    <div class="logo"><div class="logo-dot"></div>Hero's AI</div>
+  </div>
+  <div class="header-right">
+            <!-- Talk to AI button beside input box -->
+        <button class="cssbuttons-io-button" onclick="openVoiceModal()">
+          Talk to Baymax
+          <div class="icon">
+            <svg height="20" width="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M0 0h24v24H0z" fill="none"></path>
+              <!-- mic icon -->
+              <path d="M12 14a3 3 0 003-3V5a3 3 0 00-6 0v6a3 3 0 003 3zm5-3a5 5 0 01-10 0H5a7 7 0 0011 6.32V20h2v-2.68A7 7 0 0019 11h-2z" fill="currentColor"></path>
+            </svg>
+          </div>
+        </button>
+    <!-- UI Switch theme toggle -->
+    <label class="ui-switch" id="themeSwitch" title="Toggle theme">
+      <input type="checkbox" id="themeCheckbox" onchange="toggleThemeSwitch(this)"/>
+      <div class="slider"><div class="circle"></div></div>
+    </label>
+    <button class="hdr-temp-btn" id="tempChatBtn" data-tip="Temporary chat" onclick="toggleTempChat()">
+      <!-- <div class="temp-dot"></div> -->
+      <i class="fa-solid fa-clock-rotate-left" style="font-size:0.82rem;"></i>
+    </button>
+  </div>
+</header>
+
+
+<!-- ══════════════════════════════
+     MAIN WRAPPER
+══════════════════════════════ -->
+<div class="main-wrapper">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-title">Conversations</div>
+    <button class="new-chat-btn" onclick="newChat()">
+      <div class="nc-icon"><i class="fa-solid fa-plus"></i></div>
+      New conversation
+    </button>
+    <div class="history-scroll">
+      <div id="historyList">
+        <div class="history-item active"><i class="fa-regular fa-message"></i>Welcome chat</div>
+      </div>
+    </div>
+    <div class="sidebar-user-panel">
+      <div class="user-dropdown" id="userDropdown">
+        <div class="user-menu-item" onclick="openPersonalization()">
+          <i class="fa-solid fa-sliders"></i>Personalization
+        </div>
+        <div class="user-menu-item" onclick="openApiKeys()">
+          <i class="fa-solid fa-key"></i>API Keys
+        </div>
+        <div class="user-menu-item" onclick="openAboutHeros()">
+          <i class="fa-solid fa-circle-info"></i>About Hero's
+        </div>
+        <div class="user-menu-item" onclick="openHelp()">
+          <i class="fa-regular fa-circle-question"></i>Help & Support
+        </div>
+        <div class="user-menu-divider"></div>
+        <div class="user-menu-item danger" onclick="handleLogout()">
+          <i class="fa-solid fa-right-from-bracket"></i>Log out
+        </div>
+      </div>
+      <div class="user-info-row" onclick="toggleUserMenu()">
+        <div class="user-avatar" id="userAvatarInitials">H</div>
+        <div class="user-details">
+          <div class="user-name"  id="sidebarUserName">Loading…</div>
+          <div class="user-email" id="sidebarUserEmail">–</div>
+        </div>
+        <i class="fa-solid fa-chevron-up user-chevron" id="userChevron"></i>
+      </div>
+    </div>
+  </aside>
+
+  <!-- CHAT AREA -->
+  <main class="chat-area" style="position:relative;">
+
+    <!-- Temp chat banner -->
+    <div class="temp-banner" id="tempBanner">
+      <i class="fa-solid fa-clock-rotate-left"></i>
+      Temporary chat — this conversation won't be saved
+      <!-- <i class="fa-solid fa-xmark temp-banner-x" onclick="toggleTempChat()"></i> -->
+    </div>
+
+    <!-- Welcome screen -->
+    <div class="welcome" id="welcomeScreen">
+      <div class="welcome-bg-logo">
+        <img src="{% static 'images/Hero_ai.png' %}" alt="" aria-hidden="true"/>
+      </div>
+      <div style="position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;">
+        <div class="welcome-glow">
+          <img src="{% static 'images/Hero_ai.png' %}" alt="Hero's AI" width="120">
+        </div>
+        <h1>Hello {{ username }}</h1>
+        <p>Powered by Hero's AI</p>
+        <div class="suggestion-chips">
+          <div class="chip" onclick="setModeCodingAndPrompt()">
+            <i class="fa-solid fa-code"></i> Code </div>
+          <div class="chip" onclick="fillSuggestion('Summarize this text:')">
+            <i class="fa-solid fa-align-left"></i> Summarize </div>
+          <div class="chip" onclick="fillSuggestion('Explain this concept:')">
+            <i class="fa-solid fa-brain"></i> Explain </div>
+          <div class="chip" onclick="fillSuggestion('Write a blog:')">
+            <i class="fa-solid fa-pen-nib"></i> Write </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Messages -->
+    <div class="messages" id="messages" style="display:none;"></div>
+
+    <!-- Input bar -->
+    <div class="input-wrap">
+      <div class="attach-preview-row" id="attachPreviewRow"></div>
+
+      <!-- Outer row: input box + talk button -->
+      <div class="input-row-outer">
+        <div class="input-box">
+
+          <!-- + menu -->
+          <div class="plus-wrap" id="plusWrap">
+            <button class="plus-btn" id="plusBtn" onclick="togglePlusMenu(event)">+</button>
+            <div class="plus-menu" id="plusMenu">
+              <button class="plus-menu-item" onclick="triggerAttach()">
+                <div class="pm-icon attach"><i class="fa-solid fa-paperclip"></i></div>
+                Attach file
+              </button>
+              <div class="plus-menu-divider"></div>
+              <button class="plus-menu-item" onclick="setMode('coding')">
+                <div class="pm-icon code"><i class="fa-solid fa-code"></i></div>
+                Coding
+              </button>
+              <button class="plus-menu-item" onclick="setMode('websearch')">
+                <div class="pm-icon search"><i class="fa-solid fa-magnifying-glass"></i></div>
+                Web search
+              </button>
+            </div>
+          </div>
+
+          <input type="file" id="fileInput" accept="image/*,.pdf,.doc,.docx,.txt" multiple onchange="handleFiles(this.files)"/>
+
+          <!-- Mode badge -->
+          <div class="mode-badge" id="modeBadge" onclick="clearMode()">
+            <div class="badge-dot"></div>
+            <span id="modeBadgeText"></span>
+            <i class="fa-solid fa-xmark badge-x"></i>
+          </div>
+
+          <textarea id="chatInput" placeholder="Message Hero's AI…" rows="1"
+            onkeydown="handleKey(event)"
+            oninput="autoResize(this);toggleSendBtn()"></textarea>
+
+          <!-- Inline model selector -->
+          <select class="inline-model-select" id="modelSelect" onchange="onModelChange()">
+            <option value="Baymax">Baymax</option>
+            <option value="ZORVIN">ZORVIN</option>
+          </select>
+          <button class="mute-btn" id="muteBtn" onclick="toggleMute()" title="AI voice muted — click to unmute">
+            <i class="fa-solid fa-volume-xmark"></i>
+          </button>
+
+          <button class="mic-btn" id="micBtn" onclick="toggleInlineMic()">
+            <i class="fa-solid fa-microphone"></i>
+          </button>
+          <button class="send-btn" id="sendBtn" onclick="sendMessage()" disabled>
+            <i class="fa-solid fa-paper-plane"></i>
+          </button>
+        </div>
+
+
+      </div>
+
+      <div class="input-hint">Hero's AI can make mistakes. Verify important information.</div>
+    </div>
+
+  </main>
+</div><!-- end .main-wrapper -->
+
+
+<!-- ══════════════════════════════
+     VOICE OVERLAY
+══════════════════════════════ -->
+<div class="voice-overlay" id="voiceOverlay">
+  <div class="voice-modal">
+    <div class="voice-title">Speak with Hero's AI</div>
+    <div class="voice-sub">Tap Speak, say something, and hear the AI respond.</div>
+    <div class="ball-container"><canvas id="voiceCanvas" width="200" height="200"></canvas></div>
+    <div class="voice-controls">
+      <button class="v-btn speak" id="speakBtn" onclick="toggleVoiceSession()">
+        <i class="fa-solid fa-microphone"></i> Speak
+      </button>
+      <button class="v-btn pause-v" id="pauseVoiceBtn" onclick="pauseVoiceReply()" disabled>
+        <i class="fa-solid fa-pause"></i> Pause
+      </button>
+      <button class="v-btn close-v" onclick="closeVoiceModal()">
+        <i class="fa-solid fa-xmark"></i> Close
+      </button>
+    </div>
+    <div class="voice-transcript" id="voiceTranscript">Your speech will appear here…</div>
+    <div class="voice-status" id="voiceStatus"></div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════
+     PERSONALIZATION MODAL (Updated)
+══════════════════════════════ -->
+<div class="modal-overlay" id="personalizationModal">
+  <div class="modal-card">
+    <div class="modal-header">
+      <div class="modal-title"><i class="fa-solid fa-sliders"></i> Personalization</div>
+      <button class="modal-close" onclick="closeModal('personalizationModal')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="p-tabs">
+      <button class="p-tab active" onclick="switchPTab('interface',this)">Interface</button>
+      <button class="p-tab" onclick="switchPTab('about',this)">About You</button>
+      <button class="p-tab" onclick="switchPTab('instructions',this)">Custom Instructions</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- Interface tab -->
+      <div class="p-panel active" id="p-panel-interface">
+        <div class="modal-section">
+          <div class="modal-section-label"><i class="fa-solid fa-circle-half-stroke"></i> Theme</div>
+          <div class="theme-switcher">
+            <button class="theme-btn active" id="theme-dark-btn" onclick="setTheme('dark',this)">
+              <div class="theme-preview dark-prev"></div>Dark
+            </button>
+            <button class="theme-btn" id="theme-light-btn" onclick="setTheme('light',this)">
+              <div class="theme-preview light-prev"></div>Light
+            </button>
+          </div>
+        </div>
+        <div class="modal-section">
+          <div class="modal-section-label"><i class="fa-solid fa-display"></i> Display Settings</div>
+          <div class="toggle-row">
+            <span class="toggle-label">Auto-read AI responses aloud</span>
+            <button class="toggle on" data-setting="autoReadResponses" onclick="toggleSetting('autoReadResponses')"></button>
+          </div>
+          <div class="toggle-row">
+            <span class="toggle-label">Compact message layout</span>
+            <button class="toggle" data-setting="compactLayout" onclick="toggleSetting('compactLayout')"></button>
+          </div>
+          <div class="toggle-row">
+            <span class="toggle-label">Code syntax highlighting</span>
+            <button class="toggle on" data-setting="syntaxHighlighting" onclick="toggleSetting('syntaxHighlighting')"></button>
+          </div>
+        </div>
+        <div class="modal-section">
+          <div class="modal-section-label"><i class="fa-solid fa-comments"></i> Chat Behavior</div>
+          <div class="toggle-row">
+            <span class="toggle-label">Remember conversation history</span>
+            <button class="toggle on" data-setting="rememberHistory" onclick="toggleSetting('rememberHistory')"></button>
+          </div>
+        </div>
+      </div>
+
+      <!-- About You tab -->
+      <div class="p-panel" id="p-panel-about">
+        <div class="modal-section">
+          <div class="modal-section-label"><i class="fa-regular fa-user"></i> Your Name</div>
+          <input class="auth-input" type="text" id="aboutName" placeholder="What should Hero's AI call you?" style="width:100%;"/>
+        </div>
+        <div class="modal-section">
+          <div class="modal-section-label"><i class="fa-solid fa-briefcase"></i> What do you do?</div>
+          <textarea class="modal-textarea" id="aboutRole" style="min-height:80px;" placeholder="e.g. I'm a student studying computer science…"></textarea>
+        </div>
+        <div class="modal-section">
+          <div class="modal-section-label"><i class="fa-solid fa-star"></i> Interests & Goals</div>
+          <textarea class="modal-textarea" id="aboutInterests" placeholder="e.g. I enjoy gaming, graphic design…"></textarea>
+          <div class="field-hint">Hero's AI uses this to give you more relevant, personalised responses.</div>
+        </div>
+      </div>
+
+      <!-- Custom Instructions tab -->
+      <div class="p-panel" id="p-panel-instructions">
+        <div class="modal-section">
+          <div class="modal-section-label"><i class="fa-solid fa-gear"></i> Enable Custom Instructions</div>
+          <div class="toggle-row">
+            <span class="toggle-label">Use custom instructions in conversations</span>
+            <button class="toggle on" data-setting="enableCustomInstructions" onclick="toggleSetting('enableCustomInstructions')"></button>
+          </div>
+        </div>
+        <div class="modal-section">
+          <div class="modal-section-label"><i class="fa-solid fa-circle-info"></i> What should Hero's AI know about you?</div>
+          <textarea class="modal-textarea" id="instructionContext" style="min-height:120px;" placeholder="e.g. I'm a beginner Python developer…"></textarea>
+          <div class="field-hint">This context is sent with every conversation if custom instructions are enabled.</div>
+        </div>
+        <div class="modal-section">
+          <div class="modal-section-label"><i class="fa-solid fa-robot"></i> How should Hero's AI respond?</div>
+          <textarea class="modal-textarea" id="instructionBehavior" style="min-height:120px;" placeholder="e.g. Be friendly and encouraging…"></textarea>
+          <div class="field-hint">These are your personal AI behavior rules — followed in every chat if enabled.</div>
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="modal-save-btn" onclick="savePersonalization()">
+        <i class="fa-solid fa-floppy-disk"></i> Save Settings
+      </button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════
+     API KEYS MODAL
+══════════════════════════════ -->
+<div class="modal-overlay" id="apiKeysModal">
+  <div class="modal-card">
+    <div class="modal-header">
+      <div class="modal-title"><i class="fa-solid fa-key"></i> API Keys</div>
+      <button class="modal-close" onclick="closeModal('apiKeysModal')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-section">
+        <div class="modal-section-label"><i class="fa-solid fa-star"></i> Gemini API Key <span class="required-badge">Mandatory</span></div>
+        <input class="auth-input" type="password" id="geminiApiKey" placeholder="Enter your Gemini API key" style="width:100%;"/>
+        <div class="field-hint"><i class="fa-solid fa-circle-info"></i> Get your Gemini API key: <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:var(--accent);">Google AI Studio</a></div>
+      </div>
+      <div class="modal-section">
+        <div class="modal-section-label"><i class="fa-solid fa-route"></i> OpenRouter API Key <span class="required-badge">Mandatory</span></div>
+        <input class="auth-input" type="password" id="openrouterApiKey" placeholder="Enter your OpenRouter API key" style="width:100%;"/>
+        <div class="field-hint"><i class="fa-solid fa-circle-info"></i> Get your OpenRouter API key: <a href="https://openrouter.ai/keys" target="_blank" style="color:var(--accent);">OpenRouter Dashboard</a></div>
+      </div>
+      <div class="modal-section">
+        <div class="modal-section-label"><i class="fa-solid fa-bolt"></i> Groq API Key <span class="optional-badge">Optional</span></div>
+        <input class="auth-input" type="password" id="groqApiKey" placeholder="Enter your Groq API key for better performance (optional)" style="width:100%;"/>
+        <div class="field-hint"><i class="fa-solid fa-circle-info"></i> Get your Groq API key: <a href="https://console.groq.com/keys" target="_blank" style="color:var(--accent);">Groq Console</a><br><em>Note: Groq is used as a fallback model for enhanced reliability.<br>Currently in development status</em></div>
+      </div>
+      <div class="api-info-box">
+        <i class="fa-solid fa-shield-halved"></i>
+        <div><strong>Your API keys are stored securely</strong><br><span style="font-size:0.78rem;color:var(--text-muted);">All keys are encrypted and stored on the server — never exposed to the browser.</span></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="modal-save-btn" onclick="saveApiKeys()"><i class="fa-solid fa-floppy-disk"></i> Save API Keys</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════
+     ABOUT HERO'S MODAL
+══════════════════════════════ -->
+<div class="modal-overlay" id="aboutHerosModal">
+  <div class="about-card">
+    <button class="modal-close" style="float:right;margin-bottom:8px;" onclick="closeModal('aboutHerosModal')"><i class="fa-solid fa-xmark"></i></button>
+    <div class="about-logo-wrap">
+      <img src="{% static 'images/Hero_ai.png' %}" alt="Hero's AI"/>
+    </div>
+    <div class="about-title">Hero's AI</div>
+    <div class="about-badge">v1.0 · Beta</div>
+    <p class="about-desc">Hero's AI is your intelligent personal assistant — built for code, creativity, conversations, and everything in between. Powered by Baymax and the ZORVIN engine.</p>
+    <div class="about-coming-soon">
+      <i class="fa-solid fa-rocket"></i>
+      <h3>More coming soon</h3>
+      <p>The About Hero's page is currently under construction. Check back soon for a full overview of features, the team, and the roadmap!</p>
+    </div>
+    <div class="about-version">Built with ❤️ by the Hero's AI team &nbsp;·&nbsp; huddy1910@gmail.com</div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════
+     HELP MODAL
+══════════════════════════════ -->
+<div class="modal-overlay" id="helpModal">
+  <div class="help-card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+      <div class="modal-title"><i class="fa-regular fa-circle-question"></i> Help & Support</div>
+      <button class="modal-close" onclick="closeModal('helpModal')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="help-item">
+      <div class="help-icon"><i class="fa-regular fa-message"></i></div>
+      <div class="help-text-group"><div class="help-title">Start a conversation</div><div class="help-desc">Type your message and press Enter or click send to chat with Hero's AI.</div></div>
+    </div>
+    <div class="help-item">
+      <div class="help-icon"><i class="fa-solid fa-plus"></i></div>
+      <div class="help-text-group"><div class="help-title">+ Menu</div><div class="help-desc">Click + in the input to attach files, enable Coding mode, or activate Web Search.</div></div>
+    </div>
+    <div class="help-item">
+      <div class="help-icon"><i class="fa-solid fa-microphone"></i></div>
+      <div class="help-text-group"><div class="help-title">Voice input</div><div class="help-desc">Click the mic icon to dictate, or use "Talk to Baymax" for a full voice conversation.</div></div>
+    </div>
+    <div class="help-item">
+      <div class="help-icon"><i class="fa-solid fa-robot"></i></div>
+      <div class="help-text-group"><div class="help-title">Switch AI model</div><div class="help-desc">Use the model selector inside the input box to switch between Baymax and ZORVIN.</div></div>
+    </div>
+    <div class="help-item">
+      <div class="help-icon"><i class="fa-regular fa-envelope"></i></div>
+      <div class="help-text-group"><div class="help-title">Contact support</div><div class="help-desc">Reach us at <strong style="color:var(--accent)">huddy1910@gmail.com</strong></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- INTRO SCREEN — FIXED VERSION WITH IMAGE -->
+<div id="introScreen">
+  <!-- Logo image container — 60px size -->
+  <div class="intro-logo-wrap">
+    <img src="{% static 'images/Hero_ai.png' %}" alt="Hero's AI" class="intro-logo-img"/>
+  </div>
+
+  <!-- "Hero's AI Powered" text -->
+  <span class="intro-logo-text">Hero's AI Powered</span>
+
+  <!-- Animated HERO'S letters -->
+  <div class="hero-intro-loader">
+    <svg height="0" width="0" viewBox="0 0 64 64" style="position:absolute;overflow:hidden;"><defs></defs></svg>
+
+    <!-- H -->
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 64 64" height="56" width="56">
+      <path class="intro-letter intro-l-h" stroke-linejoin="round" stroke-linecap="round" d="M 10 6 L 10 58 M 10 32 L 54 32 M 54 6 L 54 58" pathLength="360"/>
+    </svg>
+    <!-- E -->
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 64 64" height="56" width="56">
+      <path class="intro-letter intro-l-e" stroke-linejoin="round" stroke-linecap="round" d="M 54 6 L 10 6 L 10 58 L 54 58 M 10 32 L 48 32" pathLength="360"/>
+    </svg>
+    <!-- R -->
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 64 64" height="56" width="56">
+      <path class="intro-letter intro-l-r" stroke-linejoin="round" stroke-linecap="round" d="M 10 6 L 10 58 M 10 6 Q 54 6 54 24 Q 54 36 10 36 M 30 36 L 54 58" pathLength="360"/>
+    </svg>
+    <div style="width:6px;display:inline-block;flex-shrink:0;"></div>
+    <!-- O -->
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 64 64" height="56" width="56">
+      <path class="intro-letter-o intro-l-o" stroke-linejoin="round" stroke-linecap="round" d="M 32 32 m 0 -24 a 24 24 0 1 1 0 48 a 24 24 0 1 1 0 -48" pathLength="360"/>
+    </svg>
+    <div style="width:6px;display:inline-block;flex-shrink:0;"></div>
+    <!-- S -->
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 64 64" height="56" width="56">
+      <path class="intro-letter intro-l-s" stroke-linejoin="round" stroke-linecap="round" d="M 52 16 Q 52 6 32 6 Q 12 6 12 20 Q 12 32 32 32 Q 52 32 52 46 Q 52 58 32 58 Q 12 58 12 48" pathLength="360"/>
+    </svg>
+  </div>
+
+  <!-- Tagline -->
+  <span class="intro-tagline">Your intelligent assistant</span>
+  
+  <!-- Accent line -->
+  <div class="intro-accent-line"></div>
+</div>
+
+<script>
+(function () {
+  var EXIT_AT = 4600;
+  var start   = Date.now();
+  function doExit() {
+    var el = document.getElementById('introScreen');
+    if (!el) return;
+    var wait = Math.max(0, EXIT_AT - (Date.now() - start));
+    setTimeout(function () {
+      el.style.animation = 'introExit 0.55s ease forwards';
+      setTimeout(function () { el.style.display = 'none'; }, 550);
+    }, wait);
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', doExit);
+  } else {
+    doExit();
+  }
+})();
+</script>
+
+<script src="{% static 'js/app.js' %}" defer></script>
+
+</body>
+</html>

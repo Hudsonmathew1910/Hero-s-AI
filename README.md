@@ -49,11 +49,22 @@ copy .env.example .env
 # 5. Apply database migrations
 python manage.py migrate
 
-# 6. Collect static files (needed for production)
-python manage.py collectstatic --noinput
-
 # 7. Run the development server
 python manage.py runserver
+
+## 🚀 Production Deployment
+
+For production environments (Linux-based), using **Gunicorn** is highly recommended for performance and scalability:
+
+```bash
+# Start Gunicorn in production
+gunicorn hero_ai.wsgi:application --workers 3 --bind 0.0.0.0:8000
+```
+
+### Deployment Configuration
+- **Procfile**: Included for easy deployment to Railway, Render, or Heroku.
+- **Static Files**: Remember to run `python manage.py collectstatic` as part of your deployment pipeline.
+- **Environment**: Set `DEBUG=False` in your production environment variables.
 ```
 
 ### Environment Variables

@@ -434,7 +434,7 @@ class Baymax:
                 return None
             if r.status_code == 429:
                 logger.warning("OpenRouter 429 rate-limit (%s) — retrying once", model)
-                time.sleep(3)
+                time.sleep(1)
                 try:
                     r2 = requests.post(
                         self.openrouter_url, headers=headers, json=payload, timeout=timeout
@@ -556,7 +556,6 @@ class Baymax:
         for model in self.models[fallback_key]:
             if not self.openrouter_key:
                 break
-            time.sleep(2)
             logger.debug("Trying OpenRouter fallback: %s", model)
             result = self._call(model, text, max_tokens, task)
             if result:

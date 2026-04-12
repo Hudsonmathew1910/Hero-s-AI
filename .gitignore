@@ -25,7 +25,7 @@ Scripts/
 logs/
 db.sqlite3
 db.sqlite3-journal
-staticfiles/
+staticfiles/   # collectstatic output — never commit this
 mediafiles/
 media/
 

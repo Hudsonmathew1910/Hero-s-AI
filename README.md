@@ -49,7 +49,10 @@ copy .env.example .env
 # 5. Apply database migrations
 python manage.py migrate
 
-# 6. Run the development server
+# 6. Collect static files (needed for production)
+python manage.py collectstatic --noinput
+
+# 7. Run the development server
 python manage.py runserver
 ```
 

@@ -193,6 +193,10 @@ else:
     FILE_HANDLER_CLASS = "logging.handlers.TimedRotatingFileHandler"
     FILE_HANDLER_KWARGS = {"when": "midnight", "backupCount": 14}
 
+# Ensure the logs directory exists to prevent deployment crashes (e.g. on Render)
+LOGS_DIR = BASE_DIR / "logs"
+os.makedirs(LOGS_DIR, exist_ok=True)
+
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,

@@ -417,17 +417,11 @@ def google_callback(request):
             request.session.set_expiry(1209600)
             return redirect('/')
         except User.DoesNotExist:
-            # Always fall back to account creation if user doesn't exist,
-            # so both 'signin' and 'signup' flows lead to a seamless experience.
-            user = User.objects.create(
-                email=email,
-                name=name,
-                google_id=google_id,
-                password_hash=''  # No password yet
-            )
-            Setting.objects.create(user=user)
-
-            request.session['setup_user_id'] = str(user.user_id)
+            # Store Google user data temporarily in session
+            # to defer user creation until username and password are provided.
+            request.session['setup_google_email'] = email
+            request.session['setup_google_name'] = name
+            request.session['setup_google_id'] = google_id
             return redirect('/?action=google_setup')
 
     except Exception as e:
@@ -437,8 +431,10 @@ def google_callback(request):
 @csrf_exempt
 @json_only
 def complete_google_signup(request):
-    setup_user_id = request.session.get('setup_user_id')
-    if not setup_user_id:
+    google_email = request.session.get('setup_google_email')
+    google_id = request.session.get('setup_google_id')
+    
+    if not google_email or not google_id:
         return JsonResponse({"status": "fail", "message": "Invalid session"}, status=400)
         
     d = request.json_data
@@ -452,14 +448,23 @@ def complete_google_signup(request):
     if err:
         return JsonResponse({"status": "fail", "message": err}, status=400)
         
+    if User.objects.filter(email=google_email).exists():
+        return JsonResponse({"status": "fail", "message": "Email already registered"}, status=409)
+
     try:
-        user = User.objects.get(user_id=setup_user_id)
-        user.name = username
-        user.password_hash = make_password(password)
-        user.save()
+        user = User.objects.create(
+            email=google_email,
+            name=username,
+            google_id=google_id,
+            password_hash=make_password(password)
+        )
+        Setting.objects.create(user=user)
         
-        # Mark setup as complete and log in
-        del request.session['setup_user_id']
+        # Mark setup as complete and clean up session
+        request.session.pop('setup_google_email', None)
+        request.session.pop('setup_google_name', None)
+        request.session.pop('setup_google_id', None)
+        
         request.session.update({
             'user_id':    str(user.user_id),
             'user_email': user.email,
@@ -477,8 +482,9 @@ def complete_google_signup(request):
                 "has_api_keys": False,
             },
         })
-    except User.DoesNotExist:
-        return JsonResponse({"status": "fail", "message": "User not found"}, status=404)
+    except Exception as e:
+        logger.exception("complete_google_signup error")
+        return JsonResponse({"status": "fail", "message": "User creation failed"}, status=500)
 
 
 # ── API Keys ──────────────────────────────────────────────────────────────────

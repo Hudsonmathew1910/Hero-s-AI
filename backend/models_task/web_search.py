@@ -1,16 +1,17 @@
 """
 web_search.py (FIXED)
-─────────────────────────────────
+─────────────────────────────────────────────
 Searches DuckDuckGo and Wikipedia directly,
 then sends the raw results to Gemini for a clean summarised answer.
-Includes context-aware query rewriting.
+Includes context-aware query rewriting and rate limit handling.
 
 Dependencies:
-    pip install duckduckgo-search wikipedia requests
+    pip install ddgs wikipedia requests lxml beautifulsoup4
 """
 
 import logging
 import requests
+import time
 
 try:
     from .query_rewriter import rewrite_query_for_search
@@ -30,8 +31,7 @@ logger = logging.getLogger("hero_ai.web_search")
 def _search_duckduckgo(query: str, max_results: int = 5) -> list[dict]:
     """Return a list of {title, url, snippet} dicts from DuckDuckGo."""
     try:
-        # from ddgs import DDGS
-        from duckduckgo_search import DDGS
+        from ddgs import DDGS
         results = []
         with DDGS() as ddgs:
             for r in ddgs.text(query, max_results=max_results):
@@ -54,6 +54,15 @@ def _search_wikipedia(query: str, sentences: int = 5) -> str:
         import wikipedia
         wikipedia.set_lang("en")
         return wikipedia.summary(query, sentences=sentences, auto_suggest=True)
+    except wikipedia.exceptions.DisambiguationError as e:
+        # When Wikipedia returns a disambiguation page, try the first option
+        logger.warning(f"[web_search] Disambiguation page for '{query}', trying first option")
+        try:
+            if e.options:
+                return wikipedia.summary(e.options[0], sentences=sentences, auto_suggest=False)
+        except Exception:
+            pass
+        return ""
     except Exception as e:
         logger.error(f"[web_search] Wikipedia error: {e}")
         return ""
@@ -167,6 +176,7 @@ def perform_web_search(
     logger.info(f"[web_search] Final Search Query: {rewritten_query}")
 
     ddg_results  = _search_duckduckgo(rewritten_query, max_results=5)
+    time.sleep(1)  # Wait 1 second between searches to avoid rate limits
     wiki_summary = _search_wikipedia(rewritten_query, sentences=5)
 
     if gemini_key:

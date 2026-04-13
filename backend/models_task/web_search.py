@@ -30,7 +30,8 @@ logger = logging.getLogger("hero_ai.web_search")
 def _search_duckduckgo(query: str, max_results: int = 5) -> list[dict]:
     """Return a list of {title, url, snippet} dicts from DuckDuckGo."""
     try:
-        from ddgs import DDGS
+        # from ddgs import DDGS
+        from duckduckgo_search import DDGS
         results = []
         with DDGS() as ddgs:
             for r in ddgs.text(query, max_results=max_results):

@@ -248,7 +248,71 @@ function _syncMuteBtn() {
 }
 
 /* ════════ AUTHENTICATION ════════ */
-function handleGoogleAuth() { window.location.href = '/auth/google'; }
+function handleGoogleAuth(flow) { window.location.href = `/auth/google?flow=${flow || 'signin'}`; }
+
+// Handle auth page loads with URL parameters
+window.addEventListener('DOMContentLoaded', () => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const action = urlParams.get('action');
+  const error = urlParams.get('error');
+  
+  if (action === 'google_setup') {
+    showAuthScreen();
+    const tabLogin = $('tabLogin');
+    const tabSignup = $('tabSignup');
+    if (tabLogin) tabLogin.style.display = 'none';
+    if (tabSignup) tabSignup.style.display = 'none';
+    
+    const loginForm = $('loginForm');
+    const signupForm = $('signupForm');
+    const googleSetupForm = $('googleSetupForm');
+    
+    if (loginForm) loginForm.style.display = 'none';
+    if (signupForm) signupForm.style.display = 'none';
+    if (googleSetupForm) googleSetupForm.style.display = 'flex';
+    
+    // Remove query param cleanly
+    window.history.replaceState({}, document.title, "/");
+  } else if (error) {
+    showNotification(error.replace(/\+/g, ' '), 'error');
+    window.history.replaceState({}, document.title, "/");
+    showAuthScreen();
+    switchAuthTab('signup');
+  }
+});
+
+async function handleGoogleSetup() {
+  const username = $('googleSetupName')?.value.trim();
+  const password = $('googleSetupPassword')?.value;
+  
+  if (!username || !password) { showNotification('Please fill in all fields', 'error'); return; }
+  
+  try {
+    const res = await fetch('/api/auth/google/complete-signup', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+      body: JSON.stringify({ username, password })
+    });
+    const data = await getJsonResponse(res);
+    if (data.status === 'success') {
+      showNotification('Account setup complete!', 'success');
+      loginUser(data.user);
+      if ($('googleSetupName')) $('googleSetupName').value = ''; 
+      if ($('googleSetupPassword')) $('googleSetupPassword').value = '';
+      
+      // Restore tabs
+      if ($('tabLogin')) $('tabLogin').style.display = 'block';
+      if ($('tabSignup')) $('tabSignup').style.display = 'block';
+      if ($('googleSetupForm')) $('googleSetupForm').style.display = 'none';
+      switchAuthTab('login');
+      
+      hasExistingApiKeys = false;
+      setTimeout(() => {
+        showConfirm('API keys are required to use Hero\'s AI. Would you like to configure them now?',
+          () => openApiKeys(), null, 'Configure Keys', 'Later');
+      }, 500);
+    } else { showNotification(data.message || 'Setup failed', 'error'); }
+  } catch (err) { showNotification('Error: ' + err.message, 'error'); }
+}
 
 async function checkSession() {
   try {

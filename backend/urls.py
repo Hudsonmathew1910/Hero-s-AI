@@ -14,6 +14,7 @@ urlpatterns = [
     # Google OAuth
     path('auth/google', views.google_login, name='google_login'),
     path('auth/google/callback', views.google_callback, name='google_callback'),
+    path('api/auth/google/complete-signup', views.complete_google_signup, name='complete_google_signup'),
     
     # API Keys
     path('api/keys/save', views.save_api_keys, name='save_api_keys'),

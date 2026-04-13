@@ -360,11 +360,14 @@ def check_session(request):
 # ── Google OAuth ──────────────────────────────────────────────────────────────
 
 def google_login(request):
+    flow = request.GET.get('flow', 'signin')
+    request.session['oauth_flow'] = flow
+
     redirect_uri = f"{django_settings.SITE_URL}/auth/google/callback"
     return redirect(
         f"https://accounts.google.com/o/oauth2/v2/auth?"
         f"client_id={django_settings.GOOGLE_CLIENT_ID}&redirect_uri={redirect_uri}&"
-        f"response_type=code&scope=openid email profile&access_type=offline"
+        f"response_type=code&scope=openid%20email%20profile&access_type=offline"
     )
 
 
@@ -395,26 +398,88 @@ def google_callback(request):
         name      = info.get('name', email.split('@')[0])
         google_id = info.get('id')
 
-        user, created = User.objects.get_or_create(
-            email=email,
-            defaults={'name': name, 'google_id': google_id, 'password_hash': ''},
-        )
-        if not created and not user.google_id:
-            user.google_id = google_id
-            user.save()
-        if created:
-            Setting.objects.create(user=user)
+        flow = request.session.get('oauth_flow', 'signin')
 
+        try:
+            user = User.objects.get(email=email)
+            # Email exists
+            if not user.google_id:
+                user.google_id = google_id
+                user.save()
+            
+            # Whether signin or signup, if user exists, just log them in directly
+            request.session.update({
+                'user_id':    str(user.user_id),
+                'user_email': user.email,
+                'user_name':  user.name,
+            })
+            request.session.set_expiry(1209600)
+            return redirect('/')
+        except User.DoesNotExist:
+            if flow == 'signin':
+                return redirect('/?error=Account+does+not+exist.+Please+create+an+account.')
+            else:
+                # Signup flow: create account
+                user = User.objects.create(
+                    email=email,
+                    name=name,
+                    google_id=google_id,
+                    password_hash=''  # No password yet
+                )
+                Setting.objects.create(user=user)
+
+                request.session['setup_user_id'] = str(user.user_id)
+                return redirect('/?action=google_setup')
+
+    except Exception as e:
+        logger.exception("Google OAuth callback error")
+        return redirect('/?error=Login+failed')
+
+@csrf_exempt
+@json_only
+def complete_google_signup(request):
+    setup_user_id = request.session.get('setup_user_id')
+    if not setup_user_id:
+        return JsonResponse({"status": "fail", "message": "Invalid session"}, status=400)
+        
+    d = request.json_data
+    username = d.get('username', '').strip()
+    password = d.get('password', '')
+    
+    if not username or not password:
+        return JsonResponse({"status": "fail", "message": "Username and password required"}, status=400)
+    
+    err = validate_password(password)
+    if err:
+        return JsonResponse({"status": "fail", "message": err}, status=400)
+        
+    try:
+        user = User.objects.get(user_id=setup_user_id)
+        user.name = username
+        user.password_hash = make_password(password)
+        user.save()
+        
+        # Mark setup as complete and log in
+        del request.session['setup_user_id']
         request.session.update({
             'user_id':    str(user.user_id),
             'user_email': user.email,
             'user_name':  user.name,
         })
         request.session.set_expiry(1209600)
-        return redirect('/')
-    except Exception as e:
-        logger.exception("Google OAuth callback error")
-        return render(request, 'home.html', {'error': f'Login failed: {e}'})
+        
+        return JsonResponse({
+            "status": "success",
+            "message": "Account setup complete",
+            "user": {
+                "user_id":      str(user.user_id),
+                "name":         user.name,
+                "email":        user.email,
+                "has_api_keys": False,
+            },
+        })
+    except User.DoesNotExist:
+        return JsonResponse({"status": "fail", "message": "User not found"}, status=404)
 
 
 # ── API Keys ──────────────────────────────────────────────────────────────────

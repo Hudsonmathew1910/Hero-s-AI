@@ -364,6 +364,7 @@ def google_login(request):
     request.session['oauth_flow'] = flow
 
     redirect_uri = f"{django_settings.SITE_URL}/auth/google/callback"
+    print("SITE_URL:", django_settings.SITE_URL)
     return redirect(
         f"https://accounts.google.com/o/oauth2/v2/auth?"
         f"client_id={django_settings.GOOGLE_CLIENT_ID}&redirect_uri={redirect_uri}&"

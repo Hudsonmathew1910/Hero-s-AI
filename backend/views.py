@@ -417,20 +417,18 @@ def google_callback(request):
             request.session.set_expiry(1209600)
             return redirect('/')
         except User.DoesNotExist:
-            if flow == 'signin':
-                return redirect('/?error=Account+does+not+exist.+Please+create+an+account.')
-            else:
-                # Signup flow: create account
-                user = User.objects.create(
-                    email=email,
-                    name=name,
-                    google_id=google_id,
-                    password_hash=''  # No password yet
-                )
-                Setting.objects.create(user=user)
+            # Always fall back to account creation if user doesn't exist,
+            # so both 'signin' and 'signup' flows lead to a seamless experience.
+            user = User.objects.create(
+                email=email,
+                name=name,
+                google_id=google_id,
+                password_hash=''  # No password yet
+            )
+            Setting.objects.create(user=user)
 
-                request.session['setup_user_id'] = str(user.user_id)
-                return redirect('/?action=google_setup')
+            request.session['setup_user_id'] = str(user.user_id)
+            return redirect('/?action=google_setup')
 
     except Exception as e:
         logger.exception("Google OAuth callback error")

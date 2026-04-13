@@ -259,7 +259,7 @@ header { height: var(--header-h); display: flex; align-items: center; justify-co
 .msg-avatar.ai { background: var(--accent); }
 .msg-avatar.ai img { width: 34px; height: 34px; border-radius: 10px; object-fit: cover; display: block; }
 
-.msg-content { flex: 1; font-size: 0.925rem; line-height: 1.75; color: var(--text); padding-top: 4px; }
+.msg-content { flex: 1; min-width: 0; font-size: 0.925rem; line-height: 1.75; color: var(--text); padding-top: 4px; }
 .msg-content .sender { font-family: var(--font-head); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 5px; }
 .msg-content.user .sender { color: var(--accent2); }
 .msg-content.ai .sender { color: var(--accent); }
@@ -890,8 +890,11 @@ header { height: var(--header-h); display: flex; align-items: center; justify-co
   .header-right { gap: 5px; }
   .cssbuttons-io-button span { display: none; }
   .cssbuttons-io-button { padding: 0.35em; padding-right: 2.6em; padding-left: 0.6em; }
-  .input-wrap { padding: 12px 14px 16px; }
-  .input-row-outer { gap: 6px; }
+  .input-wrap { padding: 8px 10px 12px; }
+  .input-row-outer { gap: 4px; }
+  .input-box { padding: 8px; gap: 4px; }
+  .plus-btn, .mic-btn, .mute-btn, .send-btn { width: 32px; height: 32px; font-size: 0.8rem; }
+  .inline-model-select { display: none; }
   .msg-row { padding: 6px 14px; }
   .auth-card { padding: 32px 24px 28px; }
   .modal-card { max-width: 100%; }
@@ -937,6 +940,7 @@ header { height: var(--header-h); display: flex; align-items: center; justify-co
   border-radius: 8px;
   padding: 16px 14px;
   position: relative;
+  overflow-x: auto;
 }
 .code-card-line {
   display: block;

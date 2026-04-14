@@ -482,7 +482,10 @@ function onModelChange() {
   const newModel = select.value;
   if (newModel === 'ZORVIN') {
     showConfirm('Download Hero\'s AI for ZORVIN Offline',
-      () => { window.location.href = 'https://heroai.app/download'; },
+      () => {
+        showNotification('Currently in development status', 'info');
+        select.value = currentModel;
+      },
       () => { select.value = currentModel; },
       'Download', 'Cancel');
   } else {

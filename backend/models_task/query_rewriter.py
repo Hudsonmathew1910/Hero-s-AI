@@ -35,7 +35,7 @@ Latest user query: {query}
 
 Rewritten search query:"""
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-8b:generateContent?key={gemini_key}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key={gemini_key}"
     
     try:
         r = requests.post(

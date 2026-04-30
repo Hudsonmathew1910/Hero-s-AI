@@ -1,0 +1,181 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Infinsight | AI Data Analyst</title>
+  <link rel="icon" type="image/png" href="{% static 'images/Hero_ai.png' %}" sizes="128x128"/>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+
+    <link rel="stylesheet" href="{% static 'css/inf.css' %}">
+</head>
+<body>
+
+<div class="ins-layout">
+
+  <!-- ══════ SIDEBAR ══════ -->
+  <aside class="ins-sidebar" id="insSidebar">
+    <div class="ins-sidebar-header">
+      <!-- <a href="/" class="ins-back-btn">
+        <i class="fa-solid fa-arrow-left"></i> Back to Hero's AI
+      </a> -->
+      <div class="ins-brand">
+        <div class="ins-brand-icon"><i class="fa-solid fa-chart-line"></i></div>
+        <div>
+          <div class="ins-brand-name">Infinsight</div>
+          <div class="ins-brand-tag">AI Data Analyst</div>
+        </div>
+      </div>
+    </div>
+
+    <button class="ins-upload-btn" onclick="openUploadModal()">
+      <i class="fa-solid fa-plus"></i>
+      New Analysis
+    </button>
+
+    <div class="ins-sessions-label">Your Datasets</div>
+
+    <div class="ins-sessions-list" id="sessionsList">
+      <div class="ins-sessions-empty" id="sessionsEmpty">
+        <i class="fa-regular fa-folder-open"></i>
+        <p>No datasets yet.<br>Upload a file to start analyzing.</p>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ══════ MAIN ══════ -->
+  <div class="ins-main">
+
+    <!-- Topbar -->
+    <div class="ins-topbar">
+      <div class="ins-topbar-left">
+        <button class="ins-menu-toggle" onclick="toggleInsSidebar()">
+          <i class="fa-solid fa-bars"></i>
+        </button>
+        <div id="insTopbarTitle" style="display:flex;align-items:center;gap:10px;">
+          <span class="ins-session-title-display" id="currentSessionTitle">Infinsight</span>
+          <span class="ins-session-badge none" id="currentSessionBadge">AI Analyst</span>
+        </div>
+      </div>
+      <div class="ins-topbar-right">
+        <button class="ins-theme-btn" onclick="toggleInsTheme()" title="Toggle theme">
+          <i class="fa-solid fa-circle-half-stroke"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Processing banner -->
+    <div class="ins-processing-banner" id="processingBanner">
+      <div class="ins-processing-spinner"></div>
+      <span>Indexing your file — this takes 30–60 seconds…</span>
+    </div>
+
+    <!-- Welcome screen -->
+    <div class="ins-welcome" id="insWelcome">
+      <div class="ins-welcome-icon"><i class="fa-solid fa-chart-line"></i></div>
+      <h1>Hello{% if username %}, {{ username }}{% endif %}!</h1>
+      <p>Upload a CSV, Excel, or PDF file to start an AI-powered data analysis session. Ask anything about your data.</p>
+      <div class="ins-capabilities">
+        <div class="ins-cap-card">
+          <i class="fa-solid fa-magnifying-glass-chart"></i>
+          Explore trends & patterns
+        </div>
+        <div class="ins-cap-card">
+          <i class="fa-solid fa-table"></i>
+          Summarize & filter data
+        </div>
+        <div class="ins-cap-card">
+          <i class="fa-solid fa-lightbulb"></i>
+          Ask natural questions
+        </div>
+      </div>
+
+      <div class="ins-drop-zone" id="welcomeDropZone" onclick="openUploadModal()"
+           ondragover="handleWelcomeDrag(event)" ondrop="handleWelcomeDrop(event)" ondragleave="this.classList.remove('drag-over')">
+        <i class="fa-solid fa-cloud-arrow-up"></i>
+        <p>Drop your file here, or <strong style="color:var(--ins-accent)">click to upload</strong></p>
+        <span>CSV, Excel, PDF — up to 20MB</span>
+      </div>
+    </div>
+
+    <!-- Chat area -->
+    <div class="ins-chat-area" id="insChatArea">
+
+      <div class="ins-messages" id="insMessages"></div>
+
+      <!-- Input -->
+      <div class="ins-input-wrap">
+        <div class="ins-input-box">
+          <textarea
+            class="ins-textarea"
+            id="insInput"
+            placeholder="Ask anything about your data…"
+            rows="1"
+            onkeydown="handleInsKey(event)"
+            oninput="insAutoResize(this); insToggleSend()"
+          ></textarea>
+          <button class="ins-send-btn" id="insSendBtn" onclick="sendInsMessage()" disabled>
+            <i class="fa-solid fa-paper-plane"></i>
+          </button>
+        </div>
+        <div class="ins-hint">Infinsight answers from your file's data only — powered by Gemini + Pinecone RAG</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ══════ UPLOAD MODAL ══════ -->
+<div class="ins-upload-modal" id="insUploadModal">
+  <div class="ins-upload-card">
+    <h2><i class="fa-solid fa-cloud-arrow-up"></i> Upload Dataset</h2>
+    <p>Upload a file to create a new analysis session. Each session is isolated to its own data context.</p>
+
+    <div class="ins-info-box">
+      <i class="fa-solid fa-shield-halved"></i>
+      <span>Your data is processed securely. Files are stored encrypted and vectors are namespaced to your account only.</span>
+    </div>
+
+    <!-- Drop zone -->
+    <div class="ins-file-drop" id="insFileDrop"
+         onclick="document.getElementById('insFileInput').click()"
+         ondragover="handleModalDrag(event)" ondrop="handleModalDrop(event)"
+         ondragleave="this.classList.remove('drag-over')">
+      <i class="fa-solid fa-file-arrow-up"></i>
+      <div class="drop-text">Click to browse or drag & drop</div>
+      <div class="drop-sub">CSV, Excel (.xlsx/.xls), PDF — max 20MB</div>
+    </div>
+    <input type="file" id="insFileInput" accept=".csv,.xlsx,.xls,.pdf" style="display:none" onchange="handleFileSelect(this)"/>
+
+    <!-- Selected file -->
+    <div class="ins-selected-file" id="selectedFileDisplay">
+      <i class="fa-solid fa-file-circle-check"></i>
+      <span class="ins-file-name" id="selectedFileName">—</span>
+      <span class="ins-file-size" id="selectedFileSize">—</span>
+      <button class="ins-file-remove" onclick="clearSelectedFile()"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+
+    <!-- Progress -->
+    <div class="ins-upload-progress" id="uploadProgress">
+      <div class="ins-progress-bar" id="uploadProgressBar"></div>
+    </div>
+
+    <div class="ins-upload-actions">
+      <button class="ins-upload-cancel" onclick="closeUploadModal()">Cancel</button>
+      <button class="ins-upload-submit" id="uploadSubmitBtn" onclick="submitUpload()" disabled>
+        <i class="fa-solid fa-rocket"></i> Start Analysis
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Notification -->
+<div class="ins-notif" id="insNotif"></div>
+
+<script src="{% static 'js/inf.js' %}"></script>
+</body>
+</html>

@@ -518,7 +518,7 @@ class Baymax:
         task:       str = "text_chat",
     ) -> str | None:
         """Route to the correct provider based on the model name."""
-        if model in ("gemini-2.5-flash-lite", "gemini-2.5-flash"):
+        if model in ("gemini-1.5-flash-8b", "gemini-1.5-flash"):
             return self._call_gemini(model, user_text, max_tokens, task)
         return self._call_openrouter(model, user_text, max_tokens, task)
 
@@ -539,7 +539,7 @@ class Baymax:
 
         API keys are stored securely. All keys are encrypted and stored on the server — never exposed to the browser.
         """
-        if primary_model in ("gemini-2.5-flash-lite", "gemini-2.5-flash"):
+        if primary_model in ("gemini-1.5-flash-8b", "gemini-1.5-flash"):
             if not self.gemini_key:
                 return "Gemini API key not configured. Please provide your api key in profile.\n" + No_API
         else:

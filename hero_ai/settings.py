@@ -25,6 +25,18 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Encryption key for API keys
 ENCRYPTION_KEY = os.getenv('ENCRYPTION_KEY', '').encode()
 
+# Pinecone settings (add to .env too)
+PINECONE_API_KEY = os.getenv('PINECONE_API_KEY', '')
+PINECONE_INDEX_NAME = os.getenv('PINECONE_INDEX_NAME', 'infinsight')
+ 
+# Media files (for user uploads)
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+ 
+# File upload size (already present — just ensure it's 10MB+)
+DATA_UPLOAD_MAX_MEMORY_SIZE = 20971520   # 20MB
+FILE_UPLOAD_MAX_MEMORY_SIZE = 20971520   # 20MB
+
 # Session configuration
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 SESSION_COOKIE_AGE = 1209600  # 2 weeks
@@ -61,7 +73,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'backend'
+    'backend',
+    'infinsight'
 ]
 
 MIDDLEWARE = [

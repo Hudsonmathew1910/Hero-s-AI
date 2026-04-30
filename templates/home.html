@@ -222,7 +222,7 @@
           <img src="{% static 'images/Hero_ai.png' %}" alt="Hero's AI" width="120">
         </div>
         <h1>Hello {{ username }}</h1>
-        <p>Powered by Hero's AI</p>
+        <p>What’s on your mind today?</p>
         <div class="suggestion-chips">
           <div class="chip" onclick="setModeCodingAndPrompt()">
             <i class="fa-solid fa-code"></i> Code </div>
@@ -254,6 +254,12 @@
               <button class="plus-menu-item" onclick="triggerAttach()">
                 <div class="pm-icon attach"><i class="fa-solid fa-paperclip"></i></div>
                 Attach file
+              </button>
+              <button class="plus-menu-item" onclick="window.location.href='/infinsight/'">
+                <div class="pm-icon" style="background:rgba(59,130,246,0.15);color:#3b82f6">
+                  <i class="fa-solid fa-chart-line"></i>
+                </div>
+                AI Analyst
               </button>
               <div class="plus-menu-divider"></div>
               <button class="plus-menu-item" onclick="setMode('coding')">

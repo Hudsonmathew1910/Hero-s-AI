@@ -2,7 +2,7 @@
 infinsight/services/embeddings.py
 -----------------------------------
 Handles embedding generation and Pinecone vector store operations.
-Uses Google's embedding-001 model via the generativeai SDK.
+Uses Google's gemini-embedding-001 model via the google-genai SDK.
 """
 
 import logging
@@ -33,7 +33,7 @@ def _get_embedding_model_name(api_key: str) -> str:
 
 logger = logging.getLogger("infinsight.embeddings")
 
-# Pinecone embedding dimension for text-embedding-004
+# Pinecone embedding dimension for gemini-embedding-001
 EMBEDDING_DIM = 768
 PINECONE_INDEX_NAME = "infinsight"  # Set in .env or hardcode your index name
 
@@ -70,7 +70,7 @@ def _get_pinecone_index():
 def generate_embedding(text: str, gemini_api_key: str) -> list[float]:
     """
     Generate a single embedding vector for the given text.
-    Uses Google's text-embedding-004 model (768 dims).
+    Uses Google's gemini-embedding-001 model (768 dims).
     """
     try:
         from google import genai

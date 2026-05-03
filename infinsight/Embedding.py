@@ -17,15 +17,15 @@ def _get_embedding_model_name(api_key: str) -> str:
     if _CACHED_EMBEDDING_MODEL:
         return _CACHED_EMBEDDING_MODEL
         
-    import google.generativeai as genai
-    genai.configure(api_key=api_key)
+    from google import genai
+    client = genai.Client(api_key=api_key)
     
-    for m in genai.list_models():
-        if 'embedContent' in getattr(m, 'supported_generation_methods', []):
+    for m in client.models.list():
+        if 'embed_content' in getattr(m, 'supported_generation_methods', []) or 'embedContent' in getattr(m, 'supported_generation_methods', []):
             _CACHED_EMBEDDING_MODEL = m.name
             return m.name
             
-    raise ValueError("No models supporting 'embedContent' found for this API key.")
+    raise ValueError("No models supporting 'embed_content' found for this API key.")
 
 logger = logging.getLogger("infinsight.embeddings")
 
@@ -69,16 +69,16 @@ def generate_embedding(text: str, gemini_api_key: str) -> list[float]:
     Uses Google's text-embedding-004 model (768 dims).
     """
     try:
-        import google.generativeai as genai
+        from google import genai
+        client = genai.Client(api_key=gemini_api_key)
 
         model_name = _get_embedding_model_name(gemini_api_key)
-        genai.configure(api_key=gemini_api_key)
-        result = genai.embed_content(
+        result = client.models.embed_content(
             model=model_name,
-            content=text,
-            task_type="retrieval_document",
+            contents=text,
+            config={"task_type": "RETRIEVAL_DOCUMENT"},
         )
-        return result["embedding"]
+        return result.embeddings[0].values
     except Exception as e:
         from google.api_core import exceptions
         if isinstance(e, exceptions.ResourceExhausted):
@@ -95,16 +95,16 @@ def generate_embedding(text: str, gemini_api_key: str) -> list[float]:
 def generate_query_embedding(query: str, gemini_api_key: str) -> list[float]:
     """Generate embedding specifically for a search query."""
     try:
-        import google.generativeai as genai
+        from google import genai
+        client = genai.Client(api_key=gemini_api_key)
 
         model_name = _get_embedding_model_name(gemini_api_key)
-        genai.configure(api_key=gemini_api_key)
-        result = genai.embed_content(
+        result = client.models.embed_content(
             model=model_name,
-            content=query,
-            task_type="retrieval_query",
+            contents=query,
+            config={"task_type": "RETRIEVAL_QUERY"},
         )
-        return result["embedding"]
+        return result.embeddings[0].values
     except Exception as e:
         from google.api_core import exceptions
         if isinstance(e, exceptions.ResourceExhausted):

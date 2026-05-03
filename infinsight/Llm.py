@@ -101,22 +101,22 @@ def generate_analyst_response(
         chat_history = []
 
     prompt = _build_prompt(user_message, context_chunks, chat_history, schema)
-    import google.generativeai as genai
+    from google import genai
+    client = genai.Client(api_key=gemini_api_key)
 
     for model in GEMINI_MODELS:
         try:
-            genai.configure(api_key=gemini_api_key)
-            gemini_model = genai.GenerativeModel(
-                model_name=model,
-                system_instruction=ANALYST_SYSTEM_PROMPT,
-                generation_config={
+            t_llm = time.time()
+            response = client.models.generate_content(
+                model=model,
+                config={
+                    "system_instruction": ANALYST_SYSTEM_PROMPT,
                     "temperature": 0.1,
                     "top_p": 0.9,
                     "max_output_tokens": 4096,
                 },
+                contents=prompt
             )
-            t_llm = time.time()
-            response = gemini_model.generate_content(prompt)
             print(f"--- [INF] LLM Content Generated ({model}) in {time.time() - t_llm:.2f}s ---")
             text = response.text.strip()
             return text, model
@@ -161,14 +161,17 @@ INSTRUCTIONS:
 """
     
     try:
-        import google.generativeai as genai
-        genai.configure(api_key=gemini_api_key)
+        from google import genai
+        client = genai.Client(api_key=gemini_api_key)
         
         for model_name in GEMINI_MODELS:
             try:
-                model = genai.GenerativeModel(model_name, system_instruction=ANALYST_SYSTEM_PROMPT)
                 t_llm = time.time()
-                response = model.generate_content(prompt)
+                response = client.models.generate_content(
+                    model=model_name,
+                    config={"system_instruction": ANALYST_SYSTEM_PROMPT},
+                    contents=prompt
+                )
                 print(f"--- [INF] LLM Interpretation Generated ({model_name}) in {time.time() - t_llm:.2f}s ---")
                 return response.text.strip()
             except Exception as e:
@@ -183,18 +186,17 @@ INSTRUCTIONS:
 def generate_session_title(file_name: str, file_type: str, gemini_api_key: str) -> str:
     """Generate a short descriptive session title for the uploaded file."""
     try:
-        import google.generativeai as genai
-        genai.configure(api_key=gemini_api_key)
+        from google import genai
+        client = genai.Client(api_key=gemini_api_key)
         
         for model_name in GEMINI_MODELS:
             try:
-                model = genai.GenerativeModel(model_name)
                 prompt = (
                     f"Generate a short, descriptive session title (max 8 words) for an uploaded "
                     f"{file_type.upper()} file named '{file_name}'. "
                     f"Return ONLY the title, no quotes, no punctuation at end."
                 )
-                response = model.generate_content(prompt)
+                response = client.models.generate_content(model=model_name, contents=prompt)
                 return response.text.strip()[:100]
             except Exception as e:
                 print(f"--- [INF] Fallback: Title generation model {model_name} failed. Details: {str(e)} ---")

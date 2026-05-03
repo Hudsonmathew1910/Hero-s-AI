@@ -2,28 +2,10 @@
    Infinsight Frontend JS
 ══════════════════════════════════════════════════════════════ */
 
-// --- CSRF Fetch Wrapper ---
-(function() {
-    const originalFetch = window.fetch;
-    window.fetch = async function() {
-        let [resource, config] = arguments;
-        if (!config) config = {};
-        const method = (config.method || 'GET').toUpperCase();
-        if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(method)) {
-            const csrfMeta = document.querySelector('meta[name="csrf-token"]');
-            if (csrfMeta) {
-                if (!config.headers) config.headers = {};
-                if (config.headers instanceof Headers) {
-                    if (!config.headers.has('X-CSRFToken')) config.headers.append('X-CSRFToken', csrfMeta.content);
-                } else {
-                    if (!config.headers['X-CSRFToken']) config.headers['X-CSRFToken'] = csrfMeta.content;
-                }
-            }
-        }
-        return originalFetch(resource, config);
-    };
-})();
-// --------------------------
+/* ════════ CSRF TOKEN ════════ */
+function getCsrfToken() {
+  return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+}
 
 // ── State ──────────────────────────────────────────────────────
 const state = {
@@ -224,7 +206,10 @@ async function doSignin() {
   try {
     const res  = await fetch("/api/auth/login", {
       method:  "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json",
+        "X-CSRFToken": getCsrfToken()
+      },
       body:    JSON.stringify({ email, password }),
     });
     const data = await res.json();
@@ -268,7 +253,10 @@ async function doSignup() {
   try {
     const res  = await fetch("/api/auth/signup", {
       method:  "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json",
+        "X-CSRFToken": getCsrfToken()
+      },
       body:    JSON.stringify({ name, email, password }),
     });
     const data = await res.json();
@@ -301,7 +289,7 @@ async function doLogout() {
   try {
     const res = await fetch("/api/auth/logout", {
       method: "POST",
-      headers: { "X-CSRFToken": token || "" },
+      headers: { "X-CSRFToken": getCsrfToken() },
       credentials: "same-origin",
     });
     console.log("Server responded:", res.status);
@@ -429,7 +417,10 @@ async function saveGeminiKey() {
   try {
     const res  = await fetch("/api/keys/save", {
       method:  "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json",
+        "X-CSRFToken": getCsrfToken()
+      },
       body:    JSON.stringify({ gemini: key }),
     });
     const data = await res.json();
@@ -760,7 +751,10 @@ async function sendInsMessage() {
   try {
     const res = await fetch("/infinsight/chat/", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json",
+        "X-CSRFToken": getCsrfToken()
+      },
       body: JSON.stringify({ session_id: state.currentSessionId, message: msg }),
     });
     const data = await res.json();
@@ -914,7 +908,11 @@ async function submitUpload() {
   formData.append("file", state.selectedFile);
 
   try {
-    const res = await fetch("/infinsight/upload/", { method: "POST", body: formData });
+    const res = await fetch("/infinsight/upload/", { 
+      method: "POST", 
+      headers: { "X-CSRFToken": getCsrfToken() },
+      body: formData 
+    });
     const data = await res.json();
 
     if (data.status === "success") {
@@ -957,7 +955,10 @@ async function deleteSession(sessionId, e) {
   e.stopPropagation();
   if (!confirm("Delete this analysis session? This cannot be undone.")) return;
   try {
-    const res = await fetch(`/infinsight/session/${sessionId}/delete/`, { method: "POST" });
+    const res = await fetch(`/infinsight/session/${sessionId}/delete/`, { 
+      method: "POST",
+      headers: { "X-CSRFToken": getCsrfToken() }
+    });
     const data = await res.json();
     if (data.status === "success") {
       notify("Session deleted.", "info");

@@ -49,7 +49,12 @@ let tempChatActive = false;
 let currentSessionId = null;
 
 /* Mute state — default MUTED */
-let isMuted = true;
+let isMuted = false;
+
+/* ════════ CSRF TOKEN ════════ */
+function getCsrfToken() {
+  return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+}
 
 /* User Settings State */
 let userSettings = {
@@ -313,7 +318,12 @@ async function handleGoogleSetup() {
   
   try {
     const res = await fetch('/api/auth/google/complete-signup', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+      method: 'POST', 
+      headers: { 
+        'Content-Type': 'application/json',
+        'X-CSRFToken': getCsrfToken()
+      }, 
+      credentials: 'include',
       body: JSON.stringify({ username, password })
     });
     const data = await getJsonResponse(res);
@@ -387,7 +397,12 @@ async function handleSignup() {
   if (password.length < 6) { showNotification('Password must be at least 6 characters', 'error'); return; }
   try {
     const res  = await fetch('/api/auth/signup', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+      method: 'POST', 
+      headers: { 
+        'Content-Type': 'application/json',
+        'X-CSRFToken': getCsrfToken()
+      }, 
+      credentials: 'include',
       body: JSON.stringify({ name, email, password })
     });
     const data = await getJsonResponse(res);
@@ -410,7 +425,12 @@ async function handleLogin() {
   if (!email || !password) { showNotification('Please enter your email and password', 'error'); return; }
   try {
     const res  = await fetch('/api/auth/login', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+      method: 'POST', 
+      headers: { 
+        'Content-Type': 'application/json',
+        'X-CSRFToken': getCsrfToken()
+      }, 
+      credentials: 'include',
       body: JSON.stringify({ email, password })
     });
     const data = await getJsonResponse(res);
@@ -449,7 +469,11 @@ function loginUser(user) {
 async function handleLogout() {
   showConfirm('Are you sure you want to logout?', async () => {
     try {
-      const res  = await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+      const res  = await fetch('/api/auth/logout', { 
+        method: 'POST', 
+        headers: { 'X-CSRFToken': getCsrfToken() },
+        credentials: 'include' 
+      });
       const data = await getJsonResponse(res);
       if (data.status === 'success') {
         currentUser = null; closeUserMenu();
@@ -508,7 +532,12 @@ async function saveApiKeys() {
   }
   try {
     const res  = await fetch('/api/keys/save', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+      method: 'POST', 
+      headers: { 
+        'Content-Type': 'application/json',
+        'X-CSRFToken': getCsrfToken()
+      }, 
+      credentials: 'include',
       body: JSON.stringify({ gemini, openrouter, groq })
     });
     const data = await getJsonResponse(res);
@@ -547,7 +576,12 @@ async function savePersonalization() {
   if (saveBtn) { saveBtn.disabled = true; saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving…'; }
   try {
     const res  = await fetch('/api/user/settings/save', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+      method: 'POST', 
+      headers: { 
+        'Content-Type': 'application/json',
+        'X-CSRFToken': getCsrfToken()
+      }, 
+      credentials: 'include',
       body: JSON.stringify(payload)
     });
     const data = await getJsonResponse(res);
@@ -646,7 +680,10 @@ async function sendMessage() {
     // FIX: Send temporary_chat (not temporary) matching backend expectations
     const res = await fetch('/api/chat', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'X-CSRFToken': getCsrfToken()
+      },
       credentials: 'include',
       body: JSON.stringify({
         message:      text,
@@ -1552,7 +1589,11 @@ async function deleteChatHistory(event, chatId) {
   event.stopPropagation();
   showConfirm('Delete this chat?', async () => {
     try {
-      const res  = await fetch(`/api/chat/history/${chatId}/delete`, { method: 'POST', credentials: 'include' });
+      const res  = await fetch(`/api/chat/history/${chatId}/delete`, { 
+        method: 'POST', 
+        headers: { 'X-CSRFToken': getCsrfToken() },
+        credentials: 'include' 
+      });
       const data = await getJsonResponse(res);
       if (data.status === 'success') { showNotification('Chat deleted', 'success'); loadChatHistory(); }
       else { showNotification(data.message || 'Failed to delete chat', 'error'); }

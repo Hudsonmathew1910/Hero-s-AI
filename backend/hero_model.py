@@ -333,59 +333,50 @@ class Baymax:
         task:       str   = "text_chat",
         timeout:    float = 10.0,
     ) -> str | None:
-        """Send a request to the Gemini generateContent API."""
-        url = (
-            f"https://generativelanguage.googleapis.com/v1beta/models/"
-            f"{model}:generateContent?key={self.gemini_key}"
-        )
+        """Send a request to the Gemini API using the official google-genai SDK."""
+        from google import genai
+        
+        # Load API key securely from the instance attribute (which should be provided by the caller)
+        # Fallback to environment variable if desired, but here we follow the class pattern.
+        if not self.gemini_key:
+            from django.conf import settings
+            api_key = getattr(settings, "GEMINI_API_KEY", None)
+        else:
+            api_key = self.gemini_key
+
+        if not api_key:
+            logger.error("Gemini API key is missing.")
+            return "Gemini API key is missing. Please check your settings."
+
+        client = genai.Client(api_key=api_key)
+        
         if task == "file_analysis":
-            timeout = 40.0
-            time.sleep(2.0)
             loop = 3
         else:
             loop = 2
 
         for i in range(1, loop + 1):
-            if task == "file_analysis":
-                num_sym = ['st', 'nd', 'rd', 'th']
-                logger.debug("Gemini file_analysis attempt %d%s", i, num_sym[i - 1])
             try:
-                r = requests.post(
-                    url,
-                    headers={"Content-Type": "application/json"},
-                    json={
-                        "contents":          self._build_cnt_gemini(user_text, task),
-                        "systemInstruction": self._build_system_instruction_gemini(task),
-                        "generationConfig": {
-                            "temperature":     0.7,
-                            "maxOutputTokens": max_tokens,
-                            "topP":            0.9,
-                        },
-                    },
-                    timeout=timeout,
+                t_start = time.time()
+                response = client.models.generate_content(
+                    model=model,
+                    contents=self._build_cnt_gemini(user_text, task),
+                    config={
+                        "system_instruction": self._build_system_prompt(task),
+                        "temperature": 0.7,
+                        "max_output_tokens": max_tokens,
+                        "top_p": 0.9,
+                    }
                 )
-                logger.debug("Gemini %s → HTTP %d", model, r.status_code)
+                logger.debug("Gemini %s generated in %.2fs", model, time.time() - t_start)
+                return response.text.strip() if response.text else None
 
-                if r.status_code == 200:
-                    content = r.json()["candidates"][0]["content"]["parts"][0]["text"]
-                    return content.strip() if content else None
-                if r.status_code == 503:
-                    logger.warning("Gemini 503 — retrying…")
-                    time.sleep(2)
-                    continue
-                if r.status_code == 400:
-                    logger.error("Gemini 400: %s", r.json().get("error", {}).get("message"))
-                if r.status_code == 401:
-                    logger.error("Gemini 401: invalid API key")
-                    return "Invalid Gemini API key. Please check your settings."
-                return None
-
-            except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-                logger.warning("Gemini network error (%s): %s", model, e)
-                return None
             except Exception as e:
-                logger.exception("Gemini unexpected error (%s)", model)
-                return f"Error: {e}"
+                logger.warning("Gemini attempt %d failed: %s", i, str(e))
+                if i == loop:
+                    logger.exception("Gemini final attempt failed")
+                    return f"Error: {str(e)}"
+                time.sleep(2)
         return None
 
     def _call_openrouter(
@@ -518,7 +509,7 @@ class Baymax:
         task:       str = "text_chat",
     ) -> str | None:
         """Route to the correct provider based on the model name."""
-        if model in ("gemini-1.5-flash-8b", "gemini-1.5-flash"):
+        if model.lower().startswith("gemini-"):
             return self._call_gemini(model, user_text, max_tokens, task)
         return self._call_openrouter(model, user_text, max_tokens, task)
 
@@ -539,9 +530,11 @@ class Baymax:
 
         API keys are stored securely. All keys are encrypted and stored on the server — never exposed to the browser.
         """
-        if primary_model in ("gemini-1.5-flash-8b", "gemini-1.5-flash"):
+        if primary_model.lower().startswith("gemini-"):
             if not self.gemini_key:
-                return "Gemini API key not configured. Please provide your api key in profile.\n" + No_API
+                from django.conf import settings
+                if not getattr(settings, "GEMINI_API_KEY", None):
+                    return "Gemini API key not configured. Please provide your api key in profile.\n" + No_API
         else:
             if not self.openrouter_key:
                 return "OpenRouter API key not configured. Please provide your api key in profile.\n" + No_API

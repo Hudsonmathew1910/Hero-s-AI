@@ -29,3 +29,7 @@ python-docx>=1.1.0
 # Project Utilities
 django-ratelimit>=4.0.0
 django-cryptography>=1.1
+
+# Web search
+ddgs==9.13.0
+wikipedia==1.4.0

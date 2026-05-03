@@ -56,6 +56,8 @@ CSRF_USE_SESSIONS = False
 CSRF_TRUSTED_ORIGINS = [
     "https://hero-s-ai.onrender.com"
 ]
+if DEBUG:
+    CSRF_TRUSTED_ORIGINS += ["http://127.0.0.1:8000", "http://localhost:8000"]
 if os.getenv('RENDER_EXTERNAL_URL'):
     CSRF_TRUSTED_ORIGINS.append(os.getenv('RENDER_EXTERNAL_URL'))
 

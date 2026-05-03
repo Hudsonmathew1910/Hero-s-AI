@@ -96,13 +96,13 @@ def generate_embedding(text: str, gemini_api_key: str) -> list[float]:
         raise
 
 
-def generate_query_embedding(query: str, gemini_api_key: str) -> list[float]:
-    """Generate embedding specifically for a search query."""
-    try:
-        from google import genai
-        client = genai.Client(api_key=gemini_api_key)
+def generate_query_embedding(query: str, api_key: str) -> list[float]:
+    """Generate a vector for a single search query using the recommended Gemini models."""
+    from google import genai
+    client = genai.Client(api_key=api_key)
+    model_name = _get_embedding_model_name(api_key)
 
-        model_name = _get_embedding_model_name(gemini_api_key)
+    try:
         result = client.models.embed_content(
             model=model_name,
             contents=query,
@@ -110,67 +110,76 @@ def generate_query_embedding(query: str, gemini_api_key: str) -> list[float]:
         )
         return result.embeddings[0].values
     except Exception as e:
-        from google.api_core import exceptions
-        if isinstance(e, exceptions.ResourceExhausted):
-            raise ValueError("You reached Gemini rate limit. Please try again later.")
-        
-        logger.error("Query embedding failed: %s", e)
-        raise
+        logger.warning(f"Embedding failed with {model_name}: {e}. Trying fallback models/gemini-embedding-2...")
+        try:
+            # Safest fallback as recommended by user
+            result = client.models.embed_content(
+                model="models/gemini-embedding-2",
+                contents=query,
+                config={"task_type": "RETRIEVAL_QUERY"},
+            )
+            return result.embeddings[0].values
+        except Exception as e2:
+            logger.error(f"Fallback embedding also failed: {e2}")
+            raise e
 
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Pinecone operations
 # ─────────────────────────────────────────────────────────────────────────────
 
-def upsert_chunks(chunks: list[dict], namespace: str, gemini_api_key: str) -> int:
-    """
-    Generate embeddings for all chunks and upsert into Pinecone.
-    chunks: [{"text": "...", "metadata": {...}}]
-    Returns: number of vectors upserted.
-    """
+def upsert_chunks(chunks: list[dict], namespace: str, api_key: str) -> int:
+    """Batch embed and upsert chunks to Pinecone."""
+    from google import genai
+    client = genai.Client(api_key=api_key)
+    model_name = _get_embedding_model_name(api_key)
     index = _get_pinecone_index()
-    vectors = []
 
-    for i, chunk in enumerate(chunks):
-        text = chunk["text"]
-        meta = chunk.get("metadata", {})
+    batch_size = 50
+    total_upserted = 0
 
-        if not text or not text.strip():
-            continue
-
-        # Rate-limit-safe: small delay every 10 embeddings
-        if i > 0 and i % 10 == 0:
-            time.sleep(0.5)
-
+    for i in range(0, len(chunks), batch_size):
+        batch = chunks[i : i + batch_size]
+        texts = [c["text"] for c in batch]
+        
         try:
-            embedding = generate_embedding(text[:8000], gemini_api_key)
-            vector_id = f"{namespace}_chunk_{i}"
-            vectors.append({
-                "id": vector_id,
-                "values": embedding,
-                "metadata": {
-                    **meta,
-                    "text": text[:2000],  # Pinecone metadata limit
-                    "chunk_index": i,
-                },
-            })
+            res = client.models.embed_content(
+                model=model_name,
+                contents=texts,
+                config={"task_type": "RETRIEVAL_DOCUMENT"},
+            )
+            embeddings = [e.values for e in res.embeddings]
         except Exception as e:
-            logger.warning("Skipping chunk %d due to embedding error: %s", i, e)
-            continue
+            logger.warning(f"Batch embedding failed with {model_name}: {e}. Trying fallback models/gemini-embedding-2...")
+            try:
+                res = client.models.embed_content(
+                    model="models/gemini-embedding-2",
+                    contents=texts,
+                    config={"task_type": "RETRIEVAL_DOCUMENT"},
+                )
+                embeddings = [e.values for e in res.embeddings]
+            except Exception as e2:
+                logger.error(f"Batch fallback embedding failed: {e2}")
+                raise e
 
-    if not vectors:
-        raise ValueError("No valid vectors generated from chunks.")
+        vectors = []
+        for j, emb in enumerate(embeddings):
+            chunk = batch[j]
+            vectors.append({
+                "id": f"{namespace}_{i+j}",
+                "values": emb,
+                "metadata": {
+                    "text": chunk["text"],
+                    "session_id": namespace,
+                    "type": chunk["metadata"].get("type", "text"),
+                    "page": chunk["metadata"].get("page", 0)
+                }
+            })
 
-    # Upsert in batches of 100
-    batch_size = 100
-    total = 0
-    for start in range(0, len(vectors), batch_size):
-        batch = vectors[start : start + batch_size]
-        index.upsert(vectors=batch, namespace=namespace)
-        total += len(batch)
-        logger.info("Upserted batch %d/%d vectors", total, len(vectors))
+        index.upsert(vectors=vectors, namespace=namespace)
+        total_upserted += len(vectors)
 
-    return total
+    return total_upserted
 
 
 def query_chunks(

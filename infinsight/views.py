@@ -15,8 +15,8 @@ from functools import wraps
 
 from django.http import JsonResponse
 from django.shortcuts import render
-from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
+from django_ratelimit.decorators import ratelimit
 
 from backend.models import User, Api
 from backend.encryption import decrypt_api_key
@@ -102,8 +102,7 @@ def infinsight_page(request):
 # ─────────────────────────────────────────────────────────────────────────────
 # File Upload + Session creation
 # ─────────────────────────────────────────────────────────────────────────────
-
-@csrf_exempt
+@ratelimit(key='ip', rate='5/m', block=True)
 @login_required_json
 def upload_file(request):
     """
@@ -112,7 +111,7 @@ def upload_file(request):
     Creates UploadedFile + ProjectSession, triggers async ingestion.
     """
     t0 = time.time()
-    print(f"\n--- [INF] Upload Request Received: {time.strftime('%H:%M:%S')} ---")
+    logger.info("Upload Request Received")
     if request.method != "POST":
         return JsonResponse({"status": "fail", "message": "Method not allowed"}, status=405)
 
@@ -152,7 +151,7 @@ def upload_file(request):
             gemini_key,
         )
 
-        print(f"--- [INF] Upload logic completed in {time.time() - t0:.2f}s ---")
+        logger.debug("Upload logic completed in %.2fs", time.time() - t0)
         return JsonResponse({
             "status": "success",
             "message": "File uploaded. Processing started.",
@@ -199,8 +198,7 @@ def _async_ingest(session_id, file_path: str, file_type: str, gemini_key: str):
 # ─────────────────────────────────────────────────────────────────────────────
 # Chat
 # ─────────────────────────────────────────────────────────────────────────────
-
-@csrf_exempt
+@ratelimit(key='ip', rate='20/m', block=True)
 @login_required_json
 def chat(request):
     """
@@ -208,7 +206,7 @@ def chat(request):
     Body: {"session_id": "...", "message": "..."}
     """
     t0 = time.time()
-    print(f"\n--- [INF] Chat Message Received: {time.strftime('%H:%M:%S')} ---")
+    logger.info("Chat Message Received")
     if request.method != "POST":
         return JsonResponse({"status": "fail", "message": "Method not allowed"}, status=405)
 
@@ -260,7 +258,7 @@ def chat(request):
             session.updated_at = timezone.now()
             session.save(update_fields=["updated_at"])
 
-        print(f"--- [INF] Total Response Time: {time.time() - t0:.2f}s ---\n")
+        logger.debug("Total Response Time: %.2fs", time.time() - t0)
         return JsonResponse({
             "status": "success",
             "reply": result["reply"],
@@ -276,8 +274,6 @@ def chat(request):
 # ─────────────────────────────────────────────────────────────────────────────
 # Session Management
 # ─────────────────────────────────────────────────────────────────────────────
-
-@csrf_exempt
 @login_required_json
 def list_sessions(request):
     """GET /infinsight/sessions/ — list all sessions for the user."""
@@ -296,9 +292,6 @@ def list_sessions(request):
             "updated_at": s.updated_at.isoformat(),
         })
     return JsonResponse({"status": "success", "sessions": data})
-
-
-@csrf_exempt
 @login_required_json
 def session_detail(request, session_id):
     """
@@ -335,9 +328,6 @@ def session_detail(request, session_id):
         },
         "messages": history,
     })
-
-
-@csrf_exempt
 @login_required_json
 def delete_session(request, session_id):
     """POST /infinsight/session/<id>/delete/"""
@@ -362,9 +352,6 @@ def delete_session(request, session_id):
     except Exception as e:
         logger.error("Delete session error: %s", e)
         return JsonResponse({"status": "fail", "message": str(e)}, status=500)
-
-
-@csrf_exempt
 @login_required_json
 def session_status(request, session_id):
     """GET /infinsight/session/<id>/status/ — poll processing status."""

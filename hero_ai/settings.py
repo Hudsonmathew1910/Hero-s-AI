@@ -80,12 +80,15 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',  # Serve static files in production
+    'hero_ai.middleware.RequestSizeLimitMiddleware',
+    'hero_ai.middleware.RequestMetricsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'hero_ai.middleware.GlobalExceptionHandlerMiddleware',
 ]
 
 ROOT_URLCONF = 'hero_ai.urls'
@@ -252,6 +255,12 @@ LOGGING = {
         },
         # Hero AI Baymax model layer
         "hero_ai.baymax": {
+            "handlers":  ["console", "file"],
+            "level":     "DEBUG",
+            "propagate": False,
+        },
+        # Infinsight app loggers
+        "infinsight": {
             "handlers":  ["console", "file"],
             "level":     "DEBUG",
             "propagate": False,

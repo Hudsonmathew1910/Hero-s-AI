@@ -9,29 +9,591 @@
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
   <link rel="stylesheet" href="{% static 'css/style.css' %}">
+  <link rel="stylesheet" href="{% static 'css/inf.css' %}">
+  <meta name="csrf-token" content="{{ csrf_token }}">
 
-    <link rel="stylesheet" href="{% static 'css/inf.css' %}">
+  <style>
+    /* ══════════════════════════════════════════
+       AUTH & API KEY OVERLAY STYLES
+    ══════════════════════════════════════════ */
+
+    /* — Shared modal backdrop — */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.72);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      z-index: 9000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;`n      overflow-y: auto;`n      padding: 2rem 1rem;
+    }
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    /* — Modal card — */
+    .modal-card {
+      background: var(--ins-sidebar-bg, #13151a);
+      border: 1px solid var(--ins-border, rgba(255,255,255,0.08));
+      border-radius: 20px;
+      padding: 2.5rem 2.25rem;
+      width: 100%;
+      max-width: 440px;
+      box-shadow: 0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04);
+      transform: translateY(18px) scale(0.97);
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.25s ease;
+      position: relative;
+    }
+    .modal-overlay.active .modal-card {
+      transform: translateY(0) scale(1);
+    }
+
+    /* light theme adjustments */
+    [data-theme="light"] .modal-card {
+      background: #ffffff;
+      border-color: rgba(0,0,0,0.08);
+      box-shadow: 0 24px 60px rgba(0,0,0,0.18);
+    }
+
+    /* — Modal header — */
+    .modal-brand {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 1.75rem;
+    }
+    .modal-brand-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #6c63ff, #48d1cc);
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      font-size: 1.1rem;
+      color: #fff;
+      flex-shrink: 0;
+    }
+    .modal-brand-name {
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 1.25rem;
+      color: var(--ins-text, #e8eaf0);
+    }
+    .modal-brand-tag {
+      font-size: 0.72rem;
+      color: var(--ins-muted, #6b7280);
+      letter-spacing: 0.04em;
+      margin-top: 1px;
+    }
+    [data-theme="light"] .modal-brand-name { color: #1a1d27; }
+    [data-theme="light"] .modal-brand-tag  { color: #6b7280; }
+
+    .modal-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.45rem;
+      font-weight: 700;
+      color: var(--ins-text, #e8eaf0);
+      margin: 0 0 0.35rem;
+    }
+    .modal-subtitle {
+      font-size: 0.85rem;
+      color: var(--ins-muted, #6b7280);
+      margin: 0 0 1.75rem;
+      line-height: 1.5;
+    }
+    [data-theme="light"] .modal-title    { color: #1a1d27; }
+    [data-theme="light"] .modal-subtitle { color: #6b7280; }
+
+    /* — Tabs — */
+    .modal-tabs {
+      display: flex;
+      gap: 4px;
+      background: var(--ins-input-bg, rgba(255,255,255,0.05));
+      border-radius: 10px;
+      padding: 4px;
+      margin-bottom: 1.75rem;
+    }
+    [data-theme="light"] .modal-tabs { background: #f3f4f6; }
+    .modal-tab {
+      flex: 1;
+      padding: 0.55rem 1rem;
+      border: none;
+      border-radius: 7px;
+      background: transparent;
+      color: var(--ins-muted, #6b7280);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.87rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .modal-tab.active {
+      background: linear-gradient(135deg, #6c63ff, #48d1cc);
+      color: #fff;
+      font-weight: 600;
+    }
+    [data-theme="light"] .modal-tab { color: #6b7280; }
+
+    /* — Form fields — */
+    .modal-field {
+      margin-bottom: 1rem;
+    }
+    .modal-label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--ins-muted, #6b7280);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin-bottom: 0.45rem;
+    }
+    [data-theme="light"] .modal-label { color: #6b7280; }
+    .modal-input {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      background: var(--ins-input-bg, rgba(255,255,255,0.06));
+      border: 1.5px solid var(--ins-border, rgba(255,255,255,0.1));
+      border-radius: 10px;
+      color: var(--ins-text, #e8eaf0);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.92rem;
+      outline: none;
+      transition: border-color 0.2s ease, background 0.2s ease;
+      box-sizing: border-box;
+    }
+    .modal-input:focus {
+      border-color: #6c63ff;
+      background: var(--ins-input-focus-bg, rgba(108,99,255,0.08));
+    }
+    .modal-input.error {
+      border-color: #f87171;
+    }
+    [data-theme="light"] .modal-input {
+      background: #f9fafb;
+      border-color: #e5e7eb;
+      color: #1a1d27;
+    }
+    [data-theme="light"] .modal-input:focus {
+      border-color: #6c63ff;
+      background: #f0eeff;
+    }
+
+    /* password wrapper */
+    .modal-input-wrap {
+      position: relative;
+    }
+    .modal-input-wrap .modal-input {
+      padding-right: 2.75rem;
+    }
+    .modal-eye-btn {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: var(--ins-muted, #6b7280);
+      cursor: pointer;
+      padding: 4px;
+      font-size: 0.85rem;
+    }
+    .modal-eye-btn:hover { color: var(--ins-text, #e8eaf0); }
+    [data-theme="light"] .modal-eye-btn:hover { color: #1a1d27; }
+
+    /* — Error text — */
+    .modal-error {
+      font-size: 0.78rem;
+      color: #f87171;
+      margin-top: 0.35rem;
+      display: none;
+    }
+    .modal-error.visible { display: block; }
+
+    /* — Alert box inside modal — */
+    .modal-alert {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 0.75rem 1rem;
+      border-radius: 10px;
+      font-size: 0.83rem;
+      line-height: 1.5;
+      margin-bottom: 1.25rem;
+      border: 1px solid transparent;
+    }
+    .modal-alert.info {
+      background: rgba(108,99,255,0.1);
+      border-color: rgba(108,99,255,0.25);
+      color: #a5b4fc;
+    }
+    .modal-alert.warning {
+      background: rgba(251,191,36,0.1);
+      border-color: rgba(251,191,36,0.25);
+      color: #fbbf24;
+    }
+    .modal-alert.success {
+      background: rgba(52,211,153,0.1);
+      border-color: rgba(52,211,153,0.25);
+      color: #34d399;
+    }
+    [data-theme="light"] .modal-alert.info    { background: #ede9ff; border-color: #c4b5fd; color: #5b21b6; }
+    [data-theme="light"] .modal-alert.warning { background: #fefce8; border-color: #fde68a; color: #92400e; }
+    [data-theme="light"] .modal-alert.success { background: #ecfdf5; border-color: #6ee7b7; color: #065f46; }
+
+    /* — Primary action button — */
+    .modal-btn {
+      width: 100%;
+      padding: 0.85rem 1.5rem;
+      border: none;
+      border-radius: 11px;
+      background: linear-gradient(135deg, #6c63ff, #48d1cc);
+      color: #fff;
+      font-family: 'Syne', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      gap: 8px;
+      transition: opacity 0.2s ease, transform 0.15s ease;
+      margin-top: 1.25rem;
+    }
+    .modal-btn:hover:not(:disabled) { opacity: 0.88; transform: translateY(-1px); }
+    .modal-btn:active:not(:disabled) { transform: translateY(0); }
+    .modal-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* secondary link */
+    .modal-footer-link {
+      text-align: center;
+      margin-top: 1.1rem;
+      font-size: 0.83rem;
+      color: var(--ins-muted, #6b7280);
+    }
+    .modal-footer-link a {
+      color: #6c63ff;
+      text-decoration: none;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .modal-footer-link a:hover { text-decoration: underline; }
+
+    /* — Divider — */
+    .modal-divider {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      margin: 1.25rem 0;
+      color: var(--ins-muted, #6b7280);
+      font-size: 0.75rem;
+    }
+    .modal-divider::before,
+    .modal-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--ins-border, rgba(255,255,255,0.08));
+    }
+    [data-theme="light"] .modal-divider::before,
+    [data-theme="light"] .modal-divider::after { background: #e5e7eb; }
+
+    /* — Google OAuth btn — */
+    .modal-google-btn {
+      width: 100%;
+      padding: 0.75rem 1.5rem;
+      border: 1.5px solid var(--ins-border, rgba(255,255,255,0.12));
+      border-radius: 11px;
+      background: transparent;
+      color: var(--ins-text, #e8eaf0);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      gap: 10px;
+      transition: background 0.2s ease, border-color 0.2s ease;
+    }
+    .modal-google-btn:hover {
+      background: rgba(255,255,255,0.05);
+      border-color: rgba(255,255,255,0.2);
+    }
+    [data-theme="light"] .modal-google-btn {
+      border-color: #e5e7eb;
+      color: #1a1d27;
+    }
+    [data-theme="light"] .modal-google-btn:hover {
+      background: #f9fafb;
+    }
+    .google-icon {
+      width: 18px;
+      height: 18px;
+    }
+
+    /* ══════════════════════════
+       API KEY SIDEBAR SECTION
+    ══════════════════════════ */
+    .ins-apikey-section {
+      margin: 0 0 0.75rem;
+      padding: 0.85rem 1rem;
+      background: var(--ins-input-bg, rgba(255,255,255,0.04));
+      border: 1px solid var(--ins-border, rgba(255,255,255,0.08));
+      /* border-radius: 12px; */
+    }
+    .ins-apikey-label {
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--ins-muted, #6b7280);
+      margin-bottom: 0.55rem;
+    }
+    .ins-apikey-status {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #f87171;
+      flex-shrink: 0;
+    }
+    .ins-apikey-status.ok { background: #34d399; }
+    .ins-apikey-row {
+      display: flex;
+      gap: 6px;
+    }
+    .ins-apikey-input {
+      flex: 1;
+      padding: 0.5rem 0.75rem;
+      background: var(--ins-input-bg, rgba(255,255,255,0.06));
+      border: 1.5px solid var(--ins-border, rgba(255,255,255,0.1));
+      border-radius: 8px;
+      color: var(--ins-text, #e8eaf0);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.8rem;
+      outline: none;
+      transition: border-color 0.2s;
+      min-width: 0;
+    }
+    .ins-apikey-input:focus { border-color: #6c63ff; }
+    [data-theme="light"] .ins-apikey-input {
+      background: #f9fafb;
+      border-color: #e5e7eb;
+      color: #1a1d27;
+    }
+    .ins-apikey-save {
+      padding: 0.5rem 0.75rem;
+      background: linear-gradient(135deg, #6c63ff, #48d1cc);
+      border: none;
+      border-radius: 8px;
+      color: #fff;
+      font-size: 0.78rem;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: opacity 0.2s;
+      flex-shrink: 0;
+    }
+    .ins-apikey-save:hover { opacity: 0.85; }
+    .ins-apikey-save:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* ══════════════════════════
+       USER CHIP IN TOPBAR
+    ══════════════════════════ */
+    .ins-user-chip {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      padding: 5px 10px 5px 5px;
+      background: var(--ins-input-bg, rgba(255,255,255,0.06));
+      border: 1px solid var(--ins-border, rgba(255,255,255,0.08));
+      border-radius: 30px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .ins-user-chip:hover { background: rgba(255,255,255,0.1); }
+    [data-theme="light"] .ins-user-chip {
+      background: #f3f4f6;
+      border-color: #e5e7eb;
+    }
+    [data-theme="light"] .ins-user-chip:hover { background: #e9eaf0; }
+    .ins-user-avatar {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #6c63ff, #48d1cc);
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: #fff;
+      flex-shrink: 0;
+      padding-top: 5px
+    }
+    .ins-user-name {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--ins-text, #e8eaf0);
+      max-width: 90px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      padding-top: 4px
+    }
+    [data-theme="light"] .ins-user-name { color: #1a1d27; }
+
+    /* sign in btn (unauthenticated) */
+    .ins-signin-btn {
+      padding: 0.45rem 1rem;
+      background: linear-gradient(135deg, #6c63ff, #48d1cc);
+      border: none;
+      border-radius: 8px;
+      color: #fff;
+      font-family: 'Syne', sans-serif;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .ins-signin-btn:hover { opacity: 0.85; }
+
+    /* logout option */
+    .ins-user-menu {
+      position: relative;
+    }
+    .ins-user-dropdown {
+      position: absolute;
+      top: calc(100% + 8px);
+      right: 0;
+      background: var(--ins-sidebar-bg, #13151a);
+      border: 1px solid var(--ins-border, rgba(255,255,255,0.1));
+      border-radius: 12px;
+      padding: 6px;
+      min-width: 160px;
+      box-shadow: 0 12px 32px rgba(0,0,0,0.4);
+      z-index: 2000;
+      display: none;
+      pointer-events: auto;
+    }
+    .ins-user-dropdown.open { display: block; }
+    [data-theme="light"] .ins-user-dropdown {
+      background: #fff;
+      border-color: #e5e7eb;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    }
+    .ins-dd-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      padding: 0.6rem 0.75rem;
+      border-radius: 8px;
+      font-size: 0.83rem;
+      color: var(--ins-text, #e8eaf0);
+      cursor: pointer;
+      transition: background 0.15s;
+      border: none;
+      background: none;
+      width: 100%;
+      text-align: left;
+    }
+    .ins-dd-item:hover { background: rgba(255,255,255,0.06); }
+    .ins-dd-item.danger { color: #f87171; }
+    .ins-dd-item.danger:hover { background: rgba(248,113,113,0.1); }
+    [data-theme="light"] .ins-dd-item { color: #1a1d27; }
+    [data-theme="light"] .ins-dd-item:hover { background: #f3f4f6; }
+    .ins-dd-divider {
+      height: 1px;
+      background: var(--ins-border, rgba(255,255,255,0.08));
+      margin: 4px 0;
+    }
+    [data-theme="light"] .ins-dd-divider { background: #e5e7eb; }
+
+    /* — Spinner in buttons — */
+    .spin { animation: spin 0.8s linear infinite; display: inline-block; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* — "No API Key" banner — */
+    .ins-nokey-banner {
+      display: none;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 0.7rem 1.1rem;
+      background: rgba(251,191,36,0.12);
+      border: 1px solid rgba(251,191,36,0.3);
+      border-radius: 10px;
+      margin: 0 1rem 0.75rem;
+      font-size: 0.83rem;
+      color: #fbbf24;
+    }
+    .ins-nokey-banner.visible { display: flex; }
+    .ins-nokey-banner i { flex-shrink: 0; }
+    .ins-nokey-link {
+      color: #fbbf24;
+      font-weight: 700;
+      text-decoration: underline;
+      cursor: pointer;
+      background: none;
+      border: none;
+      font-size: inherit;
+      padding: 0;
+    }
+  </style>
+    <meta name="csrf-token" content="{{ csrf_token }}">
 </head>
 <body>
+{% csrf_token %}
 
 <div class="ins-layout">
 
   <!-- ══════ SIDEBAR ══════ -->
   <aside class="ins-sidebar" id="insSidebar">
     <div class="ins-sidebar-header">
-      <!-- <a href="/" class="ins-back-btn">
-        <i class="fa-solid fa-arrow-left"></i> Back to Hero's AI
-      </a> -->
       <div class="ins-brand">
         <div class="ins-brand-icon"><i class="fa-solid fa-chart-line"></i></div>
         <div>
           <div class="ins-brand-name">Infinsight</div>
-          <div class="ins-brand-tag">AI Data Analyst</div>
+          <div class="ins-brand-tag">Hero's AI Powered</div>
         </div>
       </div>
     </div>
 
-    <button class="ins-upload-btn" onclick="openUploadModal()">
+    <!-- API Key section (always visible in sidebar) -->
+    <div class="ins-apikey-section" id="sidebarApikeySection">
+      <div class="ins-apikey-label">
+        <span class="ins-apikey-status" id="apikeyStatusDot"></span>
+        Gemini API Key
+      </div>
+      <div class="ins-apikey-row">
+        <input
+          type="password"
+          class="ins-apikey-input"
+          id="sidebarGeminiKey"
+          placeholder="AIza…"
+          autocomplete="off"
+        />
+        <button class="ins-apikey-save" id="sidebarApikeySaveBtn" onclick="saveGeminiKey()">
+          Save
+        </button>
+      </div>
+    </div>
+
+    <!-- No-API-key warning banner -->
+    <div class="ins-nokey-banner" id="nokeyBanner">
+      <i class="fa-solid fa-triangle-exclamation"></i>
+      <span>Gemini API key not configured. <button class="ins-nokey-link" onclick="focusApiKeyInput()">Add your key</button></span>
+    </div>
+
+    <button class="ins-upload-btn" onclick="handleUploadClick()">
       <i class="fa-solid fa-plus"></i>
       New Analysis
     </button>
@@ -44,6 +606,11 @@
         <p>No datasets yet.<br>Upload a file to start analyzing.</p>
       </div>
     </div>
+
+    <a href="{% url 'home' %}" class="ins-sidebar-hero-btn" title="Go to Hero's AI">
+      <img src="{% static 'images/Hero_ai.png' %}" alt="Hero AI">
+      Chat with Hero's AI
+    </a>
   </aside>
 
   <!-- ══════ MAIN ══════ -->
@@ -60,10 +627,12 @@
           <span class="ins-session-badge none" id="currentSessionBadge">AI Analyst</span>
         </div>
       </div>
-      <div class="ins-topbar-right">
+      <div class="ins-topbar-right" style="display:flex;align-items:center;gap:10px;">
         <button class="ins-theme-btn" onclick="toggleInsTheme()" title="Toggle theme">
           <i class="fa-solid fa-circle-half-stroke"></i>
         </button>
+        <!-- Auth area — swapped by JS -->
+        <div id="authArea"></div>
       </div>
     </div>
 
@@ -93,7 +662,7 @@
         </div>
       </div>
 
-      <div class="ins-drop-zone" id="welcomeDropZone" onclick="openUploadModal()"
+      <div class="ins-drop-zone" id="welcomeDropZone" onclick="handleUploadClick()"
            ondragover="handleWelcomeDrag(event)" ondrop="handleWelcomeDrop(event)" ondragleave="this.classList.remove('drag-over')">
         <i class="fa-solid fa-cloud-arrow-up"></i>
         <p>Drop your file here, or <strong style="color:var(--ins-accent)">click to upload</strong></p>
@@ -103,12 +672,12 @@
 
     <!-- Chat area -->
     <div class="ins-chat-area" id="insChatArea">
-
       <div class="ins-messages" id="insMessages"></div>
-
-      <!-- Input -->
       <div class="ins-input-wrap">
         <div class="ins-input-box">
+          <a href="{% url 'home' %}" class="ins-home-btn" title="Go to Hero's AI">
+            <img src="{% static 'images/Hero_ai.png' %}" alt="Hero AI" style="width: 20px; height: 20px; border-radius: 4px; object-fit: cover;">
+          </a>
           <textarea
             class="ins-textarea"
             id="insInput"
@@ -121,10 +690,96 @@
             <i class="fa-solid fa-paper-plane"></i>
           </button>
         </div>
-        <div class="ins-hint">Infinsight answers from your file's data only — powered by Gemini + Pinecone RAG</div>
+        <div class="ins-hint">Infinsight answers from your file's data only — powered by Hero AI + Pinecone RAG</div>
       </div>
     </div>
 
+  
+  </div>
+</div>
+
+
+<!-- ══════ AUTH MODAL ══════ -->
+<div class="modal-overlay" id="authModal" role="dialog" aria-modal="true" aria-label="Sign in or create account">
+  <div class="modal-card">
+    <div class="modal-brand">
+      <div class="modal-brand-icon"><i class="fa-solid fa-chart-line"></i></div>
+      <div>
+        <div class="modal-brand-name">Infinsight</div>
+        <div class="modal-brand-tag">Hero's AI Powered</div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="modal-tabs" role="tablist">
+      <button class="modal-tab active" role="tab" aria-selected="true"  id="tabSignin"  onclick="switchAuthTab('signin')">Sign In</button>
+      <button class="modal-tab"        role="tab" aria-selected="false" id="tabSignup"  onclick="switchAuthTab('signup')">Create Account</button>
+    </div>
+
+    <!-- Google -->
+    <button class="modal-google-btn" onclick="googleLogin()">
+      <svg class="google-icon" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.36-8.16 2.36-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/><path fill="none" d="M0 0h48v48H0z"/></svg>
+      Continue with Google
+    </button>
+
+    <div class="modal-divider">or</div>
+
+    <!-- Sign In form -->
+    <div id="signinForm">
+      <div class="modal-field">
+        <label class="modal-label" for="signinEmail">Email</label>
+        <input class="modal-input" type="email" id="signinEmail" placeholder="you@example.com" autocomplete="email"/>
+        <div class="modal-error" id="signinEmailErr"></div>
+      </div>
+      <div class="modal-field">
+        <label class="modal-label" for="signinPassword">Password</label>
+        <div class="modal-input-wrap">
+          <input class="modal-input" type="password" id="signinPassword" placeholder="••••••••" autocomplete="current-password"/>
+          <button class="modal-eye-btn" type="button" onclick="togglePwd('signinPassword', this)" tabindex="-1">
+            <i class="fa-regular fa-eye"></i>
+          </button>
+        </div>
+        <div class="modal-error" id="signinPassErr"></div>
+      </div>
+      <div class="modal-error" id="signinGeneralErr" style="margin-top:0.5rem;font-size:0.84rem;"></div>
+      <button class="modal-btn" id="signinBtn" onclick="doSignin()">
+        <i class="fa-solid fa-right-to-bracket"></i> Sign In
+      </button>
+      <div class="modal-footer-link">
+        Don't have an account? <a onclick="switchAuthTab('signup')">Create one</a>
+      </div>
+    </div>
+
+    <!-- Sign Up form -->
+    <div id="signupForm" style="display:none;">
+      <div class="modal-field">
+        <label class="modal-label" for="signupName">Name</label>
+        <input class="modal-input" type="text" id="signupName" placeholder="Your name" autocomplete="name"/>
+        <div class="modal-error" id="signupNameErr"></div>
+      </div>
+      <div class="modal-field">
+        <label class="modal-label" for="signupEmail">Email</label>
+        <input class="modal-input" type="email" id="signupEmail" placeholder="you@example.com" autocomplete="email"/>
+        <div class="modal-error" id="signupEmailErr"></div>
+      </div>
+      <div class="modal-field">
+        <label class="modal-label" for="signupPassword">Password</label>
+        <div class="modal-input-wrap">
+          <input class="modal-input" type="password" id="signupPassword" placeholder="Min 6 chars, 1 uppercase, 1 number" autocomplete="new-password"/>
+          <button class="modal-eye-btn" type="button" onclick="togglePwd('signupPassword', this)" tabindex="-1">
+            <i class="fa-regular fa-eye"></i>
+          </button>
+        </div>
+        <div class="modal-error" id="signupPassErr"></div>
+      </div>
+      <div class="modal-error" id="signupGeneralErr" style="margin-top:0.5rem;font-size:0.84rem;"></div>
+      <button class="modal-btn" id="signupBtn" onclick="doSignup()">
+        <i class="fa-solid fa-user-plus"></i> Create Account
+      </button>
+      <div class="modal-footer-link">
+        Already have an account? <a onclick="switchAuthTab('signin')">Sign in</a>
+      </div>
+    </div>
   </div>
 </div>
 

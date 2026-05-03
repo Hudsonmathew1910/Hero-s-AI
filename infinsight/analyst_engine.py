@@ -46,25 +46,16 @@ def get_df_schema(df: pd.DataFrame) -> str:
 
 def execute_pandas_query(df: pd.DataFrame, code: str) -> dict:
     """
-    Executes pandas code on the provided DataFrame.
+    Executes pandas code on the provided DataFrame safely using asteval.
     The code should expect 'df' to be available and should 
     assign the final result to a variable named 'result'.
     """
     if df is None:
         return {"success": False, "error": "DataFrame is None"}
 
-    # Basic safety: check for dangerous keywords
-    dangerous = ["os.", "sys.", "subprocess", "eval(", "exec(", "open(", "import "]
-    # Note: We might need 'import' for scikit-learn inside the code block if we allow it.
-    # But for now, let's provide common libraries in globals.
-    
-    for d in dangerous:
-        if d in code and d != "import ": # Allow import for specific libraries if needed
-            # We'll be more permissive with 'import' for sklearn/statsmodels if they are in the code
-            pass
-
     import sklearn
     from sklearn.linear_model import LinearRegression
+    from asteval import Interpreter
     
     # Prepare execution environment
     local_vars = {
@@ -83,12 +74,18 @@ def execute_pandas_query(df: pd.DataFrame, code: str) -> dict:
         redirected_output = io.StringIO()
         sys.stdout = redirected_output
         
-        exec(code, {}, local_vars)
+        # Initialize the secure interpreter
+        aeval = Interpreter(symtable=local_vars, use_numpy=True)
+        aeval(code)
         
         sys.stdout = old_stdout
         
+        if len(aeval.error) > 0:
+            err_msg = str(aeval.error[0].get_error()[1])
+            raise Exception(f"asteval error: {err_msg}")
+        
         output = redirected_output.getvalue()
-        result = local_vars.get("result")
+        result = aeval.symtable.get("result")
         
         # If result is a DataFrame or Series, convert to something readable
         if isinstance(result, (pd.DataFrame, pd.Series)):

@@ -11,6 +11,30 @@
    ════════════════════════════════════════════════════════════════ */
 
 /* ════════ GLOBAL STATE ════════ */
+
+// --- CSRF Fetch Wrapper ---
+(function() {
+    const originalFetch = window.fetch;
+    window.fetch = async function() {
+        let [resource, config] = arguments;
+        if (!config) config = {};
+        const method = (config.method || 'GET').toUpperCase();
+        if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(method)) {
+            const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+            if (csrfMeta) {
+                if (!config.headers) config.headers = {};
+                if (config.headers instanceof Headers) {
+                    if (!config.headers.has('X-CSRFToken')) config.headers.append('X-CSRFToken', csrfMeta.content);
+                } else {
+                    if (!config.headers['X-CSRFToken']) config.headers['X-CSRFToken'] = csrfMeta.content;
+                }
+            }
+        }
+        return originalFetch(resource, config);
+    };
+})();
+// --------------------------
+
 let messages = [];
 let attachedFiles = [];
 let isLoading = false;
@@ -296,6 +320,10 @@ async function handleGoogleSetup() {
     if (data.status === 'success') {
       showNotification('Account setup complete!', 'success');
       loginUser(data.user);
+      if (data.redirect_url && data.redirect_url !== '/') {
+        window.location.href = data.redirect_url;
+        return;
+      }
       if ($('googleSetupName')) $('googleSetupName').value = ''; 
       if ($('googleSetupPassword')) $('googleSetupPassword').value = '';
       

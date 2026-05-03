@@ -22,6 +22,7 @@ import re
 import time
 import requests
 import traceback
+from django.views.decorators.csrf import csrf_exempt
 
 from concurrent.futures import ThreadPoolExecutor
 from functools import wraps
@@ -220,6 +221,7 @@ def home(request):
 
 
 # ── Auth ──────────────────────────────────────────────────────────────────────
+@csrf_exempt
 @json_only
 def signup_view(request):
     d = request.json_data
@@ -276,6 +278,7 @@ def signup_view(request):
             msg = "Something went wrong. Please try again later."
             
         return JsonResponse({"status": "fail", "message": msg}, status=500)
+@csrf_exempt
 @json_only
 def login_view(request):
     d        = request.json_data
@@ -481,6 +484,7 @@ def complete_google_signup(request):
 
 
 # ── API Keys ──────────────────────────────────────────────────────────────────
+@csrf_exempt
 @login_required_json
 @json_only
 def save_api_keys(request):
@@ -531,6 +535,7 @@ def check_api_keys(request):
 
 
 # ── Chat ──────────────────────────────────────────────────────────────────────
+@csrf_exempt
 @login_required_json
 @json_only
 def chat_api(request):

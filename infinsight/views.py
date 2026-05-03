@@ -17,6 +17,7 @@ from django.http import JsonResponse
 from django.shortcuts import render
 from django.conf import settings
 from django_ratelimit.decorators import ratelimit
+from django.views.decorators.csrf import csrf_exempt
 
 from backend.models import User, Api
 from backend.encryption import decrypt_api_key
@@ -102,6 +103,7 @@ def infinsight_page(request):
 # ─────────────────────────────────────────────────────────────────────────────
 # File Upload + Session creation
 # ─────────────────────────────────────────────────────────────────────────────
+@csrf_exempt
 @ratelimit(key='ip', rate='5/m', block=True)
 @login_required_json
 def upload_file(request):
@@ -198,6 +200,7 @@ def _async_ingest(session_id, file_path: str, file_type: str, gemini_key: str):
 # ─────────────────────────────────────────────────────────────────────────────
 # Chat
 # ─────────────────────────────────────────────────────────────────────────────
+@csrf_exempt
 @ratelimit(key='ip', rate='20/m', block=True)
 @login_required_json
 def chat(request):

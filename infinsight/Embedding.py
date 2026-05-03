@@ -2,44 +2,29 @@
 infinsight/services/embeddings.py
 -----------------------------------
 Handles embedding generation and Pinecone vector store operations.
-Uses Google's embedding-001 model via the generativeai SDK.
+Uses the new 'google-genai' SDK.
 """
 
 import logging
 import time
 import traceback
 from typing import Optional
-
-_CACHED_EMBEDDING_MODEL = None
-
-def _get_embedding_model_name(api_key: str) -> str:
-    global _CACHED_EMBEDDING_MODEL
-    if _CACHED_EMBEDDING_MODEL:
-        return _CACHED_EMBEDDING_MODEL
-        
-    import google.generativeai as genai
-    genai.configure(api_key=api_key)
-    
-    for m in genai.list_models():
-        if 'embedContent' in getattr(m, 'supported_generation_methods', []):
-            _CACHED_EMBEDDING_MODEL = m.name
-            return m.name
-            
-    raise ValueError("No models supporting 'embedContent' found for this API key.")
+from google import genai
 
 logger = logging.getLogger("infinsight.embeddings")
 
+_CACHED_EMBEDDING_MODEL = "text-embedding-004" # Default to latest stable
+
+def _get_embedding_model_name(api_key: str) -> str:
+    global _CACHED_EMBEDDING_MODEL
+    # We'll use the cached name or just return the standard latest model
+    return _CACHED_EMBEDDING_MODEL
+
 # Pinecone embedding dimension for text-embedding-004
 EMBEDDING_DIM = 768
-PINECONE_INDEX_NAME = "infinsight"  # Set in .env or hardcode your index name
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Pinecone Client (lazy-loaded singleton)
-# ─────────────────────────────────────────────────────────────────────────────
+PINECONE_INDEX_NAME = "infinsight"
 
 _pinecone_index = None
-
 
 def _get_pinecone_index():
     """Lazy-load and cache the Pinecone index client."""
@@ -50,80 +35,52 @@ def _get_pinecone_index():
         from pinecone import Pinecone
         from django.conf import settings
 
+        if not settings.PINECONE_API_KEY:
+            raise ValueError("PINECONE_API_KEY is missing from environment variables.")
+
         pc = Pinecone(api_key=settings.PINECONE_API_KEY)
-        _pinecone_index = pc.Index(settings.PINECONE_INDEX_NAME)
+        _pinecone_index = pc.Index(settings.PINECONE_INDEX_NAME or "infinsight")
         logger.info("Pinecone index connected: %s", settings.PINECONE_INDEX_NAME)
         return _pinecone_index
     except Exception as e:
         logger.error("Pinecone init failed: %s", e)
         raise
 
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Embedding generation
-# ─────────────────────────────────────────────────────────────────────────────
-
 def generate_embedding(text: str, gemini_api_key: str) -> list[float]:
-    """
-    Generate a single embedding vector for the given text.
-    Uses Google's text-embedding-004 model (768 dims).
-    """
+    """Generate embedding using the new google-genai SDK."""
     try:
-        import google.generativeai as genai
-
+        client = genai.Client(api_key=gemini_api_key)
         model_name = _get_embedding_model_name(gemini_api_key)
-        genai.configure(api_key=gemini_api_key)
-        result = genai.embed_content(
-            model=model_name,
-            content=text,
-            task_type="retrieval_document",
-        )
-        return result["embedding"]
-    except Exception as e:
-        from google.api_core import exceptions
-        if isinstance(e, exceptions.ResourceExhausted):
-            logger.warning("Gemini Embedding Rate Limit reached.")
-            raise ValueError("You reached Gemini embedding rate limit. Please try again later.")
-        elif isinstance(e, exceptions.Unauthenticated):
-            logger.error("Gemini Authentication failed for embeddings.")
-            raise ValueError("Invalid Gemini API Key.")
         
+        # New SDK embed_content call
+        result = client.models.embed_content(
+            model=model_name,
+            contents=text,
+            config={"task_type": "RETRIEVAL_DOCUMENT"}
+        )
+        return result.embeddings[0].values
+    except Exception as e:
         logger.error("Embedding generation failed: %s", e)
         raise
 
-
 def generate_query_embedding(query: str, gemini_api_key: str) -> list[float]:
-    """Generate embedding specifically for a search query."""
+    """Generate query embedding using the new google-genai SDK."""
     try:
-        import google.generativeai as genai
-
+        client = genai.Client(api_key=gemini_api_key)
         model_name = _get_embedding_model_name(gemini_api_key)
-        genai.configure(api_key=gemini_api_key)
-        result = genai.embed_content(
-            model=model_name,
-            content=query,
-            task_type="retrieval_query",
-        )
-        return result["embedding"]
-    except Exception as e:
-        from google.api_core import exceptions
-        if isinstance(e, exceptions.ResourceExhausted):
-            raise ValueError("You reached Gemini rate limit. Please try again later.")
         
+        result = client.models.embed_content(
+            model=model_name,
+            contents=query,
+            config={"task_type": "RETRIEVAL_QUERY"}
+        )
+        return result.embeddings[0].values
+    except Exception as e:
         logger.error("Query embedding failed: %s", e)
         raise
 
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Pinecone operations
-# ─────────────────────────────────────────────────────────────────────────────
-
 def upsert_chunks(chunks: list[dict], namespace: str, gemini_api_key: str) -> int:
-    """
-    Generate embeddings for all chunks and upsert into Pinecone.
-    chunks: [{"text": "...", "metadata": {...}}]
-    Returns: number of vectors upserted.
-    """
+    """Upsert vectors into Pinecone."""
     index = _get_pinecone_index()
     vectors = []
 
@@ -134,7 +91,6 @@ def upsert_chunks(chunks: list[dict], namespace: str, gemini_api_key: str) -> in
         if not text or not text.strip():
             continue
 
-        # Rate-limit-safe: small delay every 10 embeddings
         if i > 0 and i % 10 == 0:
             time.sleep(0.5)
 
@@ -146,38 +102,28 @@ def upsert_chunks(chunks: list[dict], namespace: str, gemini_api_key: str) -> in
                 "values": embedding,
                 "metadata": {
                     **meta,
-                    "text": text[:2000],  # Pinecone metadata limit
+                    "text": text[:2000],
                     "chunk_index": i,
                 },
             })
         except Exception as e:
-            logger.warning("Skipping chunk %d due to embedding error: %s", i, e)
+            logger.warning("Skipping chunk %d due to error: %s", i, e)
             continue
 
     if not vectors:
-        raise ValueError("No valid vectors generated from chunks.")
+        raise ValueError("No valid vectors generated.")
 
-    # Upsert in batches of 100
     batch_size = 100
     total = 0
     for start in range(0, len(vectors), batch_size):
         batch = vectors[start : start + batch_size]
         index.upsert(vectors=batch, namespace=namespace)
         total += len(batch)
-        logger.info("Upserted batch %d/%d vectors", total, len(vectors))
 
     return total
 
-
-def query_chunks(
-    query_embedding: list[float],
-    namespace: str,
-    top_k: int = 8,
-) -> list[dict]:
-    """
-    Search Pinecone for the most relevant chunks.
-    Returns list of {"text": "...", "score": float, "metadata": {...}}
-    """
+def query_chunks(query_embedding: list[float], namespace: str, top_k: int = 8) -> list[dict]:
+    """Search Pinecone."""
     index = _get_pinecone_index()
     try:
         results = index.query(
@@ -199,12 +145,10 @@ def query_chunks(
         logger.error("Pinecone query failed: %s", e)
         raise
 
-
 def delete_namespace(namespace: str) -> None:
-    """Delete all vectors in a namespace (called when session is deleted)."""
+    """Delete namespace."""
     try:
         index = _get_pinecone_index()
         index.delete(delete_all=True, namespace=namespace)
-        logger.info("Deleted Pinecone namespace: %s", namespace)
     except Exception as e:
         logger.warning("Could not delete namespace %s: %s", namespace, e)

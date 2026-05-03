@@ -28,8 +28,6 @@ from functools import wraps
 
 from django.shortcuts import render, redirect
 from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-
 from django.contrib.auth.hashers import make_password, check_password
 from django.conf import settings as django_settings
 from django.utils import timezone
@@ -533,7 +531,6 @@ def check_api_keys(request):
 
 
 # ── Chat ──────────────────────────────────────────────────────────────────────
-@csrf_exempt
 @login_required_json
 @json_only
 def chat_api(request):

@@ -181,7 +181,7 @@ class Baymax:
             )
 
         # Generic safe message for regular users
-        return "Something went wrong. Please try again later."
+        return "Error: 'Hero's AI encountered a server processing error. Please try again or check your settings.'"
 
     # =========================================================================
     # NLP HELPERS (unchanged)

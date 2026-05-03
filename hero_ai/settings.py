@@ -49,17 +49,23 @@ SESSION_SAVE_EVERY_REQUEST = False
 SESSION_COOKIE_SAMESITE = "None" # 🔥 MUST in production
 CSRF_COOKIE_SAMESITE = "None"    # 🔥 MUST in production
 
+# SITE_URL for dynamic origin trust
+SITE_URL = os.getenv('SITE_URL', 'http://localhost:8000')
+
 # CSRF settings
-CSRF_COOKIE_HTTPONLY = False
-CSRF_COOKIE_SECURE = True  # 🔥 MUST in production
-CSRF_USE_SESSIONS = False
 CSRF_TRUSTED_ORIGINS = [
-    "https://hero-s-ai.onrender.com"
+    "https://hero-s-ai.onrender.com",
+    SITE_URL
 ]
 if DEBUG:
     CSRF_TRUSTED_ORIGINS += ["http://127.0.0.1:8000", "http://localhost:8000"]
 if os.getenv('RENDER_EXTERNAL_URL'):
     CSRF_TRUSTED_ORIGINS.append(os.getenv('RENDER_EXTERNAL_URL'))
+
+CSRF_COOKIE_HTTPONLY = True  # Hardened
+CSRF_COOKIE_SECURE = True    # 🔥 MUST in production
+CSRF_USE_SESSIONS = False
+CSRF_COOKIE_SAMESITE = "None" # 🔥 MUST in production
 
 # Authentication
 AUTH_USER_MODEL = 'auth.User'  # Use default Django user model
@@ -128,11 +134,6 @@ WSGI_APPLICATION = 'hero_ai.wsgi.application'
 # Use environment variables for Google OAuth
 GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID', '')
 GOOGLE_CLIENT_SECRET = os.getenv('GOOGLE_CLIENT_SECRET', '')
-SITE_URL = os.getenv('SITE_URL', 'http://localhost:8000')
-
-# Better CSRF settings
-CSRF_COOKIE_HTTPONLY = True  
-CSRF_TRUSTED_ORIGINS = [SITE_URL]  
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases

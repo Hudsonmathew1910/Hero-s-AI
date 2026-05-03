@@ -67,9 +67,14 @@ AUTH_USER_MODEL = 'auth.User'  # Use default Django user model
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-fallback-key-change-in-production')
 
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '127.0.0.1,localhost').split(',')
+if os.getenv('RENDER_EXTERNAL_URL'):
+    from urllib.parse import urlparse
+    render_host = urlparse(os.getenv('RENDER_EXTERNAL_URL')).hostname
+    if render_host and render_host not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append(render_host)
 
-
-# Application definition
+# Trust the X-Forwarded-Proto header for HTTPS
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 INSTALLED_APPS = [
     'django.contrib.admin',

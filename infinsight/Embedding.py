@@ -29,7 +29,7 @@ def _get_embedding_model_name(api_key: str) -> str:
         logger.warning(f"Could not list models: {e}. Falling back to default.")
             
     # Stable default for production
-    _CACHED_EMBEDDING_MODEL = "models/text-embedding-004"
+    _CACHED_EMBEDDING_MODEL = "text-embedding-004"
     return _CACHED_EMBEDDING_MODEL
 
 logger = logging.getLogger("infinsight.embeddings")

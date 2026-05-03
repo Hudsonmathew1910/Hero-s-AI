@@ -48,6 +48,7 @@
       background: rgba(25,195,125,0.12); color: var(--accent);
     }
   </style>
+    <meta name="csrf-token" content="{{ csrf_token }}">
 </head>
 <body>
 
@@ -162,6 +163,10 @@
 
   <!-- SIDEBAR -->
   <aside class="sidebar" id="sidebar">
+    <a href="{% url 'infinsight_home' %}" class="sidebar-infinsight-btn">
+      <div class="nc-icon"><i class="fa-solid fa-chart-line"></i></div>
+      Infinsight - Data Analyst
+    </a>
     <div class="sidebar-title">Conversations</div>
     <button class="new-chat-btn" onclick="newChat()">
       <div class="nc-icon"><i class="fa-solid fa-plus"></i></div>
@@ -215,7 +220,7 @@
     <!-- Welcome screen -->
     <div class="welcome" id="welcomeScreen">
       <div class="welcome-bg-logo">
-        <img src="{% static 'images/Hero_ai.png' %}" alt="" aria-hidden="true"/>
+        <!-- <img src="{% static 'images/Hero_ai.png' %}" alt="" aria-hidden="true"/> -->
       </div>
       <div style="position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;">
         <div class="welcome-glow">

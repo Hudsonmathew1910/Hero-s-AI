@@ -1,3 +1,6 @@
+"""
+backend/model.py
+"""
 from django.db import models
 from .encryption import encrypt_text, decrypt_text
 import uuid

@@ -1,5 +1,7 @@
+from django_ratelimit.decorators import ratelimit
 """
 views.py — Hero AI Django views
+backend/view.py
 
 Changes from original:
   • Structured logging via Python's `logging` module (replaces bare print calls)
@@ -27,7 +29,6 @@ from functools import wraps
 from django.shortcuts import render, redirect
 from django.http import JsonResponse
 from django.contrib.auth.hashers import make_password, check_password
-from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings as django_settings
 from django.utils import timezone
 
@@ -219,8 +220,6 @@ def home(request):
 
 
 # ── Auth ──────────────────────────────────────────────────────────────────────
-
-@csrf_exempt
 @json_only
 def signup_view(request):
     d = request.json_data
@@ -277,9 +276,6 @@ def signup_view(request):
             msg = "Something went wrong. Please try again later."
             
         return JsonResponse({"status": "fail", "message": msg}, status=500)
-
-
-@csrf_exempt
 @json_only
 def login_view(request):
     d        = request.json_data
@@ -324,17 +320,11 @@ def login_view(request):
         # unless they were already logged in (unlikely). We fallback to safe message.
         msg = "Something went wrong. Please try again later."
         return JsonResponse({"status": "fail", "message": msg}, status=500)
-
-
-@csrf_exempt
 def logout_view(request):
     if request.method != "POST":
         return JsonResponse({"status": "fail", "message": "Method not allowed"}, status=405)
     request.session.flush()
     return JsonResponse({"status": "success", "message": "Logged out"})
-
-
-@csrf_exempt
 def check_session(request):
     uid = request.session.get('user_id')
     if not uid:
@@ -361,18 +351,17 @@ def check_session(request):
 
 def google_login(request):
     flow = request.GET.get('flow', 'signin')
+    next_url = request.GET.get('next', '/')
     request.session['oauth_flow'] = flow
+    request.session['oauth_next'] = next_url
 
     redirect_uri = f"{django_settings.SITE_URL}/auth/google/callback"
-    print("SITE_URL:", django_settings.SITE_URL)
+    logger.info("Initiating Google Login: flow=%s, next=%s", flow, next_url)
     return redirect(
         f"https://accounts.google.com/o/oauth2/v2/auth?"
         f"client_id={django_settings.GOOGLE_CLIENT_ID}&redirect_uri={redirect_uri}&"
         f"response_type=code&scope=openid%20email%20profile&access_type=offline"
     )
-
-
-@csrf_exempt
 def google_callback(request):
     code = request.GET.get('code')
     if not code:
@@ -400,6 +389,7 @@ def google_callback(request):
         google_id = info.get('id')
 
         flow = request.session.get('oauth_flow', 'signin')
+        next_url = request.session.get('oauth_next', '/')
 
         try:
             user = User.objects.get(email=email)
@@ -415,7 +405,11 @@ def google_callback(request):
                 'user_name':  user.name,
             })
             request.session.set_expiry(1209600)
-            return redirect('/')
+            
+            # Clean up session
+            if 'oauth_next' in request.session: del request.session['oauth_next']
+            
+            return redirect(next_url)
         except User.DoesNotExist:
             # Always fall back to account creation if user doesn't exist,
             # so both 'signin' and 'signup' flows lead to a seamless experience.
@@ -428,13 +422,13 @@ def google_callback(request):
             Setting.objects.create(user=user)
 
             request.session['setup_user_id'] = str(user.user_id)
-            return redirect('/?action=google_setup')
+            
+            # Preserve next_url for the final step
+            return redirect(f'/?action=google_setup&next={next_url}' if next_url != '/' else '/?action=google_setup')
 
     except Exception as e:
         logger.exception("Google OAuth callback error")
         return redirect('/?error=Login+failed')
-
-@csrf_exempt
 @json_only
 def complete_google_signup(request):
     setup_user_id = request.session.get('setup_user_id')
@@ -467,9 +461,14 @@ def complete_google_signup(request):
         })
         request.session.set_expiry(1209600)
         
+        # Get next URL from session if available
+        next_url = request.session.get('oauth_next', '/')
+        if 'oauth_next' in request.session: del request.session['oauth_next']
+        
         return JsonResponse({
             "status": "success",
             "message": "Account setup complete",
+            "redirect_url": next_url,
             "user": {
                 "user_id":      str(user.user_id),
                 "name":         user.name,
@@ -482,8 +481,6 @@ def complete_google_signup(request):
 
 
 # ── API Keys ──────────────────────────────────────────────────────────────────
-
-@csrf_exempt
 @login_required_json
 @json_only
 def save_api_keys(request):
@@ -520,9 +517,6 @@ def save_api_keys(request):
             msg = "Something went wrong. Please try again later."
             
         return JsonResponse({"status": "fail", "message": msg}, status=500)
-
-
-@csrf_exempt
 @login_required_json
 def check_api_keys(request):
     keys = {
@@ -537,8 +531,6 @@ def check_api_keys(request):
 
 
 # ── Chat ──────────────────────────────────────────────────────────────────────
-
-@csrf_exempt
 @login_required_json
 @json_only
 def chat_api(request):
@@ -725,8 +717,6 @@ def chat_api(request):
 
 
 # ── Profile & Settings (unchanged) ────────────────────────────────────────────
-
-@csrf_exempt
 @login_required_json
 def get_user_profile(request):
     try:
@@ -760,9 +750,6 @@ def get_user_profile(request):
         },
         "settings": settings_data,
     })
-
-
-@csrf_exempt
 @login_required_json
 @json_only
 def save_user_settings(request):
@@ -783,8 +770,6 @@ def save_user_settings(request):
 
 
 # ── Chat History ──────────────────────────────────────────────────────────────
-
-@csrf_exempt
 @login_required_json
 def get_chat_history(request):
     try:
@@ -807,9 +792,6 @@ def get_chat_history(request):
     except Exception as e:
         logger.exception("get_chat_history error for user %s", request.user_obj.user_id)
         return JsonResponse({"status": "fail", "message": str(e)}, status=500)
-
-
-@csrf_exempt
 @login_required_json
 def get_chat_messages(request, chat_id):
     try:
@@ -848,9 +830,6 @@ def get_chat_messages(request, chat_id):
     except Exception as e:
         logger.exception("get_chat_messages error for chat %s", chat_id)
         return JsonResponse({"status": "fail", "message": str(e)}, status=500)
-
-
-@csrf_exempt
 @login_required_json
 def get_recent_messages(request, chat_id):
     try:
@@ -879,9 +858,6 @@ def get_recent_messages(request, chat_id):
     except Exception as e:
         logger.exception("get_recent_messages error for chat %s", chat_id)
         return JsonResponse({"status": "fail", "message": str(e)}, status=500)
-
-
-@csrf_exempt
 @login_required_json
 def delete_chat(request, chat_id):
     if request.method not in ["DELETE", "POST"]:

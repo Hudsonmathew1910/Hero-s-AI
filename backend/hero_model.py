@@ -78,11 +78,11 @@ class Baymax:
                         - Avoid unnecessary details."""
 
     _TOKEN_BUDGETS = {
-        "text_chat":     500,
-        "coding":       2000,
-        "voice":         200,
-        "web_search":    800,
-        "file_analysis": 4000,
+        "text_chat":      1000,
+        "coding":         2000,
+        "voice":          200,
+        "web_search":     800,
+        "file_analysis":  4000,
     }
 
     # ── Constructor ───────────────────────────────────────────────────────────
@@ -249,7 +249,7 @@ class Baymax:
         if self.user_about_me:
             prompt += f"\n\nAbout the User:\n{self.user_about_me}"
         if self.user_name:
-            prompt += f"\n\nUser Name: {self.user_name}"
+            prompt += f"\n\nUser Name: {self.user_name} (Only use the name naturally, do NOT start every message with a greeting like 'Hey {self.user_name}')"
 
         prompt = self._enrich_system_prompt(prompt)
         prompt = self.BASIC_RULES + "\n\n" + prompt
@@ -518,7 +518,7 @@ class Baymax:
         task:       str = "text_chat",
     ) -> str | None:
         """Route to the correct provider based on the model name."""
-        if model in ("gemini-2.5-flash-lite", "gemini-1.5-flash"):
+        if model in ("gemini-1.5-flash-8b", "gemini-1.5-flash"):
             return self._call_gemini(model, user_text, max_tokens, task)
         return self._call_openrouter(model, user_text, max_tokens, task)
 
@@ -533,13 +533,13 @@ class Baymax:
         """Try the primary model, then OpenRouter fallbacks, then Groq fallbacks."""
         No_API = """
         Steps to add API keys:
-        1. Click on your account name
+        1. Click on your account name   
         2. Select API Key
         3. Add your API keys for Gemini and OpenRouter
 
         API keys are stored securely. All keys are encrypted and stored on the server — never exposed to the browser.
         """
-        if primary_model in ("gemini-2.5-flash-lite", "gemini-1.5-flash"):
+        if primary_model in ("gemini-1.5-flash-8b", "gemini-1.5-flash"):
             if not self.gemini_key:
                 return "Gemini API key not configured. Please provide your api key in profile.\n" + No_API
         else:

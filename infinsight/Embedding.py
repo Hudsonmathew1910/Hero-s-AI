@@ -20,12 +20,17 @@ def _get_embedding_model_name(api_key: str) -> str:
     from google import genai
     client = genai.Client(api_key=api_key)
     
-    for m in client.models.list():
-        if 'embed_content' in getattr(m, 'supported_generation_methods', []) or 'embedContent' in getattr(m, 'supported_generation_methods', []):
-            _CACHED_EMBEDDING_MODEL = m.name
-            return m.name
+    try:
+        for m in client.models.list():
+            if 'embed_content' in getattr(m, 'supported_generation_methods', []) or 'embedContent' in getattr(m, 'supported_generation_methods', []):
+                _CACHED_EMBEDDING_MODEL = m.name
+                return m.name
+    except Exception as e:
+        logger.warning(f"Could not list models: {e}. Falling back to default.")
             
-    raise ValueError("No models supporting 'embed_content' found for this API key.")
+    # Stable default for production
+    _CACHED_EMBEDDING_MODEL = "models/text-embedding-004"
+    return _CACHED_EMBEDDING_MODEL
 
 logger = logging.getLogger("infinsight.embeddings")
 

@@ -11,6 +11,7 @@ requests>=2.31.0
 
 # AI & LLM (Minimal Google Stack)
 google-genai>=0.1.0
+google-api-core>=2.11.0
 pinecone>=3.0.0
 
 # Data Analysis & Processing

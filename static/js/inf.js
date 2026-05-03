@@ -49,7 +49,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 // ── Auth Logic ─────────────────────────────────────────────────
 async function bootstrapAuth() {
   try {
-    const res  = await fetch("/api/auth/check-session");
+    const res  = await fetch("/api/auth/check-session", { credentials: 'include' });
     const data = await res.json();
 
     if (data.logged_in) {
@@ -210,6 +210,7 @@ async function doSignin() {
         "Content-Type": "application/json",
         "X-CSRFToken": getCsrfToken()
       },
+      credentials: 'include',
       body:    JSON.stringify({ email, password }),
     });
     const data = await res.json();
@@ -257,6 +258,7 @@ async function doSignup() {
         "Content-Type": "application/json",
         "X-CSRFToken": getCsrfToken()
       },
+      credentials: 'include',
       body:    JSON.stringify({ name, email, password }),
     });
     const data = await res.json();
@@ -290,7 +292,7 @@ async function doLogout() {
     const res = await fetch("/api/auth/logout", {
       method: "POST",
       headers: { "X-CSRFToken": getCsrfToken() },
-      credentials: "same-origin",
+      credentials: "include",
     });
     console.log("Server responded:", res.status);
     const data = await res.json();
@@ -372,7 +374,7 @@ function togglePwd(inputId, btn) {
 // ── API Key Management ───────────────────────────────────────────
 async function checkGeminiStatus() {
   try {
-    const res  = await fetch("/api/keys/check");
+    const res  = await fetch("/api/keys/check", { credentials: 'include' });
     const data = await res.json();
     if (data.status === "success") {
       state.hasGeminiKey = !!data.keys?.gemini;
@@ -421,6 +423,7 @@ async function saveGeminiKey() {
         "Content-Type": "application/json",
         "X-CSRFToken": getCsrfToken()
       },
+      credentials: 'include',
       body:    JSON.stringify({ gemini: key }),
     });
     const data = await res.json();
@@ -474,7 +477,7 @@ function notify(msg, type = "info") {
 // ── Load sessions ──────────────────────────────────────────────
 async function loadSessions() {
   try {
-    const res = await fetch("/infinsight/sessions/");
+    const res = await fetch("/infinsight/sessions/", { credentials: 'include' });
     if (!res.ok) return;
     const data = await res.json();
     if (data.status !== "success") return;
@@ -532,7 +535,7 @@ function fileIcon(type) {
 // ── Open session ───────────────────────────────────────────────
 async function openSession(sessionId) {
   try {
-    const res = await fetch(`/infinsight/session/${sessionId}/`);
+    const res = await fetch(`/infinsight/session/${sessionId}/`, { credentials: 'include' });
     const data = await res.json();
     if (data.status !== "success") { notify("Could not load session.", "error"); return; }
 
@@ -593,7 +596,7 @@ function startPolling(sessionId) {
   stopPolling();
   state.polling = setInterval(async () => {
     try {
-      const res = await fetch(`/infinsight/session/${sessionId}/status/`);
+      const res = await fetch(`/infinsight/session/${sessionId}/status/`, { credentials: 'include' });
       const data = await res.json();
       if (data.session_status === "ready") {
         stopPolling();
@@ -755,6 +758,7 @@ async function sendInsMessage() {
         "Content-Type": "application/json",
         "X-CSRFToken": getCsrfToken()
       },
+      credentials: 'include',
       body: JSON.stringify({ session_id: state.currentSessionId, message: msg }),
     });
     const data = await res.json();
@@ -911,6 +915,7 @@ async function submitUpload() {
     const res = await fetch("/infinsight/upload/", { 
       method: "POST", 
       headers: { "X-CSRFToken": getCsrfToken() },
+      credentials: 'include',
       body: formData 
     });
     const data = await res.json();
@@ -957,7 +962,8 @@ async function deleteSession(sessionId, e) {
   try {
     const res = await fetch(`/infinsight/session/${sessionId}/delete/`, { 
       method: "POST",
-      headers: { "X-CSRFToken": getCsrfToken() }
+      headers: { "X-CSRFToken": getCsrfToken() },
+      credentials: 'include'
     });
     const data = await res.json();
     if (data.status === "success") {

@@ -34,7 +34,7 @@ class GlobalExceptionHandlerMiddleware:
                 'status_code': 500,
                 'request': request
             })
-            return JsonResponse({'status': 'fail', 'message': 'Internal Server Error'}, status=500)
+            return JsonResponse({'status': 'fail', 'message': 'Something went wrong. Please try again later.'}, status=500)
 
 class RequestMetricsMiddleware:
     """

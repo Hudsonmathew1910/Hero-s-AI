@@ -38,6 +38,7 @@ from .models import User, Api, Chat, Setting, ChatSession
 from .encryption import encrypt_api_key, decrypt_api_key
 from .hero_model import Baymax
 from .Nlp import preprocess, resolve_mode
+from .utils import safe_error_response
 
 # ---------------------------------------------------------------------------
 # Module-level logger
@@ -261,23 +262,7 @@ def signup_view(request):
             },
         })
     except Exception as e:
-        tb = traceback.format_exc()
-        logger.error("Signup error for %s: %s\n%s", email, e, tb)
-        
-        # Check if the session already has a user who might be a superuser
-        current_uid = request.session.get('user_id')
-        is_superuser = False
-        if current_uid:
-            try:
-                is_superuser = User.objects.get(user_id=current_uid).is_superuser
-            except Exception: pass
-            
-        if is_superuser:
-            msg = f"**[Superuser Debug]** Signup error:\n\n```\n{tb.strip()}\n```"
-        else:
-            msg = "Something went wrong. Please try again later."
-            
-        return JsonResponse({"status": "fail", "message": msg}, status=500)
+        return safe_error_response(request, logger, "Signup", e)
 @csrf_exempt
 @json_only
 def login_view(request):
@@ -316,13 +301,7 @@ def login_view(request):
             },
         })
     except Exception as e:
-        tb = traceback.format_exc()
-        logger.error("Login error for %s: %s\n%s", email, e, tb)
-        
-        # In login, if the user doesn't exist yet, we can't easily check is_superuser
-        # unless they were already logged in (unlikely). We fallback to safe message.
-        msg = "Something went wrong. Please try again later."
-        return JsonResponse({"status": "fail", "message": msg}, status=500)
+        return safe_error_response(request, logger, "Login", e)
 def logout_view(request):
     if request.method != "POST":
         return JsonResponse({"status": "fail", "message": "Method not allowed"}, status=405)
@@ -481,6 +460,8 @@ def complete_google_signup(request):
         })
     except User.DoesNotExist:
         return JsonResponse({"status": "fail", "message": "User not found"}, status=404)
+    except Exception as e:
+        return safe_error_response(request, logger, "complete_google_signup", e)
 
 
 # ── API Keys ──────────────────────────────────────────────────────────────────
@@ -511,16 +492,7 @@ def save_api_keys(request):
             Api.objects.filter(user=request.user_obj, model_name='Groq').delete()
         return JsonResponse({"status": "success", "message": "API keys saved"})
     except Exception as e:
-        tb = traceback.format_exc()
-        logger.error("save_api_keys error for user %s: %s\n%s", request.user_obj.user_id, e, tb)
-        
-        is_superuser = getattr(request.user_obj, 'is_superuser', False)
-        if is_superuser:
-            msg = f"**[Superuser Debug]** save_api_keys error:\n\n```\n{tb.strip()}\n```"
-        else:
-            msg = "Something went wrong. Please try again later."
-            
-        return JsonResponse({"status": "fail", "message": msg}, status=500)
+        return safe_error_response(request, logger, "save_api_keys", e)
 @login_required_json
 def check_api_keys(request):
     keys = {
@@ -682,6 +654,9 @@ def chat_api(request):
             else:
                 reply = "Something went wrong. Please try again later."
 
+        if not reply:
+            reply = "Something went wrong. Please try again later."
+        
         logger.debug("AI reply: %.2fs | total: %.2fs", time.time() - t1, time.time() - t0)
 
         # ── Persist (skipped for temporary chats) ─────────────────────────────
@@ -706,19 +681,7 @@ def chat_api(request):
         })
 
     except Exception as e:
-        # Top-level catch-all
-        tb = traceback.format_exc()
-        logger.error("chat_api top-level error: %s\n%s", e, tb)
-
-        if is_superuser:
-            error_message = (
-                f"**[Superuser Debug]** Unhandled exception in chat_api:\n\n"
-                f"```\n{tb.strip()}\n```"
-            )
-        else:
-            error_message = "Something went wrong. Please try again later."
-
-        return JsonResponse({"status": "fail", "message": error_message}, status=500)
+        return safe_error_response(request, logger, "chat_api", e)
 
 
 # ── Profile & Settings (unchanged) ────────────────────────────────────────────
@@ -770,8 +733,7 @@ def save_user_settings(request):
         s.save()
         return JsonResponse({"status": "success", "message": "Settings saved successfully"})
     except Exception as e:
-        logger.exception("save_user_settings error for user %s", request.user_obj.user_id)
-        return JsonResponse({"status": "fail", "message": str(e)}, status=500)
+        return safe_error_response(request, logger, "save_user_settings", e)
 
 
 # ── Chat History ──────────────────────────────────────────────────────────────
@@ -795,8 +757,7 @@ def get_chat_history(request):
             })
         return JsonResponse({"status": "success", "chats": chat_list})
     except Exception as e:
-        logger.exception("get_chat_history error for user %s", request.user_obj.user_id)
-        return JsonResponse({"status": "fail", "message": str(e)}, status=500)
+        return safe_error_response(request, logger, "get_chat_history", e)
 @login_required_json
 def get_chat_messages(request, chat_id):
     try:
@@ -833,8 +794,7 @@ def get_chat_messages(request, chat_id):
     except ChatSession.DoesNotExist:
         return JsonResponse({"status": "fail", "message": "Chat not found"}, status=404)
     except Exception as e:
-        logger.exception("get_chat_messages error for chat %s", chat_id)
-        return JsonResponse({"status": "fail", "message": str(e)}, status=500)
+        return safe_error_response(request, logger, "get_chat_messages", e)
 @login_required_json
 def get_recent_messages(request, chat_id):
     try:
@@ -861,8 +821,7 @@ def get_recent_messages(request, chat_id):
     except ChatSession.DoesNotExist:
         return JsonResponse({"status": "fail", "message": "Chat not found"}, status=404)
     except Exception as e:
-        logger.exception("get_recent_messages error for chat %s", chat_id)
-        return JsonResponse({"status": "fail", "message": str(e)}, status=500)
+        return safe_error_response(request, logger, "get_recent_messages", e)
 @login_required_json
 def delete_chat(request, chat_id):
     if request.method not in ["DELETE", "POST"]:
@@ -873,5 +832,4 @@ def delete_chat(request, chat_id):
     except ChatSession.DoesNotExist:
         return JsonResponse({"status": "fail", "message": "Chat not found"}, status=404)
     except Exception as e:
-        logger.exception("delete_chat error for chat %s", chat_id)
-        return JsonResponse({"status": "fail", "message": str(e)}, status=500)
+        return safe_error_response(request, logger, "delete_chat", e)

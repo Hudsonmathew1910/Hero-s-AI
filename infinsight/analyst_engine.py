@@ -44,6 +44,20 @@ def get_df_schema(df: pd.DataFrame) -> str:
         
     return "\n".join(schema)
 
+def clean_analyst_code(code: str) -> str:
+    """
+    Remove import and from ... import ... statements from the code.
+    This prevents 'NotImplementedError: ImportFrom not supported' in asteval.
+    """
+    lines = code.split('\n')
+    cleaned_lines = []
+    for line in lines:
+        stripped = line.strip()
+        if stripped.startswith('import ') or stripped.startswith('from '):
+            continue
+        cleaned_lines.append(line)
+    return '\n'.join(cleaned_lines)
+
 def execute_pandas_query(df: pd.DataFrame, code: str) -> dict:
     """
     Executes pandas code on the provided DataFrame safely using asteval.
@@ -53,9 +67,13 @@ def execute_pandas_query(df: pd.DataFrame, code: str) -> dict:
     if df is None:
         return {"success": False, "error": "DataFrame is None"}
 
-    import sklearn
-    from sklearn.linear_model import LinearRegression
-    from asteval import Interpreter
+    try:
+        import sklearn
+        from sklearn.linear_model import LinearRegression
+        from asteval import Interpreter
+    except ImportError as e:
+        logger.error(f"Missing dependency for analysis: {e}")
+        return {"success": False, "error": f"Missing dependency: {e}"}
     
     # Prepare execution environment
     local_vars = {
@@ -74,9 +92,13 @@ def execute_pandas_query(df: pd.DataFrame, code: str) -> dict:
         redirected_output = io.StringIO()
         sys.stdout = redirected_output
         
-        # Initialize the secure interpreter
-        aeval = Interpreter(symtable=local_vars, use_numpy=True)
-        aeval(code)
+        # Clean the code to remove imports that asteval doesn't support
+        cleaned_code = clean_analyst_code(code)
+        
+        # Initialize the secure interpreter and update its symbol table
+        aeval = Interpreter(use_numpy=True)
+        aeval.symtable.update(local_vars)
+        aeval(cleaned_code)
         
         sys.stdout = old_stdout
         
@@ -103,10 +125,12 @@ def execute_pandas_query(df: pd.DataFrame, code: str) -> dict:
             "raw_result": result
         }
     except Exception as e:
-        sys.stdout = old_stdout
+        if 'old_stdout' in locals():
+            sys.stdout = old_stdout
         logger.error(f"Execution error: {e}\n{traceback.format_exc()}")
         return {
             "success": False,
             "error": str(e),
             "traceback": traceback.format_exc()
         }
+

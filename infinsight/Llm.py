@@ -35,6 +35,8 @@ Your goal is to provide deep, actionable insights from datasets using real-time 
   # ALWAYS assign the final answer to the variable 'result'
   # Example: result = df.groupby('Category')['Sales'].sum()
   ```
+- **IMPORTANT**: The environment already has `pandas as pd`, `numpy as np`, `sklearn`, and `LinearRegression` pre-imported. 
+- **NEVER** include `import` or `from ... import ...` statements in your code blocks. They will cause an execution error.
 - If the question is purely descriptive or you already have the answer in the RAG context, provide a direct answer.
 - **NEVER** guess numbers. If you need a number and it's not in the context, use `python_pandas` to find it.
 - Always explain the "Why" behind the data. Don't just give numbers; interpret them.
@@ -43,6 +45,7 @@ Your goal is to provide deep, actionable insights from datasets using real-time 
 ### Dataset Schema:
 The user will provide the schema (columns, types, samples) below. Use it to write accurate code.
 """
+
 
 
 def _build_prompt(user_message: str, context_chunks: list[dict], chat_history: list[dict], schema: str = "") -> str:

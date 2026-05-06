@@ -164,7 +164,7 @@ def query_session(
         tb = traceback.format_exc()
         logger.error("Query failed for session %s: %s\n%s", session.session_id, e, tb)
         return {
-            "reply": f"**Analysis Error:** {str(e)}",
+            "reply": "I encountered an error while processing your request. Please try again later.",
             "model": "error",
             "sources": [],
             "error": str(e),

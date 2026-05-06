@@ -21,6 +21,7 @@ from django.views.decorators.csrf import csrf_exempt
 
 from backend.models import User, Api
 from backend.encryption import decrypt_api_key
+from backend.utils import safe_error_response
 from .models import UploadedFile, ProjectSession, ChatMessage
 from .Rag import ingest_file, query_session, cleanup_session, get_session_title
 
@@ -170,8 +171,7 @@ def upload_file(request):
     except ValueError as e:
         return JsonResponse({"status": "fail", "message": str(e)}, status=400)
     except Exception as e:
-        logger.error("Upload error: %s\n%s", e, traceback.format_exc())
-        return JsonResponse({"status": "fail", "message": "Upload failed. Please try again."}, status=500)
+        return safe_error_response(request, logger, "Upload", e)
 
 
 def _async_ingest(session_id, file_path: str, file_type: str, gemini_key: str):
@@ -270,8 +270,7 @@ def chat(request):
         })
 
     except Exception as e:
-        logger.error("Chat error session %s: %s\n%s", session_id, e, traceback.format_exc())
-        return JsonResponse({"status": "fail", "message": "Analysis failed. Please try again."}, status=500)
+        return safe_error_response(request, logger, "Chat", e)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -353,8 +352,7 @@ def delete_session(request, session_id):
     except ProjectSession.DoesNotExist:
         return JsonResponse({"status": "fail", "message": "Session not found"}, status=404)
     except Exception as e:
-        logger.error("Delete session error: %s", e)
-        return JsonResponse({"status": "fail", "message": str(e)}, status=500)
+        return safe_error_response(request, logger, "Delete session", e)
 @login_required_json
 def session_status(request, session_id):
     """GET /infinsight/session/<id>/status/ — poll processing status."""

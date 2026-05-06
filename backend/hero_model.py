@@ -78,10 +78,10 @@ class Baymax:
                         - Avoid unnecessary details."""
 
     _TOKEN_BUDGETS = {
-        "text_chat":      1000,
+        "text_chat":      1500,
         "coding":         2000,
         "voice":          200,
-        "web_search":     800,
+        "web_search":     1000,
         "file_analysis":  4000,
     }
 
@@ -346,7 +346,7 @@ class Baymax:
 
         if not api_key:
             logger.error("Gemini API key is missing.")
-            return "Gemini API key is missing. Please check your settings."
+            return None
 
         client = genai.Client(api_key=api_key)
         
@@ -375,7 +375,7 @@ class Baymax:
                 logger.warning("Gemini attempt %d failed: %s", i, str(e))
                 if i == loop:
                     logger.exception("Gemini final attempt failed")
-                    return f"Error: {str(e)}"
+                    return None
                 time.sleep(2)
         return None
 
@@ -419,7 +419,7 @@ class Baymax:
                 return None
             if r.status_code == 401:
                 logger.error("OpenRouter 401: invalid API key")
-                return "Invalid OpenRouter API key. Please check your settings."
+                return None
             if r.status_code == 404:
                 logger.warning("OpenRouter 404: model %s not found — skipping", model)
                 return None
@@ -448,7 +448,7 @@ class Baymax:
             return None
         except Exception as e:
             logger.exception("OpenRouter unexpected error (%s)", model)
-            return f"Error: {e}"
+            return None
 
     def _call_groq(
         self,
@@ -487,7 +487,7 @@ class Baymax:
                 return content.strip() if content else None
             if r.status_code == 401:
                 logger.error("Groq 401: invalid API key")
-                return "Invalid Groq API key. Please check your settings."
+                return None
             return None
 
         except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
@@ -495,7 +495,7 @@ class Baymax:
             return None
         except Exception as e:
             logger.exception("Groq unexpected error (%s)", model)
-            return f"Error: {e}"
+            return None
 
     # =========================================================================
     # UNIFIED DISPATCHER & FALLBACK ORCHESTRATION (unchanged logic)

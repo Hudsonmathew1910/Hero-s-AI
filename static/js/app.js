@@ -965,12 +965,19 @@ function formatContent(raw) {
 
   // ── Protect tables ────────────────────────────────────────────
   const tables = [];
-  text = text.replace(/^(\|.+\|[ \t]*)\n(\|[-| :]+\|[ \t]*)\n((?:\|.+\|[ \t]*\n?)*)/gm,
+  // Updated regex: optional leading pipes, requires a separator line with at least one dash AND at least one pipe
+  text = text.replace(/^([ \t]*\|?.*\|.*)\n([ \t]*\|?[:\- ]*[-]+[:\- ]*\|[:\- |]*)\n((?:[ \t]*\|?.*\|.*\n?)*)/gm,
     (_, header, _sep, body) => {
       const i = tables.length;
       const parseRow = (row) => {
+        // Remove leading/trailing pipes and split by pipe
         return row.trim().replace(/^\||\|$/g, '').split('|').map(c => {
           let cell = c.trim();
+          // Escape HTML for security but preserve <br> tags
+          cell = cell.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+          cell = cell.replace(/&lt;br\s*\/?&gt;/gi, '<br>');
+
+          // Apply basic markdown formatting within cells
           cell = cell.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
           cell = cell.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
           cell = cell.replace(/\*([^*]+?)\*/g, '<em>$1</em>');
@@ -1186,8 +1193,26 @@ function autoResize(el) {
 }
 
 function toggleSendBtn() {
-  const inp = $('chatInput'), sendBtn = $('sendBtn'); if (!inp || !sendBtn) return;
-  sendBtn.disabled = (!inp.value.trim() && attachedFiles.length === 0) || isLoading;
+  const inp = $('chatInput'), sendBtn = $('sendBtn'), micBtn = $('micBtn');
+  if (!inp || !sendBtn || !micBtn) return;
+  
+  const hasContent = (inp.value.trim().length > 0 || attachedFiles.length > 0);
+  sendBtn.disabled = !hasContent || isLoading;
+  
+  // Mobile toggle logic: show mic by default, switch to send if has content or is loading
+  if (window.innerWidth <= 768) {
+    if (hasContent || isLoading) {
+      micBtn.style.display = 'none';
+      sendBtn.style.display = 'flex';
+    } else {
+      micBtn.style.display = 'flex';
+      sendBtn.style.display = 'none';
+    }
+  } else {
+    // Desktop: always show both (default flex state)
+    micBtn.style.display = 'flex';
+    sendBtn.style.display = 'flex';
+  }
 }
 
 function handleFiles(files) {
@@ -1717,6 +1742,6 @@ function drawBall() {
 
 /* ════════ INIT ════════ */
 if (window.speechSynthesis) window.speechSynthesis.getVoices();
-setTimeout(() => { initBallCanvas(); _syncMuteBtn(); }, 100);
+setTimeout(() => { initBallCanvas(); _syncMuteBtn(); toggleSendBtn(); }, 100);
 document.addEventListener('DOMContentLoaded', checkSession);
 console.log('✅ Hero AI loaded.');

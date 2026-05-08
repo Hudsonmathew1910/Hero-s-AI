@@ -302,6 +302,7 @@ def login_view(request):
         })
     except Exception as e:
         return safe_error_response(request, logger, "Login", e)
+@csrf_exempt
 def logout_view(request):
     if request.method != "POST":
         return JsonResponse({"status": "fail", "message": "Method not allowed"}, status=405)
@@ -411,6 +412,7 @@ def google_callback(request):
     except Exception as e:
         logger.exception("Google OAuth callback error")
         return redirect('/?error=Login+failed')
+@csrf_exempt
 @json_only
 def complete_google_signup(request):
     setup_user_id = request.session.get('setup_user_id')
@@ -718,6 +720,7 @@ def get_user_profile(request):
         },
         "settings": settings_data,
     })
+@csrf_exempt
 @login_required_json
 @json_only
 def save_user_settings(request):
@@ -822,6 +825,7 @@ def get_recent_messages(request, chat_id):
         return JsonResponse({"status": "fail", "message": "Chat not found"}, status=404)
     except Exception as e:
         return safe_error_response(request, logger, "get_recent_messages", e)
+@csrf_exempt
 @login_required_json
 def delete_chat(request, chat_id):
     if request.method not in ["DELETE", "POST"]:

@@ -82,7 +82,7 @@ if os.getenv('RENDER_EXTERNAL_URL'):
     render_host = urlparse(os.getenv('RENDER_EXTERNAL_URL')).hostname
     if render_host and render_host not in ALLOWED_HOSTS:
         ALLOWED_HOSTS.append(render_host)
-
+# ALLOWED_HOSTS.append('192.168.0.102')
 # Trust the X-Forwarded-Proto header for HTTPS
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 

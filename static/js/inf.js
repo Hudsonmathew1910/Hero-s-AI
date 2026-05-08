@@ -709,16 +709,28 @@ function renderMarkdown(text) {
 }
 
 function renderTable(html) {
-  const tableRegex = /(\|.+\|[\r\n]+\|[-| :]+\|[\r\n]+(?:\|.+\|[\r\n]*)+)/g;
+  // Robust table detection: optional leading pipes, requires separator with at least one dash and at least one pipe
+  const tableRegex = /^([ \t]*\|?.*\|.*)\n([ \t]*\|?[:\- ]*[-]+[:\- ]*\|[:\- |]*)\n((?:[ \t]*\|?.*\|.*\n?)*)/gm;
   return html.replace(tableRegex, tableText => {
     const rows = tableText.trim().split('\n');
     if (rows.length < 2) return tableText;
-    const headers = rows[0].split('|').filter(c => c.trim()).map(c => `<th>${c.trim()}</th>`).join('');
+    
+    const parseRow = (row) => {
+      return row.trim().replace(/^\||\|$/g, '').split('|').map(c => {
+        let cell = c.trim();
+        // Restore <br> if it was escaped by esc() earlier
+        cell = cell.replace(/&lt;br\s*\/?&gt;/gi, '<br>');
+        return cell;
+      });
+    };
+
+    const headers = parseRow(rows[0]).map(c => `<th>${c}</th>`).join('');
     const bodyRows = rows.slice(2).map(r => {
-      const cells = r.split('|').filter(c => c.trim()).map(c => `<td>${c.trim()}</td>`).join('');
+      const cells = parseRow(r).map(c => `<td>${c}</td>`).join('');
       return `<tr>${cells}</tr>`;
     }).join('');
-    return `<table><thead><tr>${headers}</tr></thead><tbody>${bodyRows}</tbody></table>`;
+    
+    return `<div class="ins-table-wrap"><table><thead><tr>${headers}</tr></thead><tbody>${bodyRows}</tbody></table></div>`;
   });
 }
 

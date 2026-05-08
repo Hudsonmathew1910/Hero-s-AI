@@ -897,7 +897,8 @@ header { height: var(--header-h); display: flex; align-items: center; justify-co
   .input-wrap { padding: 8px 10px 12px; }
   .input-row-outer { gap: 4px; }
   .input-box { padding: 8px; gap: 4px; }
-  .plus-btn, .mic-btn, .mute-btn, .send-btn { width: 28px; height: 28px; font-size: 0.75rem; }
+  .plus-btn, .mic-btn, .mute-btn, .send-btn { width: 36px; height: 36px; font-size: 0.75rem; }
+  .send-btn { display: none; } /* JS will toggle this on mobile */
   .inline-model-select { display: none; }
   .msg-row { padding: 6px 14px; }
   .auth-card { padding: 32px 24px 28px; }

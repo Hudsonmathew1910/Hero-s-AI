@@ -219,11 +219,15 @@ header { height: var(--header-h); display: flex; align-items: center; justify-co
 .main-wrapper { display: flex; flex: 1; overflow: hidden; position: relative; }
 
 /* ════════ SIDEBAR ════════ */
-.sidebar { width: var(--sidebar-w); background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 16px 12px 0; flex-shrink: 0; overflow: hidden; transition: transform 0.3s ease, background 0.3s; }
+.sidebar { width: var(--sidebar-w); background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 16px 12px 0;margin-top: -20px; flex-shrink: 0; overflow: hidden; transition: transform 0.3s ease, background 0.3s; }
 .sidebar-title { font-family: var(--font-head); font-size: 0.7rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 10px; padding: 0 6px; }
 .new-chat-btn { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; color: var(--text); font-family: var(--font-body); font-size: 0.875rem; font-weight: 500; cursor: pointer; transition: background 0.2s; margin-bottom: 16px; width: 100%; text-align: left; }
 .new-chat-btn:hover { background: var(--surface3); }
 .new-chat-btn .nc-icon { width: 22px; height: 22px; background: var(--accent); border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: #000; font-size: 0.75rem; }
+
+.sidebar-infinsight-btn { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: rgba(59,130,246,0.06); border: 1px solid rgba(59,130,246,0.2); border-radius: 0px 0px 10px 10px; color: var(--text); font-family: var(--font-body); font-size: 0.875rem; font-weight: 500; cursor: pointer; transition: all 0.2s; margin-bottom: 24px; width: 100%; text-align: left; text-decoration: none; }
+.sidebar-infinsight-btn:hover { background: rgba(59,130,246,0.12); border-color: rgba(59,130,246,0.35); transform: translateY(-1px); }
+.sidebar-infinsight-btn .nc-icon { width: 22px; height: 22px; background: linear-gradient(135deg, #6c63ff, #48d1cc); border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: white; font-size: 0.75rem; }
 .history-scroll { flex: 1; overflow-y: auto; scrollbar-width: none; }
 .history-scroll::-webkit-scrollbar { display: none; }
 .history-item { padding: 9px 12px; border-radius: 10px; font-size: 0.82rem; color: var(--text-muted); cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: background 0.15s, color 0.15s; display: flex; align-items: center; gap: 8px; }
@@ -259,7 +263,7 @@ header { height: var(--header-h); display: flex; align-items: center; justify-co
 .msg-avatar.ai { background: var(--accent); }
 .msg-avatar.ai img { width: 34px; height: 34px; border-radius: 10px; object-fit: cover; display: block; }
 
-.msg-content { flex: 1; font-size: 0.925rem; line-height: 1.75; color: var(--text); padding-top: 4px; }
+.msg-content { flex: 1; min-width: 0; font-size: 0.925rem; line-height: 1.75; color: var(--text); padding-top: 4px; }
 .msg-content .sender { font-family: var(--font-head); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 5px; }
 .msg-content.user .sender { color: var(--accent2); }
 .msg-content.ai .sender { color: var(--accent); }
@@ -493,7 +497,7 @@ header { height: var(--header-h); display: flex; align-items: center; justify-co
 /* FIX 3: scrollable voice transcript for long AI replies */
 .voice-transcript {
   margin-top: 24px;
-  max-width: 380px;
+  max-width: 650px;
   width: 100%;
   background: var(--surface2);
   border: 1px solid var(--border);
@@ -890,12 +894,20 @@ header { height: var(--header-h); display: flex; align-items: center; justify-co
   .header-right { gap: 5px; }
   .cssbuttons-io-button span { display: none; }
   .cssbuttons-io-button { padding: 0.35em; padding-right: 2.6em; padding-left: 0.6em; }
-  .input-wrap { padding: 12px 14px 16px; }
-  .input-row-outer { gap: 6px; }
+  .input-wrap { padding: 8px 10px 12px; }
+  .input-row-outer { gap: 4px; }
+  .input-box { padding: 8px; gap: 4px; }
+  .plus-btn, .mic-btn, .mute-btn, .send-btn { width: 36px; height: 36px; font-size: 0.75rem; }
+  .send-btn { display: none; } /* JS will toggle this on mobile */
+  .inline-model-select { display: none; }
   .msg-row { padding: 6px 14px; }
   .auth-card { padding: 32px 24px 28px; }
   .modal-card { max-width: 100%; }
   .p-tab { font-size: 0.75rem; padding: 7px 10px; }
+  #chatInput { font-size: 0.85rem; }
+  .msg-content { font-size: 0.85rem; }
+  .msg-content .bubble pre { font-size: 0.75rem; padding: 10px 12px; }
+  .logo { font-size: 1.05rem; }
 }
 
 /* ════════ NOTIFICATIONS & CONFIRM ════════ */
@@ -937,6 +949,7 @@ header { height: var(--header-h); display: flex; align-items: center; justify-co
   border-radius: 8px;
   padding: 16px 14px;
   position: relative;
+  overflow-x: auto;
 }
 .code-card-line {
   display: block;
@@ -1003,15 +1016,24 @@ header { height: var(--header-h); display: flex; align-items: center; justify-co
     gap: 4px;
   }
   .cssbuttons-io-button {
-    padding: 0.35em;
-    padding-left: 0.8em;
-    padding-right: 2.4em;
-    font-size: 12px;
-    height: 2.4em;
+    padding: 0.3em;
+    padding-left: 0.7em;
+    padding-right: 2.2em;
+    font-size: 11px;
+    height: 2.2em;
   }
   .cssbuttons-io-button .icon {
-    height: 1.8em;
-    width: 1.8em;
+    height: 1.6em;
+    width: 1.6em;
+  }
+  .hdr-temp-btn {
+    width: 28px;
+    height: 28px;
+    font-size: 0.75rem;
+  }
+  .theme-btn {
+    padding: 6px 4px;
+    font-size: 0.65rem;
   }
 }
  .hdr-temp-btn {

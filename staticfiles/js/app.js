@@ -11,6 +11,30 @@
    ════════════════════════════════════════════════════════════════ */
 
 /* ════════ GLOBAL STATE ════════ */
+
+// --- CSRF Fetch Wrapper ---
+(function() {
+    const originalFetch = window.fetch;
+    window.fetch = async function() {
+        let [resource, config] = arguments;
+        if (!config) config = {};
+        const method = (config.method || 'GET').toUpperCase();
+        if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(method)) {
+            const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+            if (csrfMeta) {
+                if (!config.headers) config.headers = {};
+                if (config.headers instanceof Headers) {
+                    if (!config.headers.has('X-CSRFToken')) config.headers.append('X-CSRFToken', csrfMeta.content);
+                } else {
+                    if (!config.headers['X-CSRFToken']) config.headers['X-CSRFToken'] = csrfMeta.content;
+                }
+            }
+        }
+        return originalFetch(resource, config);
+    };
+})();
+// --------------------------
+
 let messages = [];
 let attachedFiles = [];
 let isLoading = false;
@@ -25,7 +49,12 @@ let tempChatActive = false;
 let currentSessionId = null;
 
 /* Mute state — default MUTED */
-let isMuted = true;
+let isMuted = false;
+
+/* ════════ CSRF TOKEN ════════ */
+function getCsrfToken() {
+  return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+}
 
 /* User Settings State */
 let userSettings = {
@@ -248,7 +277,80 @@ function _syncMuteBtn() {
 }
 
 /* ════════ AUTHENTICATION ════════ */
-function handleGoogleAuth() { window.location.href = '/auth/google'; }
+function handleGoogleAuth(flow) { window.location.href = `/auth/google?flow=${flow || 'signin'}`; }
+
+// Handle auth page loads with URL parameters
+window.addEventListener('DOMContentLoaded', () => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const action = urlParams.get('action');
+  const error = urlParams.get('error');
+  
+  if (action === 'google_setup') {
+    showAuthScreen();
+    const tabLogin = $('tabLogin');
+    const tabSignup = $('tabSignup');
+    if (tabLogin) tabLogin.style.display = 'none';
+    if (tabSignup) tabSignup.style.display = 'none';
+    
+    const loginForm = $('loginForm');
+    const signupForm = $('signupForm');
+    const googleSetupForm = $('googleSetupForm');
+    
+    if (loginForm) loginForm.style.display = 'none';
+    if (signupForm) signupForm.style.display = 'none';
+    if (googleSetupForm) googleSetupForm.style.display = 'flex';
+    
+    // Remove query param cleanly
+    window.history.replaceState({}, document.title, "/");
+  } else if (error) {
+    showNotification(error.replace(/\+/g, ' '), 'error');
+    window.history.replaceState({}, document.title, "/");
+    showAuthScreen();
+    switchAuthTab('signup');
+  }
+});
+
+async function handleGoogleSetup() {
+  const username = $('googleSetupName')?.value.trim();
+  const password = $('googleSetupPassword')?.value;
+  
+  if (!username || !password) { showNotification('Please fill in all fields', 'error'); return; }
+  
+  try {
+    const res = await fetch('/api/auth/google/complete-signup', {
+      method: 'POST', 
+      headers: { 
+        'Content-Type': 'application/json',
+        'X-CSRFToken': getCsrfToken()
+      }, 
+      credentials: 'include',
+      body: JSON.stringify({ username, password })
+    });
+    const data = await getJsonResponse(res);
+    if (data.status === 'success') {
+      showNotification('Account setup complete!', 'success');
+      loginUser(data.user);
+      if (data.redirect_url && data.redirect_url !== '/') {
+        window.location.href = data.redirect_url;
+        return;
+      }
+      if ($('googleSetupName')) $('googleSetupName').value = ''; 
+      if ($('googleSetupPassword')) $('googleSetupPassword').value = '';
+      
+      // Restore tabs
+      if ($('tabLogin')) $('tabLogin').style.display = 'block';
+      if ($('tabSignup')) $('tabSignup').style.display = 'block';
+      if ($('googleSetupForm')) $('googleSetupForm').style.display = 'none';
+      switchAuthTab('login');
+      
+      hasExistingApiKeys = false;
+      setTimeout(() => {
+        showConfirm('API keys are required to use Hero\'s AI. Would you like to configure them now?',
+          () => openApiKeys(), null, 'Configure Keys', 'Later');
+      }, 500);
+    } else { showNotification(data.message || 'Setup failed', 'error'); }
+  } catch (err) { showNotification('Error: ' + err.message, 'error'); }
+}
 
 async function checkSession() {
   try {
@@ -295,7 +397,12 @@ async function handleSignup() {
   if (password.length < 6) { showNotification('Password must be at least 6 characters', 'error'); return; }
   try {
     const res  = await fetch('/api/auth/signup', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+      method: 'POST', 
+      headers: { 
+        'Content-Type': 'application/json',
+        'X-CSRFToken': getCsrfToken()
+      }, 
+      credentials: 'include',
       body: JSON.stringify({ name, email, password })
     });
     const data = await getJsonResponse(res);
@@ -318,7 +425,12 @@ async function handleLogin() {
   if (!email || !password) { showNotification('Please enter your email and password', 'error'); return; }
   try {
     const res  = await fetch('/api/auth/login', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+      method: 'POST', 
+      headers: { 
+        'Content-Type': 'application/json',
+        'X-CSRFToken': getCsrfToken()
+      }, 
+      credentials: 'include',
       body: JSON.stringify({ email, password })
     });
     const data = await getJsonResponse(res);
@@ -357,7 +469,11 @@ function loginUser(user) {
 async function handleLogout() {
   showConfirm('Are you sure you want to logout?', async () => {
     try {
-      const res  = await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+      const res  = await fetch('/api/auth/logout', { 
+        method: 'POST', 
+        headers: { 'X-CSRFToken': getCsrfToken() },
+        credentials: 'include' 
+      });
       const data = await getJsonResponse(res);
       if (data.status === 'success') {
         currentUser = null; closeUserMenu();
@@ -416,7 +532,12 @@ async function saveApiKeys() {
   }
   try {
     const res  = await fetch('/api/keys/save', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+      method: 'POST', 
+      headers: { 
+        'Content-Type': 'application/json',
+        'X-CSRFToken': getCsrfToken()
+      }, 
+      credentials: 'include',
       body: JSON.stringify({ gemini, openrouter, groq })
     });
     const data = await getJsonResponse(res);
@@ -455,7 +576,12 @@ async function savePersonalization() {
   if (saveBtn) { saveBtn.disabled = true; saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving…'; }
   try {
     const res  = await fetch('/api/user/settings/save', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+      method: 'POST', 
+      headers: { 
+        'Content-Type': 'application/json',
+        'X-CSRFToken': getCsrfToken()
+      }, 
+      credentials: 'include',
       body: JSON.stringify(payload)
     });
     const data = await getJsonResponse(res);
@@ -482,7 +608,10 @@ function onModelChange() {
   const newModel = select.value;
   if (newModel === 'ZORVIN') {
     showConfirm('Download Hero\'s AI for ZORVIN Offline',
-      () => { window.location.href = 'https://heroai.app/download'; },
+      () => {
+        showNotification('Currently in development status', 'info');
+        select.value = currentModel;
+      },
       () => { select.value = currentModel; },
       'Download', 'Cancel');
   } else {
@@ -551,7 +680,10 @@ async function sendMessage() {
     // FIX: Send temporary_chat (not temporary) matching backend expectations
     const res = await fetch('/api/chat', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'X-CSRFToken': getCsrfToken()
+      },
       credentials: 'include',
       body: JSON.stringify({
         message:      text,
@@ -833,12 +965,19 @@ function formatContent(raw) {
 
   // ── Protect tables ────────────────────────────────────────────
   const tables = [];
-  text = text.replace(/^(\|.+\|[ \t]*)\n(\|[-| :]+\|[ \t]*)\n((?:\|.+\|[ \t]*\n?)*)/gm,
+  // Updated regex: optional leading pipes, requires a separator line with at least one dash AND at least one pipe
+  text = text.replace(/^([ \t]*\|?.*\|.*)\n([ \t]*\|?[:\- ]*[-]+[:\- ]*\|[:\- |]*)\n((?:[ \t]*\|?.*\|.*\n?)*)/gm,
     (_, header, _sep, body) => {
       const i = tables.length;
       const parseRow = (row) => {
+        // Remove leading/trailing pipes and split by pipe
         return row.trim().replace(/^\||\|$/g, '').split('|').map(c => {
           let cell = c.trim();
+          // Escape HTML for security but preserve <br> tags
+          cell = cell.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+          cell = cell.replace(/&lt;br\s*\/?&gt;/gi, '<br>');
+
+          // Apply basic markdown formatting within cells
           cell = cell.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
           cell = cell.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
           cell = cell.replace(/\*([^*]+?)\*/g, '<em>$1</em>');
@@ -1054,8 +1193,26 @@ function autoResize(el) {
 }
 
 function toggleSendBtn() {
-  const inp = $('chatInput'), sendBtn = $('sendBtn'); if (!inp || !sendBtn) return;
-  sendBtn.disabled = (!inp.value.trim() && attachedFiles.length === 0) || isLoading;
+  const inp = $('chatInput'), sendBtn = $('sendBtn'), micBtn = $('micBtn');
+  if (!inp || !sendBtn || !micBtn) return;
+  
+  const hasContent = (inp.value.trim().length > 0 || attachedFiles.length > 0);
+  sendBtn.disabled = !hasContent || isLoading;
+  
+  // Mobile toggle logic: show mic by default, switch to send if has content or is loading
+  if (window.innerWidth <= 768) {
+    if (hasContent || isLoading) {
+      micBtn.style.display = 'none';
+      sendBtn.style.display = 'flex';
+    } else {
+      micBtn.style.display = 'flex';
+      sendBtn.style.display = 'none';
+    }
+  } else {
+    // Desktop: always show both (default flex state)
+    micBtn.style.display = 'flex';
+    sendBtn.style.display = 'flex';
+  }
 }
 
 function handleFiles(files) {
@@ -1457,7 +1614,11 @@ async function deleteChatHistory(event, chatId) {
   event.stopPropagation();
   showConfirm('Delete this chat?', async () => {
     try {
-      const res  = await fetch(`/api/chat/history/${chatId}/delete`, { method: 'POST', credentials: 'include' });
+      const res  = await fetch(`/api/chat/history/${chatId}/delete`, { 
+        method: 'POST', 
+        headers: { 'X-CSRFToken': getCsrfToken() },
+        credentials: 'include' 
+      });
       const data = await getJsonResponse(res);
       if (data.status === 'success') { showNotification('Chat deleted', 'success'); loadChatHistory(); }
       else { showNotification(data.message || 'Failed to delete chat', 'error'); }
@@ -1581,6 +1742,6 @@ function drawBall() {
 
 /* ════════ INIT ════════ */
 if (window.speechSynthesis) window.speechSynthesis.getVoices();
-setTimeout(() => { initBallCanvas(); _syncMuteBtn(); }, 100);
+setTimeout(() => { initBallCanvas(); _syncMuteBtn(); toggleSendBtn(); }, 100);
 document.addEventListener('DOMContentLoaded', checkSession);
 console.log('✅ Hero AI loaded.');

@@ -101,6 +101,8 @@ class Baymax:
         temporary:        bool = False,
         # ── NEW: is the calling user a superuser? (for error detail level) ───
         is_superuser:     bool = False,
+        # ── NEW: fast response mode flag ───
+        is_fast:          bool = False,
     ):
         self.gemini_key       = gemini_key
         self.openrouter_key   = openrouter_key
@@ -117,6 +119,8 @@ class Baymax:
 
         # Controls whether _safe_error() reveals internal details
         self.is_superuser     = is_superuser
+        
+        self.is_fast          = is_fast
 
         self.openrouter_url = "https://openrouter.ai/api/v1/chat/completions"
         self.groq_url       = "https://api.groq.com/openai/v1/chat/completions"
@@ -513,6 +517,67 @@ class Baymax:
             return self._call_gemini(model, user_text, max_tokens, task)
         return self._call_openrouter(model, user_text, max_tokens, task)
 
+    def _with_concurrent_fallback(
+        self,
+        primary_model: str,
+        text:          str,
+        max_tokens:    int,
+        fallback_key:  str = "fallback",
+        task:          str = "text_chat",
+    ) -> str:
+        """Run Groq and Primary/OpenRouter models concurrently attempt by attempt."""
+        No_API = """
+        Steps to add API keys:
+        1. Click on your account   
+        2. Select API Key
+        3. Add your API keys for Gemini and OpenRouter
+
+        API keys are stored securely. All keys are encrypted and stored on the server — never exposed to the browser.
+        """
+        if not self.groq_key:
+            return "Add Groq API key for Fast response.\n\n" + No_API
+            
+        import concurrent.futures
+
+        or_models = [primary_model] + self.models.get(fallback_key, [])
+        groq_models = self.models.get("fallback_with_groq", [])
+        max_len = max(len(or_models), len(groq_models))
+        
+        logger.info("AI dispatch (Fast Mode) | task=%s", task)
+
+        def run_model(model_type, model_name, call_fn):
+            if not model_name:
+                raise Exception("No model provided")
+            result = call_fn(model_name, text, max_tokens, task)
+            if result:
+                return (model_type, model_name, result)
+            raise Exception(f"{model_type} model {model_name} failed")
+
+        for attempt in range(max_len):
+            or_model = or_models[attempt] if attempt < len(or_models) else None
+            groq_model = groq_models[attempt] if attempt < len(groq_models) else None
+            
+            print(f"Fast Mode Attempt {attempt + 1}: Running '{or_model}' and '{groq_model}' concurrently...")
+            
+            futures = []
+            with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+                if or_model:
+                    futures.append(executor.submit(run_model, "Primary/Fallback", or_model, self._call))
+                if groq_model:
+                    futures.append(executor.submit(run_model, "Groq", groq_model, self._call_groq))
+                
+                for future in concurrent.futures.as_completed(futures):
+                    try:
+                        m_type, m_name, result = future.result()
+                        logger.info("Fast Mode Attempt %d succeeded using %s (%s)", attempt + 1, m_type, m_name)
+                        print(f"-> Succeeded on attempt {attempt + 1} with {m_name}")
+                        return result
+                    except Exception as e:
+                        logger.debug("Fast Mode Thread generated an exception on attempt %d: %s", attempt + 1, e)
+                        
+        logger.error("All models failed for fast task=%s", task)
+        return "All models failed. Please try again later."
+
     def _with_fallback(
         self,
         primary_model: str,
@@ -524,7 +589,7 @@ class Baymax:
         """Try the primary model, then OpenRouter fallbacks, then Groq fallbacks."""
         No_API = """
         Steps to add API keys:
-        1. Click on your account name   
+        1. Click on your account   
         2. Select API Key
         3. Add your API keys for Gemini and OpenRouter
 
@@ -576,6 +641,10 @@ class Baymax:
         """Handle general text chat with NLP-adaptive token budget."""
         try:
             max_tok = self._smart_token_budget("text_chat")
+            if getattr(self, 'is_fast', False):
+                return self._with_concurrent_fallback(
+                    self.models["text_chat"], text, max_tokens=max_tok, task="text_chat"
+                )
             return self._with_fallback(
                 self.models["text_chat"],
                 text,
@@ -588,6 +657,10 @@ class Baymax:
     def handle_coding(self, text: str) -> str:
         """Handle coding/programming requests with full token budget."""
         try:
+            if getattr(self, 'is_fast', False):
+                return self._with_concurrent_fallback(
+                    self.models["coding"], text, max_tokens=self._TOKEN_BUDGETS["coding"], task="coding"
+                )
             return self._with_fallback(
                 self.models["coding"],
                 text,
@@ -601,6 +674,10 @@ class Baymax:
         """Handle full voice conversation with short, spoken-word-friendly replies."""
         try:
             max_tok = self._smart_token_budget("voice")
+            if getattr(self, 'is_fast', False):
+                return self._with_concurrent_fallback(
+                    self.models["voice_chat"], text, max_tokens=max_tok, task="voice"
+                )
             return self._with_fallback(
                 self.models["voice_chat"],
                 text,
@@ -614,6 +691,10 @@ class Baymax:
         """Handle inline mic voice messages routed through the normal chat thread."""
         try:
             max_tok = self._smart_token_budget("voice")
+            if getattr(self, 'is_fast', False):
+                return self._with_concurrent_fallback(
+                    self.models["voice_chat"], text, max_tokens=max_tok, task="voice"
+                )
             return self._with_fallback(
                 self.models["voice_chat"],
                 text,
@@ -649,6 +730,10 @@ class Baymax:
             # Fallback: plain LLM with web-search system prompt
             logger.info("[handle_websearch] falling back to LLM-only")
             max_tok = self._smart_token_budget("web_search")
+            if getattr(self, 'is_fast', False):
+                return self._with_concurrent_fallback(
+                    self.models["web_search"], rewritten_query, max_tokens=max_tok, task="web_search"
+                )
             return self._with_fallback(
                 self.models["web_search"],
                 rewritten_query,

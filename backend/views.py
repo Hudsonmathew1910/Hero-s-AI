@@ -259,6 +259,7 @@ def signup_view(request):
                 "name":         user.name,
                 "email":        user.email,
                 "has_api_keys": False,
+                "has_groq_key": False,
             },
         })
     except Exception as e:
@@ -290,6 +291,7 @@ def login_view(request):
         })
         request.session.set_expiry(1209600)
         has_keys = Api.objects.filter(user=user, model_name__in=['Gemini', 'OpenRouter']).exists()
+        has_groq = Api.objects.filter(user=user, model_name='Groq').exists()
         return JsonResponse({
             "status": "success",
             "message": "Login successful",
@@ -298,6 +300,7 @@ def login_view(request):
                 "name":         user.name,
                 "email":        user.email,
                 "has_api_keys": has_keys,
+                "has_groq_key": has_groq,
             },
         })
     except Exception as e:
@@ -315,6 +318,7 @@ def check_session(request):
     try:
         user     = User.objects.get(user_id=uid)
         has_keys = Api.objects.filter(user=user, model_name__in=['Gemini', 'OpenRouter']).exists()
+        has_groq = Api.objects.filter(user=user, model_name='Groq').exists()
         return JsonResponse({
             "status":    "success",
             "logged_in": True,
@@ -323,6 +327,7 @@ def check_session(request):
                 "name":         user.name,
                 "email":        user.email,
                 "has_api_keys": has_keys,
+                "has_groq_key": has_groq,
             },
         })
     except User.DoesNotExist:
@@ -458,6 +463,7 @@ def complete_google_signup(request):
                 "name":         user.name,
                 "email":        user.email,
                 "has_api_keys": False,
+                "has_groq_key": False,
             },
         })
     except User.DoesNotExist:
@@ -504,6 +510,7 @@ def check_api_keys(request):
     return JsonResponse({
         "status":      "success",
         "has_api_keys": keys['Gemini'] or keys['OpenRouter'],
+        "has_groq_key": keys['Groq'],
         "keys":         {k.lower(): v for k, v in keys.items()},
     })
 
@@ -536,6 +543,7 @@ def chat_api(request):
 
     # ── NEW: read temporary-chat flag from the request ────────────────────────
     temporary_chat: bool = bool(d.get('temporary_chat', False))
+    is_fast: bool = bool(d.get('is_fast', False))
 
     # ── Determine whether this user has superuser privileges ──────────────────
     # A user is a superuser if their is_superuser flag is set to True.
@@ -623,6 +631,7 @@ def chat_api(request):
             # Pass new flags so Baymax behaves correctly
             temporary=temporary_chat,
             is_superuser=is_superuser,
+            is_fast=is_fast,
         )
 
         t1 = time.time()

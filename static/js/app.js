@@ -85,6 +85,7 @@ const SILENCE_DELAY_MS = 3000;
 
 /* API Keys State */
 let hasExistingApiKeys = false;
+let hasGroqKey = false;
 
 /* ════════ DOM HELPERS ════════ */
 const $ = (id) => document.getElementById(id);
@@ -344,6 +345,7 @@ async function handleGoogleSetup() {
       switchAuthTab('login');
       
       hasExistingApiKeys = false;
+      hasGroqKey = false;
       setTimeout(() => {
         showConfirm('API keys are required to use Hero\'s AI. Would you like to configure them now?',
           () => openApiKeys(), null, 'Configure Keys', 'Later');
@@ -359,6 +361,7 @@ async function checkSession() {
     if (data.logged_in && data.user) {
       loginUser(data.user);
       hasExistingApiKeys = data.user.has_api_keys;
+      hasGroqKey = data.user.has_groq_key;
       if (!data.user.has_api_keys) {
         setTimeout(() => {
           showConfirm(
@@ -411,6 +414,7 @@ async function handleSignup() {
       loginUser(data.user);
       $('signupName').value = ''; $('signupEmail').value = ''; $('signupPassword').value = '';
       hasExistingApiKeys = false;
+      hasGroqKey = false;
       setTimeout(() => {
         showConfirm('API keys are required to use Hero\'s AI. Would you like to configure them now?',
           () => openApiKeys(), null, 'Configure Keys', 'Later');
@@ -439,6 +443,7 @@ async function handleLogin() {
       loginUser(data.user);
       $('loginEmail').value = ''; $('loginPassword').value = '';
       hasExistingApiKeys = data.user.has_api_keys;
+      hasGroqKey = data.user.has_groq_key;
       if (!data.user.has_api_keys) {
         setTimeout(() => {
           showConfirm('API keys are required to use Hero\'s AI. Would you like to configure them now?',
@@ -477,7 +482,7 @@ async function handleLogout() {
       const data = await getJsonResponse(res);
       if (data.status === 'success') {
         currentUser = null; closeUserMenu();
-        messages = []; attachedFiles = []; hasExistingApiKeys = false;
+        messages = []; attachedFiles = []; hasExistingApiKeys = false; hasGroqKey = false;
         currentSessionId = null;
         const md = $('messages'), ws = $('welcomeScreen'), ap = $('attachPreviewRow');
         if (md) { md.innerHTML = ''; md.style.display = 'none'; }
@@ -514,6 +519,7 @@ async function openApiKeys() {
     const data = await getJsonResponse(res);
     if (data.status === 'success') {
       hasExistingApiKeys = data.has_api_keys;
+      hasGroqKey = data.has_groq_key;
       const gi = $('geminiApiKey'), oi = $('openrouterApiKey'), gri = $('groqApiKey');
       if (gi)  gi.placeholder  = data.keys.gemini     ? 'Modify your Gemini API key'    : 'Enter your Gemini API key';
       if (oi)  oi.placeholder  = data.keys.openrouter ? 'Modify your OpenRouter API key' : 'Enter your OpenRouter API key';
@@ -553,6 +559,7 @@ async function saveApiKeys() {
           closeModal('apiKeysModal');
           showNotification('API keys saved successfully!', 'success');
           hasExistingApiKeys = true;
+          if (groq) hasGroqKey = true; else hasGroqKey = false;
           if ($('geminiApiKey'))     $('geminiApiKey').value     = '';
           if ($('openrouterApiKey')) $('openrouterApiKey').value = '';
           if ($('groqApiKey'))       $('groqApiKey').value       = '';
@@ -636,6 +643,22 @@ function activateChatBg() {
 }
 
 /* ════════ CHAT ════════ */
+let isFastMode = false;
+
+function toggleFastModeBtn(btn) {
+  if (!isFastMode && !hasGroqKey) {
+    showNotification('Please add Groq API key in settings for Fast response.', 'error');
+    return;
+  }
+  isFastMode = !isFastMode;
+  if (isFastMode) {
+    btn.classList.add('active');
+    showNotification('Fast mode enabled', 'info');
+  } else {
+    btn.classList.remove('active');
+  }
+}
+
 async function sendMessage() {
   if (isLoading) return;
   const inp = $('chatInput'); if (!inp) return;
@@ -691,6 +714,7 @@ async function sendMessage() {
         mode:         taskType,
         session_id:   tempChatActive ? null : currentSessionId,  // FIX: Don't send session_id if temp
         temporary_chat: tempChatActive,  // FIX: Send the correct flag name
+        is_fast:      isFastMode,
         has_files:    userMsg.files.length > 0,
         file_count:   userMsg.files.length,
         files:        userMsg.files,

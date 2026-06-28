@@ -47,6 +47,17 @@
       padding: 2px 8px; border-radius: 6px; margin-bottom: 6px; font-weight: 600;
       background: rgba(25,195,125,0.12); color: var(--accent);
     }
+    .fast-btn {
+      background: transparent; border: none; color: var(--text-muted);
+      cursor: pointer; font-size: 0.95rem; padding: 4px 6px; margin-left: 2px;
+      border-radius: 6px; transition: all 0.2s ease; display: flex; align-items: center;
+    }
+    .fast-btn:hover {
+      color: #f5a623; background: rgba(245, 166, 35, 0.1);
+    }
+    .fast-btn.active {
+      color: #f5a623; text-shadow: 0 0 10px rgba(245, 166, 35, 0.5);
+    }
   </style>
     <meta name="csrf-token" content="{{ csrf_token }}">
 </head>
@@ -292,11 +303,16 @@
             onkeydown="handleKey(event)"
             oninput="autoResize(this);toggleSendBtn()"></textarea>
 
-          <!-- Inline model selector -->
-          <select class="inline-model-select" id="modelSelect" onchange="onModelChange()">
-            <option value="Baymax">Baymax</option>
-            <option value="ZORVIN">ZORVIN</option>
-          </select>
+          <div class="model-select-group" style="display: flex; align-items: center; background: var(--surface2); border: 1px solid var(--accent); border-radius: 8px; height: 28px; align-self: flex-end; transition: border-color 0.2s;">
+            <select class="inline-model-select" id="modelSelect" onchange="onModelChange()" style="border: none; background: transparent; height: 100%; box-shadow: none; outline: none; padding-right: 24px;">
+              <option value="Baymax">Baymax</option>
+              <option value="ZORVIN">ZORVIN</option>
+            </select>
+            <div style="width: 1px; height: 14px; background: var(--border); margin-left: -6px; margin-right: 2px;"></div>
+            <button id="fastModeBtn" onclick="toggleFastModeBtn(this)" class="fast-btn" title="Fast response (requires Groq API key)" style="height: 24px; padding: 0 6px; margin-right: 2px;">
+              <i class="fa-solid fa-bolt"></i>
+            </button>
+          </div>
           <button class="mute-btn" id="muteBtn" onclick="toggleMute()" title="AI voice muted — click to unmute">
             <i class="fa-solid fa-volume-xmark"></i>
           </button>
@@ -456,18 +472,18 @@
     </div>
     <div class="modal-body">
       <div class="modal-section">
-        <div class="modal-section-label"><i class="fa-solid fa-star"></i> Gemini API Key <span class="required-badge">Mandatory</span></div>
+        <div class="modal-section-label"><i class="fa-solid fa-star"></i> Gemini API Key <span class="required-badge">Required </span></div>
         <input class="auth-input" type="password" id="geminiApiKey" placeholder="Enter your Gemini API key" style="width:100%;"/>
         <div class="field-hint"><i class="fa-solid fa-circle-info"></i> Get your Gemini API key: <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:var(--accent);">Google AI Studio</a></div>
       </div>
       <div class="modal-section">
-        <div class="modal-section-label"><i class="fa-solid fa-route"></i> OpenRouter API Key <span class="required-badge">Mandatory</span></div>
+        <div class="modal-section-label"><i class="fa-solid fa-route"></i> OpenRouter API Key <span class="required-badge">Required </span></div>
         <input class="auth-input" type="password" id="openrouterApiKey" placeholder="Enter your OpenRouter API key" style="width:100%;"/>
         <div class="field-hint"><i class="fa-solid fa-circle-info"></i> Get your OpenRouter API key: <a href="https://openrouter.ai/keys" target="_blank" style="color:var(--accent);">OpenRouter Dashboard</a></div>
       </div>
       <div class="modal-section">
         <div class="modal-section-label"><i class="fa-solid fa-bolt"></i> Groq API Key <span class="optional-badge">Optional</span></div>
-        <input class="auth-input" type="password" id="groqApiKey" placeholder="Enter your Groq API key for better performance (optional)" style="width:100%;"/>
+        <input class="auth-input" type="password" id="groqApiKey" placeholder="Enter your Groq API key for better performance (optional for fast experience)" style="width:100%;"/>
         <div class="field-hint"><i class="fa-solid fa-circle-info"></i> Get your Groq API key: <a href="https://console.groq.com/keys" target="_blank" style="color:var(--accent);">Groq Console</a><br><em>Note: Groq is used as a fallback model for enhanced reliability.<br>Currently in development status</em></div>
       </div>
       <div class="api-info-box">

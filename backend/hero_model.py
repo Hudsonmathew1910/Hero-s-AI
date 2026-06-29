@@ -239,6 +239,16 @@ class Baymax:
 
     def _build_system_prompt(self, task: str) -> str:
         """Select and build the system prompt for the given task."""
+        from django.core.cache import cache
+        import hashlib
+        
+        config_str = f"{task}_{self.user_instruction}_{self.user_about_me}_{self.user_name}_{self.nlp_result.get('intent', '')}"
+        cache_key = "sysprompt_" + hashlib.md5(config_str.encode('utf-8')).hexdigest()
+        
+        cached_prompt = cache.get(cache_key)
+        if cached_prompt:
+            return cached_prompt
+
         if task == "coding":
             prompt = self.CODING_PROMPT
         elif task == "voice":
@@ -257,6 +267,8 @@ class Baymax:
 
         prompt = self._enrich_system_prompt(prompt)
         prompt = self.BASIC_RULES + "\n\n" + prompt
+        
+        cache.set(cache_key, prompt, timeout=3600 * 24)
         return prompt
 
     def _get_limited_history(self, task: str) -> list:

@@ -37,13 +37,11 @@ _INTENT_RULES: list[tuple[str, list[str]]] = [
 
     # ── Web search / research ─────────────────────────────────────────────
     ("web_search", [
-        r"\bsearch\s+(?:for\s+)?(?:the\s+)?(?:web|internet|online)?\b",
-        r"\bwhat\s+is\s+(?:the\s+)?(?:latest|current|recent|news)\b",
-        r"\bfind\s+(?:me\s+)?(?:information|info|data|articles?|results?)\b",
-        r"\blook\s+up\b", r"\bwho\s+(?:is|was|are|were)\b",
-        r"\bwhere\s+(?:is|can|do)\b", r"\bwhen\s+(?:is|did|was|will)\b",
-        r"\bhow\s+much\s+(?:does|is|are|do)\b",
-        r"\bprice\s+of\b", r"\bstock\s+(?:price|market)\b",
+        r"\bsearch\b", r"\bgoogle\b",
+        r"\b(?:what|who)\s+(?:is|are|was|were)\s+(?:the\s+)?(?:latest|current|recent|news)\b",
+        r"\b(?:who|what)\s+(?:is|are)\s+.*?\b(?:now|currently|today)\b",
+        r"\blatest\s+news\b", r"\bcurrent\s+price\b",
+        r"\blook\s+up\b", r"\bstock\s+(?:price|market)\b",
         r"\bweather\b", r"\bnews\b", r"\btoday\b", r"\blatest\b",
         r"\brecent\b", r"\bcurrent\b", r"\blive\b",
     ]),
@@ -346,30 +344,51 @@ def get_intent(text: str, source: str = "text") -> str:
 
 def resolve_mode(preprocessed: PreprocessedInput, current_mode: str) -> str:
     """
-    Suggest the best handler mode for views.py / Baymax based on
-    preprocessed intent vs the frontend-declared mode.
-
-    Rules:
-    - If the frontend mode is explicit and persistent (coding, websearch, file_handle)
-      always honour it — the user made a deliberate choice.
-    - If mode is "text" or "voice_message" (transient), and NLP detected a 
-      stronger specific intent (like coding), return the NLP-inferred mode.
-    - Otherwise keep the current_mode unchanged.
+    Final router using a strict 5-step priority system.
     """
-    # Persistent explicit mode beats NLP inference
-    # Note: "voice_message" is transient, so we allow NLP overrides
+    intent = preprocessed["intent"]
+    clean_text = preprocessed["clean_text"].lower()
+    
+    # 1. Explicit user command (Persistent modes beat NLP)
     persistent_modes = ("coding", "websearch", "Voice Chat", "file_handle", "live_display")
     if current_mode in persistent_modes:
         return current_mode
 
-    intent = preprocessed["intent"]
+    # 2. Safety override (chat detection)
+    safety_chat_patterns = [
+        r"\bwho\s+are\s+you\b",
+        r"\bintroduce\s+yourself\b",
+        r"\bexplain\s+yourself\b",
+        r"\bwhat\s+can\s+you\s+do\b",
+        r"\btell\s+me\s+about\s+yourself\b",
+        r"\bwhat\s+are\s+you\b",
+    ]
+    for pattern in safety_chat_patterns:
+        if re.search(pattern, clean_text):
+            return "text"
 
-    # If the user used the mic but didn't trigger a specific intent,
-    # we preserve voice_message so they get the short voice-optimized response.
+    # Anti-WebSearch Guard: if NLP suggested web_search but it's a broad conversational question
+    if intent == "web_search":
+        anti_websearch = [
+            r"\bwhat\s+is\b",
+            r"\bwho\s+(?:is|was|are|were)\b",
+            r"\btell\s+me\s+about\b",
+        ]
+        for pattern in anti_websearch:
+            if re.search(pattern, clean_text):
+                # Allow if they explicitly use search/live words
+                allow_websearch = [
+                    r"\bsearch\b", r"\bgoogle\b", r"\blatest\s+news\b", r"\bcurrent\s+price\b", r"\blive\b",
+                    r"\bnow\b", r"\bcurrently\b", r"\btoday\b"
+                ]
+                if not any(re.search(p, clean_text) for p in allow_websearch):
+                    intent = "chat"
+                    break
+
+    # 3. NLP Prediction
     if current_mode == "voice_message" and intent == "chat":
         return "voice_message"
 
-    # Map NLP intent back to the Baymax handler mode strings
     _intent_to_mode: dict[str, str] = {
         "coding":        "coding",
         "web_search":    "websearch",
@@ -381,7 +400,9 @@ def resolve_mode(preprocessed: PreprocessedInput, current_mode: str) -> str:
         "explain":       "text",
         "chat":          "text",
     }
-    return _intent_to_mode.get(intent, current_mode)
+    
+    # 4. Default -> chat (text)
+    return _intent_to_mode.get(intent, "text")
 
 
 # ══════════════════════════════════════════════════════════════════════════════

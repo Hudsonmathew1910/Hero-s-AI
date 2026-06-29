@@ -206,6 +206,13 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 DATA_UPLOAD_MAX_MEMORY_SIZE = 10485760  # 10MB
 FILE_UPLOAD_MAX_MEMORY_SIZE = 10485760  # 10MB
 
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'hero-ai-cache',
+    }
+}
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Add this LOGGING block to your Django settings.py

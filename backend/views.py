@@ -34,6 +34,7 @@ from django.conf import settings as django_settings
 from django.utils import timezone
 
 from django.db import connections, close_old_connections
+from django.core.cache import cache
 from .models import User, Api, Chat, Setting, ChatSession
 from .encryption import encrypt_api_key, decrypt_api_key
 from .hero_model import Baymax
@@ -70,47 +71,74 @@ def db_thread_task(f):
 
 @db_thread_task
 def get_user_api_keys(user):
+    cache_key = f"api_keys_{user.user_id}"
+    keys = cache.get(cache_key)
+    if keys is not None:
+        return keys['Gemini'], keys['OpenRouter'], keys['Groq']
+
     keys = {'Gemini': None, 'OpenRouter': None, 'Groq': None}
     for api in Api.objects.filter(user=user, model_name__in=keys):
         keys[api.model_name] = decrypt_api_key(api.api_key_encrypted)
+        
+    cache.set(cache_key, keys, timeout=3600 * 24)
     return keys['Gemini'], keys['OpenRouter'], keys['Groq']
 
 
 @db_thread_task
 def get_user_settings(user):
+    cache_key = f"settings_{user.user_id}"
+    sett = cache.get(cache_key)
+    if sett is not None:
+        return sett
+
     try:
         s = Setting.objects.get(user=user)
-        return {
+        sett = {
             'user_instruction':           s.user_instruction,
             'user_about_me':              s.user_about_me,
             'user_name':                  s.user_name,
             'enable_custom_instructions': getattr(s, 'enable_custom_instructions', True),
         }
     except Setting.DoesNotExist:
-        return {
+        sett = {
             'user_instruction':           None,
             'user_about_me':              None,
             'user_name':                  None,
             'enable_custom_instructions': True,
         }
+    
+    cache.set(cache_key, sett, timeout=3600 * 24)
+    return sett
 
 
 def get_session_history(session_id_str, user, limit=5):
     if not session_id_str:
         return []
-    try:
-        session = ChatSession.objects.get(session_id=session_id_str, user=user)
-        chats   = list(session.messages.order_by('-timestamp')[:limit])
-        chats.reverse()
-        history = []
-        for chat in chats:
-            if not chat.input_text or not chat.output_text:
-                continue
-            history.append({"role": "user",      "content": chat.input_text.strip()})
-            history.append({"role": "assistant", "content": chat.output_text.strip()})
-        return history
-    except (ChatSession.DoesNotExist, Exception):
-        return []
+    
+    cache_key = f"history_{session_id_str}"
+    cached_buffer = cache.get(cache_key)
+    
+    if cached_buffer is None:
+        try:
+            session = ChatSession.objects.get(session_id=session_id_str, user=user)
+            # Load max base chunk for the buffer (5 turns = 10 messages)
+            chats = list(session.messages.order_by('-timestamp')[:5])
+            chats.reverse()
+            cached_buffer = []
+            for chat in chats:
+                if not chat.input_text or not chat.output_text:
+                    continue
+                cached_buffer.append({"role": "user",      "content": chat.input_text.strip()})
+                cached_buffer.append({"role": "assistant", "content": chat.output_text.strip()})
+            
+            cache.set(cache_key, cached_buffer, timeout=3600 * 2)
+        except (ChatSession.DoesNotExist, Exception):
+            cached_buffer = []
+
+    # Slicing logic: limit is in turns, buffer holds messages (2 per turn)
+    if limit:
+        return cached_buffer[-(limit*2):] if len(cached_buffer) >= (limit*2) else cached_buffer
+    return cached_buffer
 
 
 @db_thread_task
@@ -496,8 +524,11 @@ def save_api_keys(request):
                 user=request.user_obj, model_name='Groq',
                 defaults={'api_key_encrypted': encrypt_api_key(groq), 'is_mandatory': False},
             )
-        elif 'groq' in d:
+        if 'groq' in d:
             Api.objects.filter(user=request.user_obj, model_name='Groq').delete()
+            
+        cache.delete(f"api_keys_{request.user_obj.user_id}")
+        
         return JsonResponse({"status": "success", "message": "API keys saved"})
     except Exception as e:
         return safe_error_response(request, logger, "save_api_keys", e)
@@ -555,7 +586,11 @@ def chat_api(request):
 
     try:
         # ── NLP pre-processing ────────────────────────────────────────────────
-        nlp_result = preprocess(raw_message, source=mode)
+        if mode in ['coding', 'websearch', 'Voice Chat', 'voice_message']:
+            nlp_result = {"clean_text": raw_message, "intent": "direct", "metadata": {}}
+        else:
+            nlp_result = preprocess(raw_message, source=mode)
+            
         message    = nlp_result["clean_text"] or raw_message
         mode       = resolve_mode(nlp_result, mode)
         nlp_intent = nlp_result["intent"]
@@ -667,8 +702,21 @@ def chat_api(request):
 
         if not reply:
             reply = "Something went wrong. Please try again later."
-        
+            
         logger.debug("AI reply: %.2fs | total: %.2fs", time.time() - t1, time.time() - t0)
+        
+        # ── Update Active Memory Buffer ───────────────────────────────────────
+        if not temporary_chat:
+            active_buffer = cache.get(f"history_{chat_session.session_id}")
+            if active_buffer is None:
+                active_buffer = list(chat_history)
+            
+            active_buffer.append({"role": "user", "content": message.strip()})
+            active_buffer.append({"role": "assistant", "content": reply.strip()})
+            
+            # Enforce max buffer size to 5 turns (10 messages)
+            active_buffer = active_buffer[-10:]
+            cache.set(f"history_{chat_session.session_id}", active_buffer, timeout=3600 * 2)
 
         # ── Persist (skipped for temporary chats) ─────────────────────────────
         if not temporary_chat:
@@ -743,6 +791,9 @@ def save_user_settings(request):
         s.user_interests              = d.get('user_interests', '').strip()    or None
         s.enable_custom_instructions  = d.get('enable_custom_instructions', True)
         s.save()
+        
+        cache.delete(f"settings_{request.user_obj.user_id}")
+        
         return JsonResponse({"status": "success", "message": "Settings saved successfully"})
     except Exception as e:
         return safe_error_response(request, logger, "save_user_settings", e)

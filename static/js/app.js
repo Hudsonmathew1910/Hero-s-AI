@@ -49,7 +49,7 @@ let tempChatActive = false;
 let currentSessionId = null;
 
 /* Mute state — default MUTED */
-let isMuted = false;
+let isMuted = true;
 
 /* ════════ CSRF TOKEN ════════ */
 function getCsrfToken() {
@@ -362,6 +362,8 @@ async function checkSession() {
       loginUser(data.user);
       hasExistingApiKeys = data.user.has_api_keys;
       hasGroqKey = data.user.has_groq_key;
+      updateFastModeDefault();
+      
       if (!data.user.has_api_keys) {
         setTimeout(() => {
           showConfirm(
@@ -415,6 +417,7 @@ async function handleSignup() {
       $('signupName').value = ''; $('signupEmail').value = ''; $('signupPassword').value = '';
       hasExistingApiKeys = false;
       hasGroqKey = false;
+      updateFastModeDefault();
       setTimeout(() => {
         showConfirm('API keys are required to use Hero\'s AI. Would you like to configure them now?',
           () => openApiKeys(), null, 'Configure Keys', 'Later');
@@ -444,6 +447,7 @@ async function handleLogin() {
       $('loginEmail').value = ''; $('loginPassword').value = '';
       hasExistingApiKeys = data.user.has_api_keys;
       hasGroqKey = data.user.has_groq_key;
+      updateFastModeDefault();
       if (!data.user.has_api_keys) {
         setTimeout(() => {
           showConfirm('API keys are required to use Hero\'s AI. Would you like to configure them now?',
@@ -483,6 +487,7 @@ async function handleLogout() {
       if (data.status === 'success') {
         currentUser = null; closeUserMenu();
         messages = []; attachedFiles = []; hasExistingApiKeys = false; hasGroqKey = false;
+        updateFastModeDefault();
         currentSessionId = null;
         const md = $('messages'), ws = $('welcomeScreen'), ap = $('attachPreviewRow');
         if (md) { md.innerHTML = ''; md.style.display = 'none'; }
@@ -520,6 +525,7 @@ async function openApiKeys() {
     if (data.status === 'success') {
       hasExistingApiKeys = data.has_api_keys;
       hasGroqKey = data.has_groq_key;
+      updateFastModeDefault();
       const gi = $('geminiApiKey'), oi = $('openrouterApiKey'), gri = $('groqApiKey');
       if (gi)  gi.placeholder  = data.keys.gemini     ? 'Modify your Gemini API key'    : 'Enter your Gemini API key';
       if (oi)  oi.placeholder  = data.keys.openrouter ? 'Modify your OpenRouter API key' : 'Enter your OpenRouter API key';
@@ -560,6 +566,7 @@ async function saveApiKeys() {
           showNotification('API keys saved successfully!', 'success');
           hasExistingApiKeys = true;
           if (groq) hasGroqKey = true; else hasGroqKey = false;
+          updateFastModeDefault();
           if ($('geminiApiKey'))     $('geminiApiKey').value     = '';
           if ($('openrouterApiKey')) $('openrouterApiKey').value = '';
           if ($('groqApiKey'))       $('groqApiKey').value       = '';
@@ -656,6 +663,19 @@ function toggleFastModeBtn(btn) {
     showNotification('Fast mode enabled', 'info');
   } else {
     btn.classList.remove('active');
+  }
+}
+
+function updateFastModeDefault() {
+  const fastBtn = $('fastModeBtn');
+  if (fastBtn) {
+    if (hasGroqKey) {
+      isFastMode = true;
+      fastBtn.classList.add('active');
+    } else {
+      isFastMode = false;
+      fastBtn.classList.remove('active');
+    }
   }
 }
 

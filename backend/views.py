@@ -575,6 +575,10 @@ def chat_api(request):
     # ── NEW: read temporary-chat flag from the request ────────────────────────
     temporary_chat: bool = bool(d.get('temporary_chat', False))
     is_fast: bool = bool(d.get('is_fast', False))
+    
+    is_developer = bool(d.get('is_developer', False))
+    dev_provider = d.get('dev_provider', '')
+    dev_model_name = d.get('dev_model_name', '')
 
     # ── Determine whether this user has superuser privileges ──────────────────
     # A user is a superuser if their is_superuser flag is set to True.
@@ -585,6 +589,56 @@ def chat_api(request):
 
 
     try:
+        # ── Developer Bypass ──────────────────────────────────────────────────
+        if is_developer:
+            from .hero_model import Developer
+            dev_client = Developer(request.user_obj, dev_provider, dev_model_name)
+            
+            clean_history = []
+            if isinstance(send_history, list):
+                for msg in send_history:
+                    if isinstance(msg, dict) and "role" in msg and "content" in msg:
+                        clean_history.append({"role": msg["role"], "content": msg["content"]})
+            
+            # Limit history to match Baymax's standard text behavior (10 messages = 5 turns)
+            clean_history = clean_history[-10:]
+            
+            system_prompt = dev_client.build_system_prompt(mode)
+            messages_payload = [{"role": "system", "content": system_prompt}] + clean_history
+            messages_payload.append({"role": "user", "content": raw_message})
+            
+            result = dev_client.generate(messages_payload)
+            
+            reply = result.get('reply') or ""
+            status_code = result.get('status_code', 500)
+            error_msg = result.get('error')
+            
+            is_new_session = False
+            if not temporary_chat and reply and not error_msg:
+                chat_session, is_new_session = _get_or_create_session(request.user_obj, session_id_str, raw_message)
+                
+                active_buffer = cache.get(f"history_{chat_session.session_id}")
+                if active_buffer is None:
+                    active_buffer = list(send_history)
+                
+                active_buffer.append({"role": "user", "content": raw_message.strip()})
+                active_buffer.append({"role": "assistant", "content": reply.strip()})
+                active_buffer = active_buffer[-10:]
+                cache.set(f"history_{chat_session.session_id}", active_buffer, timeout=3600 * 2)
+                
+                # Force mode to developer for the database record
+                _save_chat_async(request.user_obj, chat_session, 'developer', dev_model_name, raw_message, reply)
+                
+            return JsonResponse({
+                "status": "success",
+                "reply": reply,
+                "status_code": status_code,
+                "error": error_msg,
+                "session_id": str(chat_session.session_id) if not temporary_chat and 'chat_session' in locals() else session_id_str,
+                "is_new_chat": is_new_session,
+                "temporary": temporary_chat,
+            })
+
         # ── NLP pre-processing ────────────────────────────────────────────────
         if mode in ['coding', 'websearch', 'Voice Chat', 'voice_message']:
             nlp_result = {"clean_text": raw_message, "intent": "direct", "metadata": {}}
@@ -852,6 +906,7 @@ def get_chat_messages(request, chat_id):
                 'task_type':  last.task_type,
                 'model_used': last.model_used,
                 'created_at': sess.created_at.isoformat(),
+                'is_developer_session': getattr(last, 'task_type', '') == 'developer',
             },
         })
     except ChatSession.DoesNotExist:

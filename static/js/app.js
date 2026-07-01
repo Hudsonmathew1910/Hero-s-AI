@@ -628,7 +628,20 @@ function onModelChange() {
       },
       () => { select.value = currentModel; },
       'Download', 'Cancel');
+  } else if (newModel === 'Developer') {
+    openDeveloperModal();
   } else {
+    if (isDeveloperMode) {
+      isDeveloperMode = false;
+      const devSidebar = $('developerSidebar');
+      if (devSidebar) devSidebar.style.display = 'none';
+      const toggleBtn = $('devSidebarToggleBtn');
+      if (toggleBtn) toggleBtn.style.display = 'none';
+      const fastBtn = $('fastModeBtn');
+      if (fastBtn) fastBtn.style.display = '';
+      updateFastModeDefault();
+      newChat();
+    }
     currentModel = newModel;
     const chip = $('modelChipName');
     if (chip) chip.textContent = currentModel;
@@ -689,7 +702,8 @@ async function sendMessage() {
   activateChatBg();
 
   let taskType = activeMode;
-  if (attachedFiles.length > 0) taskType = 'file_handle';
+  if (isDeveloperMode) taskType = 'developer';
+  else if (attachedFiles.length > 0) taskType = 'file_handle';
   else if (!taskType)            taskType = 'text';
 
   // Transient modes: Reset after use so the next message defaults to text
@@ -732,12 +746,16 @@ async function sendMessage() {
         message:      text,
         model:        currentModel,
         mode:         taskType,
-        session_id:   tempChatActive ? null : currentSessionId,  // FIX: Don't send session_id if temp
-        temporary_chat: tempChatActive,  // FIX: Send the correct flag name
+        session_id:   (tempChatActive || isDeveloperMode) ? null : currentSessionId,  // FIX: Don't send session_id if temp
+        temporary_chat: isDeveloperMode ? true : tempChatActive,
         is_fast:      isFastMode,
         has_files:    userMsg.files.length > 0,
         file_count:   userMsg.files.length,
         files:        userMsg.files,
+        is_developer: isDeveloperMode,
+        dev_provider: isDeveloperMode ? devConfig.provider : '',
+        dev_model_name: isDeveloperMode ? devConfig.model : '',
+        send_history: sessionHistory
       })
     });
     
@@ -747,11 +765,17 @@ async function sendMessage() {
 
     if (data.status === 'success') {
       // FIX: Don't update currentSessionId if this was a temporary chat
-      if (data.session_id && !currentSessionId && !tempChatActive) {
+      if (data.session_id && !currentSessionId && !tempChatActive && !isDeveloperMode) {
         currentSessionId = data.session_id;
         loadChatHistory();
       }
-      const aiMsg = { role: 'assistant', content: data.reply };
+      const aiMsg = { 
+        role: 'assistant', 
+        content: data.reply,
+        is_developer: isDeveloperMode,
+        status_code: data.status_code,
+        error: data.error
+      };
       messages.push(aiMsg);
       renderMessage(aiMsg);
 
@@ -762,7 +786,7 @@ async function sendMessage() {
       }
 
       // FIX: Only reload chat history if it's not a temporary chat
-      if (data.is_new_chat && !tempChatActive) {
+      if (data.is_new_chat && !tempChatActive && !isDeveloperMode) {
         loadChatHistory();
       }
     } else {
@@ -835,7 +859,15 @@ function renderMessage(msg) {
     }
   }
 
-  const displayName = isUser ? (currentUser ? currentUser.name.split(' ')[0] : 'You') : "Hero's AI";
+  const displayName = isUser ? (currentUser ? currentUser.name.split(' ')[0] : 'You') : (msg.is_developer ? 'Developer AI' : "Hero's AI");
+
+  let devFooter = '';
+  if (msg.is_developer) {
+    devFooter = `<div style="margin-top: 10px; padding: 10px; background: rgba(0,0,0,0.2); border-left: 3px solid var(--accent); font-family: monospace; font-size: 0.85em; border-radius: 4px;">
+      <strong style="color: ${msg.status_code === 200 ? '#4ade80' : '#f87171'};">Status Code: ${msg.status_code || 'Unknown'}</strong><br>
+      <strong style="color: var(--accent);">Error:</strong> <span style="color: #999;">${msg.error ? escHtml(msg.error) : 'None'}</span>
+    </div>`;
+  }
 
   row.innerHTML = `
     <div class="msg-avatar ${isUser ? 'user' : 'ai'}">${avatarHTML}</div>
@@ -845,7 +877,7 @@ function renderMessage(msg) {
         <button class="copy-msg-btn" title="Copy" onclick="copyMsg(this)"><i class="fa-regular fa-copy"></i></button>
       </div>
       ${modeTag}${filesHTML}
-      <div class="bubble">${formatContent(msg.content || '')}</div>
+      <div class="bubble">${formatContent(msg.content || '')}${devFooter}</div>
     </div>`;
 
   container.appendChild(row);
@@ -1646,6 +1678,21 @@ async function loadChatMessages(sessionId) {
       const activeItem = document.querySelector(`[data-session-id="${sessionId}"]`);
       if (activeItem) activeItem.classList.add('active');
       currentSessionId = sessionId;
+      if (data.chat_info && data.chat_info.is_developer_session) {
+        const select = $('modelSelect');
+        if (select) select.value = 'Developer';
+        openDeveloperModal();
+      } else {
+        isDeveloperMode = false;
+        const devSidebar = $('developerSidebar');
+        if (devSidebar) devSidebar.style.display = 'none';
+        const toggleBtn = $('devSidebarToggleBtn');
+        if (toggleBtn) toggleBtn.style.display = 'none';
+        const fastBtn = $('fastModeBtn');
+        if (fastBtn) fastBtn.style.display = '';
+        const select = $('modelSelect');
+        if (select) select.value = (data.chat_info ? data.chat_info.model_used : 'Baymax') || 'Baymax';
+      }
       (data.messages || []).forEach(msg => { messages.push(msg); renderMessage(msg); });
     }
   } catch (err) {
@@ -1789,3 +1836,180 @@ if (window.speechSynthesis) window.speechSynthesis.getVoices();
 setTimeout(() => { initBallCanvas(); _syncMuteBtn(); toggleSendBtn(); }, 100);
 document.addEventListener('DOMContentLoaded', checkSession);
 console.log('✅ Hero AI loaded.');
+
+/* ════════ DEVELOPER MODE ════════ */
+let isDeveloperMode = false;
+let devConfig = { provider: 'openrouter', model: '', saveHistory: true };
+
+const devModels = {
+  openrouter: [
+    'google/gemma-4-26b-a4b-it:free',
+    'google/gemma-4-31b-it:free',
+    'meta-llama/llama-3.3-70b-instruct:free',
+    'meta-llama/llama-3.2-3b-instruct:free',
+    'nvidia/nemotron-nano-9b-v2:free',
+    'nvidia/nemotron-3-nano-30b-a3b:free',
+    'nvidia/nemotron-3-super-120b-a12b:free',
+    'gemini-2.5-flash',
+    'gemini-2.5-flash-lite',
+    'meta-llama/llama-3.3-70b:free',
+    'custom'
+  ],
+  groq: [
+    'llama-3.1-8b-instant',
+    'openai/gpt-oss-120b',
+    'openai/gpt-oss-20b',
+    'llama-3.3-70b-versatile',
+    'qwen/qwen3.6-27b',
+    'qwen/qwen3-32b',
+    'custom'
+  ],
+  gemini: [
+    'gemini-2.5-flash',
+    'gemini-2.5-pro',
+    'custom'
+  ]
+};
+
+function openDeveloperModal() {
+  developerModal.style.display = 'flex';
+  onDevProviderChange(); // init dropdown
+}
+
+function closeDeveloperModal() {
+  developerModal.style.display = 'none';
+  if (!isDeveloperMode) {
+    const select = modelSelect;
+    if (select) select.value = currentModel || 'Baymax';
+  }
+}
+
+function onDevProviderChange() {
+  const provider = devProviderSelect.value;
+  const modelSelect = devModelSelect;
+  modelSelect.innerHTML = '';
+  devModels[provider].forEach(m => {
+    const opt = document.createElement('option');
+    opt.value = m;
+    opt.textContent = m === 'custom' ? 'Custom Input...' : m;
+    modelSelect.appendChild(opt);
+  });
+  onDevModelChange();
+}
+
+function onDevModelChange() {
+  const model = devModelSelect.value;
+  const customInput = devCustomModelInput;
+  if (model === 'custom') {
+    customInput.style.display = 'block';
+  } else {
+    customInput.style.display = 'none';
+  }
+}
+
+function startDeveloperSession() {
+  const provider = $('devProviderSelect').value;
+  const modelSelectVal = $('devModelSelect').value;
+  const customModel = $('devCustomModelInput').value.trim();
+
+  const finalModel = modelSelectVal === 'custom' ? customModel : modelSelectVal;
+  if (!finalModel) {
+    showNotification('Please enter a custom model name', 'error');
+    return;
+  }
+
+  if (provider === 'groq' && !hasGroqKey) {
+    showNotification('Groq API Key is required. Please set it in Settings.', 'error');
+    return;
+  }
+  if (provider === 'openrouter' && !hasExistingApiKeys) {
+    showNotification('OpenRouter API Key is required. Please set it in Settings.', 'error');
+    return;
+  }
+
+  isDeveloperMode = true;
+  devConfig = {
+    provider: provider,
+    model: finalModel
+  };
+
+  isFastMode = false;
+  const fastBtn = $('fastModeBtn');
+  if (fastBtn) { fastBtn.classList.remove('active'); fastBtn.style.display = 'none'; }
+  const toggleBtn = $('devSidebarToggleBtn');
+  if (toggleBtn) toggleBtn.style.display = '';
+  
+  const devSidebar = $('developerSidebar');
+  if (devSidebar) devSidebar.style.display = 'none'; // Default hidden as requested
+
+  const sideProv = $('sideDevProviderSelect');
+  if (sideProv) {
+    sideProv.value = provider;
+    onSideDevProviderChange();
+    const sideModel = $('sideDevModelSelect');
+    if (modelSelectVal === 'custom') {
+      sideModel.value = 'custom';
+      onSideDevModelChange();
+      $('sideDevCustomModelInput').value = customModel;
+    } else {
+      sideModel.value = finalModel;
+      onSideDevModelChange();
+    }
+  }
+
+  $('developerModal').style.display = 'none';
+  
+  newChat();
+  addSystemNote(`Started Developer Session (${provider.toUpperCase()}: ${finalModel})`);
+}
+
+function onSideDevProviderChange() {
+  const provider = $('sideDevProviderSelect').value;
+  const modelSelect = $('sideDevModelSelect');
+  if (!modelSelect) return;
+  modelSelect.innerHTML = '';
+  devModels[provider].forEach(m => {
+    const opt = document.createElement('option');
+    opt.value = m;
+    opt.textContent = m === 'custom' ? 'Custom Input...' : m;
+    modelSelect.appendChild(opt);
+  });
+  onSideDevModelChange();
+}
+
+function onSideDevModelChange() {
+  const model = $('sideDevModelSelect').value;
+  const customInput = $('sideDevCustomModelInput');
+  if (!customInput) return;
+  if (model === 'custom') {
+    customInput.style.display = 'block';
+  } else {
+    customInput.style.display = 'none';
+  }
+}
+
+function applySidebarDevConfig() {
+  const provider = $('sideDevProviderSelect').value;
+  const modelSelectVal = $('sideDevModelSelect').value;
+  const customModel = $('sideDevCustomModelInput').value.trim();
+  const finalModel = modelSelectVal === 'custom' ? customModel : modelSelectVal;
+  if (!finalModel) {
+    showNotification('Please enter a custom model name', 'error');
+    return;
+  }
+  
+  devConfig = {
+    provider: provider,
+    model: finalModel
+  };
+  addSystemNote(`Updated Developer Config (${provider.toUpperCase()}: ${finalModel})`);
+  showNotification('Developer configuration applied', 'success');
+}
+
+function toggleDevSidebar() {
+  const devSidebar = $('developerSidebar');
+  if (devSidebar) {
+    devSidebar.style.display = devSidebar.style.display === 'none' ? 'block' : 'none';
+  }
+}
+

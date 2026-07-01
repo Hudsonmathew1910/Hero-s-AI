@@ -137,17 +137,17 @@ class Baymax:
             'fallback': [
                 'google/gemma-4-26b-a4b-it:free',
                 'google/gemma-4-31b-it:free',
-                # 'mistralai/mistral-small-3.1-24b-instruct:free',
                 'meta-llama/llama-3.3-70b-instruct:free',
                 'meta-llama/llama-3.2-3b-instruct:free',
                 'nvidia/nemotron-nano-9b-v2:free',
-                # 'stepfun/step-3.5-flash:free',
             ],
             'fallback_with_groq': [
                 "llama-3.1-8b-instant",
-                "qwen-3-32b",
+                "openai/gpt-oss-120b",
+                "openai/gpt-oss-20b",
                 "llama-3.3-70b-versatile",
-                "kimi-k2",
+                "qwen/qwen3.6-27b",
+                "qwen/qwen3-32b",
             ],
         }
 
@@ -844,4 +844,136 @@ class Baymax:
         except Exception as e:
             return self._safe_error(e, "handle_live_display")
 
+class Developer:
+    """
+    A bare-metal, unopinionated client used for testing specific models
+    directly on Groq or OpenRouter, returning status codes and raw error traces.
+    """
+    def __init__(self, user, provider, model_name):
+        from .models import Api
+        from .encryption import decrypt_api_key
+        self.user = user
+        self.provider = provider.lower()
+        self.model_name = model_name
+        self.openrouter_url = "https://openrouter.ai/api/v1/chat/completions"
+        self.groq_url       = "https://api.groq.com/openai/v1/chat/completions"
 
+        self.groq_api_key       = None
+        self.openrouter_api_key = None
+        self.gemini_api_key     = None
+        
+        for api in Api.objects.filter(user=self.user, model_name__in=['Groq', 'OpenRouter', 'Gemini']):
+            if api.model_name == 'Groq':
+                self.groq_api_key = decrypt_api_key(api.api_key_encrypted)
+            elif api.model_name == 'OpenRouter':
+                self.openrouter_api_key = decrypt_api_key(api.api_key_encrypted)
+            elif api.model_name == 'Gemini':
+                self.gemini_api_key = decrypt_api_key(api.api_key_encrypted)
+
+    def build_system_prompt(self, mode: str) -> str:
+        from .hero_model import Baymax
+        from .views import get_user_settings
+        
+        if mode == 'coding':
+            prompt = Baymax.CODING_PROMPT
+        elif mode in ['voice', 'Voice Chat', 'voice_message']:
+            prompt = Baymax.VOICE_PROMPT
+        elif mode == 'websearch':
+            prompt = Baymax.WEB_SEARCH_PROMPT
+        else:
+            prompt = Baymax.TEXT_PROMPT
+
+        user_settings = get_user_settings(self.user)
+        user_instruction = user_settings.get('user_instruction') if user_settings.get('enable_custom_instructions') else None
+        user_about_me = user_settings.get('user_about_me') if user_settings.get('enable_custom_instructions') else None
+        user_name = user_settings.get('user_name')
+
+        if user_instruction:
+            prompt += f"\n\nUser Instructions:\n{user_instruction}"
+        if user_about_me:
+            prompt += f"\n\nAbout the User:\n{user_about_me}"
+        if user_name:
+            prompt += f"\n\nUser Name: {user_name} (Only use the name naturally, do NOT start every message with a greeting like 'Hey {user_name}')"
+
+        prompt = Baymax.BASIC_RULES + "\n\n" + prompt
+        return prompt
+
+    def generate(self, messages):
+        """
+        Sends the exact payload and returns detailed metadata.
+        """
+        import requests
+        
+        if self.provider == 'gemini':
+            if not self.gemini_api_key:
+                return {"reply": None, "status_code": 401, "error": "Gemini API key missing"}
+            
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model_name}:generateContent?key={self.gemini_api_key}"
+            headers = {"Content-Type": "application/json"}
+            
+            contents = []
+            system_instruction = None
+            
+            for msg in messages:
+                role = msg.get("role")
+                content = msg.get("content", "")
+                if role == "system":
+                    system_instruction = {"parts": [{"text": content}]}
+                else:
+                    gemini_role = "model" if role == "assistant" else "user"
+                    contents.append({"role": gemini_role, "parts": [{"text": content}]})
+            
+            payload = {"contents": contents}
+            if system_instruction:
+                payload["system_instruction"] = system_instruction
+                
+            try:
+                response = requests.post(url, headers=headers, json=payload, timeout=60)
+                status_code = response.status_code
+                if status_code == 200:
+                    data = response.json()
+                    candidates = data.get("candidates", [])
+                    if candidates:
+                        reply = candidates[0].get("content", {}).get("parts", [{}])[0].get("text", "")
+                        return {"reply": reply, "status_code": 200, "error": None}
+                    return {"reply": None, "status_code": 200, "error": "No candidates returned"}
+                else:
+                    return {"reply": None, "status_code": status_code, "error": response.text}
+            except Exception as e:
+                return {"reply": None, "status_code": 500, "error": str(e)}
+
+        elif self.provider == 'groq':
+            if not self.groq_api_key:
+                return {"reply": None, "status_code": 401, "error": "Groq API key missing"}
+            url = self.groq_url
+            headers = {
+                "Authorization": f"Bearer {self.groq_api_key}",
+                "Content-Type": "application/json"
+            }
+        else:
+            if not self.openrouter_api_key:
+                return {"reply": None, "status_code": 401, "error": "OpenRouter API key missing"}
+            url = self.openrouter_url
+            headers = {
+                "Authorization": f"Bearer {self.openrouter_api_key}",
+                "Content-Type": "application/json"
+            }
+        
+        payload = {
+            "model": self.model_name,
+            "messages": messages,
+            "temperature": 0.7,
+            "max_tokens": 4096
+        }
+
+        try:
+            response = requests.post(url, headers=headers, json=payload, timeout=60)
+            status_code = response.status_code
+            if status_code == 200:
+                data = response.json()
+                reply = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+                return {"reply": reply, "status_code": status_code, "error": None}
+            else:
+                return {"reply": None, "status_code": status_code, "error": response.text}
+        except Exception as e:
+            return {"reply": None, "status_code": 500, "error": str(e)}

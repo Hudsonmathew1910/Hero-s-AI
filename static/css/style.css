@@ -267,7 +267,9 @@ header { height: var(--header-h); display: flex; align-items: center; justify-co
 .msg-content .sender { font-family: var(--font-head); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 5px; }
 .msg-content.user .sender { color: var(--accent2); }
 .msg-content.ai .sender { color: var(--accent); }
-.msg-content .bubble { display: inline-block; max-width: 100%; word-break: break-word; }
+.msg-content .bubble { display: inline-block; max-width: 100%; word-break: break-word; padding: 12px 16px; border-radius: 14px; }
+.msg-content.user .bubble { background: var(--surface2); border: 1px solid var(--border); border-top-left-radius: 4px; }
+.msg-content.ai .bubble { background: rgba(25, 195, 125, 0.06); border: 1px solid rgba(25, 195, 125, 0.15); border-top-left-radius: 4px; }
 .msg-content .bubble code { background: var(--surface); padding: 2px 6px; border-radius: 5px; font-family: var(--font-head);letter-spacing: 0.4px; font-size: 0.85em; color: #A0D585; }
 .msg-content .bubble pre { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; overflow-x: auto; margin-top: 10px; font-size: 0.85rem; }
 

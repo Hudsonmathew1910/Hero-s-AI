@@ -28,8 +28,24 @@ logger = logging.getLogger("hero_ai.web_search")
 
 # ── DuckDuckGo ────────────────────────────────────────────────────────────────
 
+import concurrent.futures
+import trafilatura
+
+def _scrape_page(url: str) -> str:
+    """Fetch and extract readable text from a URL, truncated to 3000 chars."""
+    try:
+        downloaded = trafilatura.fetch_url(url)
+        if not downloaded:
+            return ""
+        text = trafilatura.extract(downloaded, include_links=False, include_images=False)
+        if text:
+            return text[:3000]
+    except Exception as e:
+        logger.error(f"[web_search] Trafilatura error scraping {url}: {e}")
+    return ""
+
 def _search_duckduckgo(query: str, max_results: int = 5) -> list[dict]:
-    """Return a list of {title, url, snippet} dicts from DuckDuckGo."""
+    """Return a list of {title, url, snippet} dicts from DuckDuckGo, with deep read for top 2."""
     try:
         from ddgs import DDGS
         results = []
@@ -40,6 +56,18 @@ def _search_duckduckgo(query: str, max_results: int = 5) -> list[dict]:
                     "url":     r.get("href",  ""),
                     "snippet": r.get("body",  ""),
                 })
+        
+        # Scrape full text for top 2 URLs concurrently
+        top_urls = [r["url"] for r in results[:2] if r.get("url")]
+        
+        if top_urls:
+            with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+                scraped_texts = list(executor.map(_scrape_page, top_urls))
+                
+            for i, text in enumerate(scraped_texts):
+                if text and len(text) > 50:
+                    results[i]["snippet"] = text + "\n[End of full page context]"
+
         return results
     except Exception as e:
         logger.error(f"[web_search] DuckDuckGo error: {e}")

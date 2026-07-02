@@ -88,12 +88,14 @@ def query_session(
 
     try:
         if session.status != "ready":
-            return {
+            yield {
+                "type": "final",
                 "reply": f"This session is still **{session.status}**. Please wait for processing to complete.",
                 "model": "none",
                 "sources": [],
                 "error": "session_not_ready",
             }
+            return
 
         # --- 1. Preparation: Schema & DF ---
         t0 = time.time()
@@ -106,9 +108,12 @@ def query_session(
         if file_type in ["csv", "excel"]:
             df = load_dataset(file_path, file_type)
             schema_text = get_df_schema(df)
-        print(f"--- [INF] Step 1: Schema/Data loaded in {time.time() - t0:.2f}s ---")
+        msg = f"Schema/Data loaded in {time.time() - t0:.2f}s"
+        print(f"--- [INF] Step 1: {msg} ---")
+        yield {"type": "status", "message": msg}
 
         # --- 2. Step 1: LLM Call (Think or Answer) ---
+        yield {"type": "status", "message": "Searching knowledge base & thinking..."}
         t1 = time.time()
         # Search Pinecone for textual context (always useful)
         query_embedding = generate_query_embedding(user_message, gemini_api_key)
@@ -122,7 +127,9 @@ def query_session(
             session_name=session.session_name,
             schema=schema_text
         )
-        print(f"--- [INF] Step 2: RAG & LLM Think completed in {time.time() - t1:.2f}s ---")
+        msg2 = f"RAG & LLM Think completed in {time.time() - t1:.2f}s"
+        print(f"--- [INF] Step 2: {msg2} ---")
+        yield {"type": "status", "message": msg2}
 
         # --- 3. Step 2: Dynamic Execution if requested ---
         if "```python_pandas" in reply:
@@ -132,28 +139,35 @@ def query_session(
                 t2 = time.time()
                 code = code_match.group(1).strip()
                 logger.info("Executing dynamic analyst code for session %s", session.session_id)
+                yield {"type": "status", "message": "Executing Python Data Analysis..."}
                 
                 # Run the code
                 exec_result = execute_pandas_query(df, code)
-                print(f"--- [INF] Step 3: Code execution completed in {time.time() - t2:.2f}s ---")
+                msg3 = f"Code execution completed in {time.time() - t2:.2f}s"
+                print(f"--- [INF] Step 3: {msg3} ---")
+                yield {"type": "status", "message": msg3}
                 
                 if exec_result["success"]:
                     # Pass results back for interpretation
                     t3 = time.time()
+                    yield {"type": "status", "message": "Interpreting execution results..."}
                     reply = generate_final_interpretation(
                         user_message=user_message,
                         code_execution_result=exec_result["result"],
                         gemini_api_key=gemini_api_key,
                         chat_history=chat_history
                     )
-                    print(f"--- [INF] Step 4: Final interpretation completed in {time.time() - t3:.2f}s ---")
+                    msg4 = f"Final interpretation completed in {time.time() - t3:.2f}s"
+                    print(f"--- [INF] Step 4: {msg4} ---")
+                    yield {"type": "status", "message": msg4}
                 else:
                     # Log the technical error for the developer
                     logger.error("Dynamic analysis failed: %s\n%s", exec_result['error'], exec_result.get('traceback', ''))
                     # Send a friendly message to the user
                     reply = "I encountered an issue while analyzing the data. This might be due to an unexpected format in your file or a complex calculation requirement. Could you try rephrasing your question?"
 
-        return {
+        yield {
+            "type": "final",
             "reply": reply,
             "model": model_used,
             "sources": [{"score": h["score"], "type": h["metadata"].get("type", "")} for h in hits[:2]],
@@ -163,7 +177,8 @@ def query_session(
     except Exception as e:
         tb = traceback.format_exc()
         logger.error("Query failed for session %s: %s\n%s", session.session_id, e, tb)
-        return {
+        yield {
+            "type": "final",
             "reply": "I encountered an error while processing your request. Please try again later.",
             "model": "error",
             "sources": [],

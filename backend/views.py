@@ -249,6 +249,11 @@ def home(request):
     return render(request, 'home.html', {'username': username})
 
 
+def landing(request):
+    """Public landing / marketing page."""
+    return render(request, 'landing.html')
+
+
 # ── Auth ──────────────────────────────────────────────────────────────────────
 @csrf_exempt
 @json_only

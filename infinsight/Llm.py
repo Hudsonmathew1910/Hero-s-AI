@@ -2,9 +2,8 @@
 infinsight/services/llm.py
 ---------------------------
 Gemini LLM integration for the Infinsight analyst.
-Primary: gemini-2.5-flash
-Fallback: gemini-2.5-flash-lite
-Second Fallback: gemini-1.5-flash
+Primary: gemini-3.5-flash
+Fallback: gemini-3.1-flash-lite, gemini-2.5-flash, gemini-2.5-flash-lite, gemini-1.5-flash
 """
 
 import logging
@@ -14,6 +13,8 @@ import traceback
 logger = logging.getLogger("infinsight.llm")
 
 GEMINI_MODELS = [
+    "models/gemini-3.5-flash",
+    "models/gemini-3.1-flash-lite",
     "models/gemini-2.5-flash",
     "models/gemini-2.5-flash-lite",
     "models/gemini-1.5-flash",
@@ -36,6 +37,7 @@ Your goal is to provide deep, actionable insights from datasets using real-time 
   # Example: result = df.groupby('Category')['Sales'].sum()
   ```
 - **IMPORTANT**: The environment already has `pandas as pd`, `numpy as np`, `sklearn`, and `LinearRegression` pre-imported. 
+- **CRITICAL**: ONLY use column names that EXACTLY match the provided `DATASET SCHEMA`. Do not guess, modify, or hallucinate column names (e.g., if the schema says 'Match_Score', do not use 'Match Score').
 - **NEVER** include `import` or `from ... import ...` statements in your code blocks. They will cause an execution error.
 - If the question is purely descriptive or you already have the answer in the RAG context, provide a direct answer.
 - **NEVER** guess numbers. If you need a number and it's not in the context, use `python_pandas` to find it.
@@ -116,7 +118,7 @@ def generate_analyst_response(
                     "system_instruction": ANALYST_SYSTEM_PROMPT,
                     "temperature": 0.1,
                     "top_p": 0.9,
-                    "max_output_tokens": 4096,
+                    "max_output_tokens": 8192,
                 },
                 contents=prompt
             )

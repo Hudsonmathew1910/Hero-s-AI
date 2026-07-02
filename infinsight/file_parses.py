@@ -192,6 +192,7 @@ def parse_csv(file_obj) -> tuple[list[dict], dict]:
         import pandas as pd
 
         df = pd.read_csv(file_obj)
+        df.columns = df.columns.str.strip()
         metadata = {
             "rows": len(df),
             "columns": list(df.columns),

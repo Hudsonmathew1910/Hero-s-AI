@@ -13,7 +13,7 @@ import traceback
 from concurrent.futures import ThreadPoolExecutor
 from functools import wraps
 
-from django.http import JsonResponse
+from django.http import JsonResponse, StreamingHttpResponse
 from django.shortcuts import render
 from django.conf import settings
 from django_ratelimit.decorators import ratelimit
@@ -244,33 +244,35 @@ def chat(request):
         history.append({"role": "user", "content": msg.user_message})
         history.append({"role": "assistant", "content": msg.ai_response})
 
-    try:
-        result = query_session(session, user_message, gemini_key, history)
+    def event_stream():
+        try:
+            generator = query_session(session, user_message, gemini_key, history)
+            for chunk in generator:
+                if chunk["type"] == "final":
+                    # Persist the exchange
+                    if chunk.get("error") != "session_not_ready":
+                        ChatMessage.objects.create(
+                            session=session,
+                            user_message=user_message,
+                            ai_response=chunk["reply"],
+                            sources_used=chunk.get("sources", []),
+                            model_used=chunk.get("model", "unknown"),
+                        )
+                        from django.utils import timezone
+                        session.updated_at = timezone.now()
+                        session.save(update_fields=["updated_at"])
+                    
+                    logger.debug("Total Response Time: %.2fs", time.time() - t0)
+                
+                yield f"data: {json.dumps(chunk)}\n\n"
 
-        # Persist the exchange
-        if result.get("error") != "session_not_ready":
-            ChatMessage.objects.create(
-                session=session,
-                user_message=user_message,
-                ai_response=result["reply"],
-                sources_used=result.get("sources", []),
-                model_used=result.get("model", "unknown"),
-            )
-            # Update session timestamp
-            from django.utils import timezone
-            session.updated_at = timezone.now()
-            session.save(update_fields=["updated_at"])
+        except Exception as e:
+            logger.error("Chat view generator error: %s", traceback.format_exc())
+            yield f"data: {json.dumps({'type': 'final', 'reply': 'An error occurred.', 'model': 'error', 'sources': []})}\n\n"
 
-        logger.debug("Total Response Time: %.2fs", time.time() - t0)
-        return JsonResponse({
-            "status": "success",
-            "reply": result["reply"],
-            "model": result.get("model", ""),
-            "sources": result.get("sources", []),
-        })
+    return StreamingHttpResponse(event_stream(), content_type='text/event-stream')
 
-    except Exception as e:
-        return safe_error_response(request, logger, "Chat", e)
+
 
 
 # ─────────────────────────────────────────────────────────────────────────────

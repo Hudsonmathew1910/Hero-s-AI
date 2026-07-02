@@ -881,7 +881,13 @@ function renderMessage(msg) {
     </div>`;
 
   container.appendChild(row);
-  container.scrollTop = container.scrollHeight;
+  
+  if (isUser) {
+    container.scrollTop = container.scrollHeight;
+  } else {
+    const offset = row.offsetTop - 20; 
+    container.scrollTo({ top: Math.max(0, offset), behavior: 'smooth' });
+  }
 }
 
 /* ════════ TYPING INDICATOR ════════ */
@@ -1107,9 +1113,9 @@ function formatContent(raw) {
   text = text.replace(/(<\/(?:ul|ol|h[123]|hr|div|pre|table|tbody|tr|th|td)>)\s*<br>/g, '$1');
 
   // ── Restore protected blocks ──────────────────────────────────
-  codeBlocks.forEach((block, i) => { text = text.replace(`%%CODEBLOCK_${i}%%`, block); });
-  inlineCodes.forEach((block, i) => { text = text.replace(`%%INLINE_${i}%%`,   block); });
-  tables.forEach((block, i)      => { text = text.replace(`%%TABLE_${i}%%`,    block); });
+  codeBlocks.forEach((block, i) => { text = text.replace(`%%CODEBLOCK_${i}%%`, () => block); });
+  inlineCodes.forEach((block, i) => { text = text.replace(`%%INLINE_${i}%%`,   () => block); });
+  tables.forEach((block, i)      => { text = text.replace(`%%TABLE_${i}%%`,    () => block); });
 
   // ── FIX 2: Restore clickable link placeholders ────────────────
   text = _restoreLinks(text);

@@ -67,7 +67,8 @@ class Baymax:
                         - Keep responses short and natural.
                         - Sound like a real human conversation.
                         - Avoid long explanations.
-                        - Be friendly, casual, and quick."""
+                        - Be friendly, casual, and quick.
+                        - If the user asks if you can hear them, confirm enthusiastically that you can hear their voice perfectly."""
 
     WEB_SEARCH_PROMPT = """You are Baymax, a research assistant with web access.
                         Rules:
@@ -78,12 +79,24 @@ class Baymax:
                         - Avoid unnecessary details."""
 
     _TOKEN_BUDGETS = {
-        "text_chat":      1500,
-        "coding":         2000,
-        "voice":          200,
-        "web_search":     1000,
-        "file_analysis":  4000,
+        "text_chat":      2048,
+        "coding":         8192,
+        "voice":          256,
+        "web_search":     2048,
+        "file_analysis":  8192,
     }
+
+    _TEMPERATURES = {
+        "text_chat":      0.7,
+        "voice_chat":     0.7,
+        "voice":          0.7,
+        "file_analysis":  0.2,
+        "coding":         0.0,
+        "web_search":     0.3,
+    }
+
+    def _get_temperature(self, task: str) -> float:
+        return self._TEMPERATURES.get(task, 0.7)
 
     # ── Constructor ───────────────────────────────────────────────────────────
 
@@ -126,20 +139,22 @@ class Baymax:
         self.groq_url       = "https://api.groq.com/openai/v1/chat/completions"
 
         self.models = {
-            'text_chat':       'nvidia/nemotron-3-nano-30b-a3b:free',
-            'voice_chat':      'gemini-2.5-flash-lite',
-            'file_analysis':   'gemini-2.5-flash',
-            'coding':          'gemini-2.5-flash-lite',
-            'live_screen':     'gemini-2.5-flash',
+            'text_chat':       'gemini-3.1-flash-lite',
+            'voice_chat':      'gemini-3.1-flash-lite',
+            'file_analysis':   'gemini-3.1-flash-lite',
+            'coding':          'gemini-3.5-flash',
+            'live_screen':     'gemini-3.5-flash',
             'task_automation': 'nvidia/nemotron-3-super-120b-a12b:free',
             'web_search':      'nvidia/nemotron-3-nano-30b-a3b:free',
-            'web_search_preprocessor':      'meta-llama/llama-3.3-70b:free',
+            'web_search_preprocessor':      'gemini-3.1-flash-lite',
             'fallback': [
+                'nvidia/nemotron-3-nano-30b-a3b:free',
                 'google/gemma-4-26b-a4b-it:free',
-                'google/gemma-4-31b-it:free',
                 'meta-llama/llama-3.3-70b-instruct:free',
-                'meta-llama/llama-3.2-3b-instruct:free',
+                'google/gemma-4-31b-it:free',
                 'nvidia/nemotron-nano-9b-v2:free',
+                'meta-llama/llama-3.2-3b-instruct:free',
+                'meta-llama/llama-3.3-70b:free',
             ],
             'fallback_with_groq': [
                 "llama-3.1-8b-instant",
@@ -149,6 +164,11 @@ class Baymax:
                 "qwen/qwen3.6-27b",
                 "qwen/qwen3-32b",
             ],
+            'fallback_with_gemini': [
+                'gemini-2.5-flash',
+                'gemini-2.5-flash-lite',
+            ],
+           
         }
 
         logger.debug(
@@ -379,7 +399,7 @@ class Baymax:
                     contents=self._build_cnt_gemini(user_text, task),
                     config={
                         "system_instruction": self._build_system_prompt(task),
-                        "temperature": 0.7,
+                        "temperature": self._get_temperature(task),
                         "max_output_tokens": max_tokens,
                         "top_p": 0.9,
                     }
@@ -390,7 +410,7 @@ class Baymax:
             except Exception as e:
                 logger.warning("Gemini attempt %d failed: %s", i, str(e))
                 if i == loop:
-                    logger.exception("Gemini final attempt failed")
+                    logger.error("Gemini final attempt failed: %s", str(e))
                     return None
                 time.sleep(2)
         return None
@@ -413,7 +433,7 @@ class Baymax:
         payload = {
             "model":       model,
             "messages":    self._build_msg_openrouter(user_text, task),
-            "temperature": 0.7,
+            "temperature": self._get_temperature(task),
             "max_tokens":  max_tokens,
             "top_p":       0.9,
         }
@@ -463,7 +483,7 @@ class Baymax:
             logger.warning("OpenRouter network error (%s): %s", model, e)
             return None
         except Exception as e:
-            logger.exception("OpenRouter unexpected error (%s)", model)
+            logger.error("OpenRouter unexpected error (%s): %s", model, str(e))
             return None
 
     def _call_groq(
@@ -485,7 +505,7 @@ class Baymax:
                 json={
                     "model":       model,
                     "messages":    self._build_msg_openrouter(user_text, task),
-                    "temperature": 0.7,
+                    "temperature": self._get_temperature(task),
                     "max_tokens":  max_tokens,
                     "top_p":       0.9,
                 },
@@ -510,7 +530,7 @@ class Baymax:
             logger.warning("Groq network error (%s): %s", model, e)
             return None
         except Exception as e:
-            logger.exception("Groq unexpected error (%s)", model)
+            logger.error("Groq unexpected error (%s): %s", model, str(e))
             return None
 
     # =========================================================================
@@ -537,7 +557,7 @@ class Baymax:
         fallback_key:  str = "fallback",
         task:          str = "text_chat",
     ) -> str:
-        """Run Groq and Primary/OpenRouter models concurrently attempt by attempt."""
+        """Run Primary/OpenRouter, Gemini, and Groq models concurrently attempt by attempt."""
         No_API = """
         Steps to add API keys:
         1. Click on your account   
@@ -552,8 +572,9 @@ class Baymax:
         import concurrent.futures
 
         or_models = [primary_model] + self.models.get(fallback_key, [])
+        gemini_models = self.models.get("fallback_with_gemini", [])
         groq_models = self.models.get("fallback_with_groq", [])
-        max_len = max(len(or_models), len(groq_models))
+        max_len = max(len(or_models), len(gemini_models), len(groq_models))
         
         logger.info("AI dispatch (Fast Mode) | task=%s", task)
 
@@ -567,14 +588,17 @@ class Baymax:
 
         for attempt in range(max_len):
             or_model = or_models[attempt] if attempt < len(or_models) else None
+            gemini_model = gemini_models[attempt] if attempt < len(gemini_models) else None
             groq_model = groq_models[attempt] if attempt < len(groq_models) else None
             
-            print(f"Fast Mode Attempt {attempt + 1}: Running '{or_model}' and '{groq_model}' concurrently...")
+            print(f"Fast Mode Attempt {attempt + 1}: Running '{or_model}', '{gemini_model}' and '{groq_model}' concurrently...")
             
             futures = []
-            with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+            with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
                 if or_model:
                     futures.append(executor.submit(run_model, "Primary/Fallback", or_model, self._call))
+                if gemini_model:
+                    futures.append(executor.submit(run_model, "Gemini", gemini_model, self._call))
                 if groq_model:
                     futures.append(executor.submit(run_model, "Groq", groq_model, self._call_groq))
                 
@@ -598,7 +622,7 @@ class Baymax:
         fallback_key:  str = "fallback",
         task:          str = "text_chat",
     ) -> str:
-        """Try the primary model, then OpenRouter fallbacks, then Groq fallbacks."""
+        """Try the primary model, then Gemini fallbacks, then OpenRouter fallbacks."""
         No_API = """
         Steps to add API keys:
         1. Click on your account   
@@ -623,7 +647,14 @@ class Baymax:
             logger.debug("Primary model succeeded: %s", primary_model)
             return result
 
-        for model in self.models[fallback_key]:
+        for model in self.models.get("fallback_with_gemini", []):
+            logger.debug("Trying Gemini fallback: %s", model)
+            result = self._call(model, text, max_tokens, task)
+            if result:
+                logger.info("Gemini fallback succeeded: %s", model)
+                return result
+
+        for model in self.models.get(fallback_key, []):
             if not self.openrouter_key:
                 break
             logger.debug("Trying OpenRouter fallback: %s", model)
@@ -631,14 +662,6 @@ class Baymax:
             if result:
                 logger.info("OpenRouter fallback succeeded: %s", model)
                 return result
-
-        if self.groq_key:
-            for model in self.models["fallback_with_groq"]:
-                logger.debug("Trying Groq fallback: %s", model)
-                result = self._call_groq(model, text, max_tokens, task)
-                if result:
-                    logger.info("Groq fallback succeeded: %s", model)
-                    return result
 
         logger.error("All models failed for task=%s", task)
         return "All models failed. Please try again later."

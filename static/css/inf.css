@@ -438,14 +438,25 @@
       flex: 1; font-size: 0.9rem; line-height: 1.75;
       color: var(--text); padding-top: 4px;
     }
+    .ins-sender-row {
+      display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;
+    }
     .ins-sender {
       font-family: var(--font-head); font-size: 0.72rem; font-weight: 700;
-      letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 5px;
+      letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 0;
     }
+    .ins-copy-msg-btn {
+      background: none; border: none; color: var(--text-dim); cursor: pointer;
+      font-size: 0.8rem; padding: 4px; border-radius: 6px; transition: color 0.2s, background 0.2s;
+    }
+    .ins-copy-msg-btn:hover { color: var(--ins-accent); background: var(--surface2); }
+
     .ins-sender.user { color: var(--ins-accent); }
     .ins-sender.ai   { color: var(--ins-accent2); }
 
-    .ins-bubble { word-break: break-word; }
+    .ins-msg-content.user .ins-bubble { background: var(--surface2); border: 1px solid var(--border); border-top-left-radius: 4px; }
+.ins-msg-content.ai .ins-bubble { background: rgba(6, 182, 212, 0.08); border: 1px solid rgba(6, 182, 212, 0.2); border-top-left-radius: 4px; }
+.ins-bubble { word-break: break-word; display: inline-block; max-width: 100%; padding: 12px 16px; border-radius: 14px; }
     .ins-bubble h1, .ins-bubble h2, .ins-bubble h3 {
       margin: 14px 0 6px; font-weight: 700; color: var(--text);
     }
@@ -460,6 +471,13 @@
     .ins-bubble code {
       background: var(--surface2); padding: 1px 6px; border-radius: 4px;
       font-family: 'Fira Code', monospace; font-size: 0.82em; color: #a5f3fc;
+    }
+    .ins-code-block { margin: 10px 0; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; background: var(--surface2); }
+    .ins-code-block pre { margin: 0; border: none; border-radius: 0; background: transparent; padding: 14px 16px; overflow-x: auto; font-size: 0.83rem; }
+    .ins-code-header { 
+      display: flex; justify-content: space-between; align-items: center; 
+      background: var(--surface); padding: 6px 12px; font-size: 0.75rem; color: var(--text-dim);
+      border-bottom: 1px solid var(--border);
     }
     .ins-bubble pre {
       background: var(--surface2); border: 1px solid var(--border);
@@ -710,3 +728,69 @@
       .ins-user-chip { padding: 4px; border-radius: 50%; border: none; background: transparent; }
       .ins-user-chip:hover { background: var(--surface2); }
     }
+/* From Uiverse.io by Nawsome */
+.pl {
+  width: 1.5em;
+  height: 1.5em;
+}
+
+.pl circle {
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+}
+
+.pl__ring1 { animation: ring1_ 4s 0s ease-in-out infinite; }
+.pl__ring2 { animation: ring2_ 4s 0.04s ease-in-out infinite; }
+.pl__ring3 { animation: ring3_ 4s 0.08s ease-in-out infinite; }
+.pl__ring4 { animation: ring4_ 4s 0.12s ease-in-out infinite; }
+.pl__ring5 { animation: ring5_ 4s 0.16s ease-in-out infinite; }
+.pl__ring6 { animation: ring6_ 4s 0.2s ease-in-out infinite; }
+
+/* Animations */
+@keyframes ring1_ {
+  from { stroke-dashoffset: -376.237129776; transform: rotate(-0.25turn); animation-timing-function: ease-in; }
+  23% { stroke-dashoffset: -94.247778; transform: rotate(1turn); animation-timing-function: ease-out; }
+  46%, 50% { stroke-dashoffset: -376.237129776; transform: rotate(2.25turn); animation-timing-function: ease-in; }
+  73% { stroke-dashoffset: -94.247778; transform: rotate(3.5turn); animation-timing-function: ease-out; }
+  96%, to { stroke-dashoffset: -376.237129776; transform: rotate(4.75turn); }
+}
+
+@keyframes ring2_ {
+  from { stroke-dashoffset: -329.207488554; transform: rotate(-0.25turn); animation-timing-function: ease-in; }
+  23% { stroke-dashoffset: -82.46680575; transform: rotate(1turn); animation-timing-function: ease-out; }
+  46%, 50% { stroke-dashoffset: -329.207488554; transform: rotate(2.25turn); animation-timing-function: ease-in; }
+  73% { stroke-dashoffset: -82.46680575; transform: rotate(3.5turn); animation-timing-function: ease-out; }
+  96%, to { stroke-dashoffset: -329.207488554; transform: rotate(4.75turn); }
+}
+
+@keyframes ring3_ {
+  from { stroke-dashoffset: -288.4484661616; transform: rotate(-0.25turn); animation-timing-function: ease-in; }
+  23% { stroke-dashoffset: -72.2566298; transform: rotate(1turn); animation-timing-function: ease-out; }
+  46%, 50% { stroke-dashoffset: -288.4484661616; transform: rotate(2.25turn); animation-timing-function: ease-in; }
+  73% { stroke-dashoffset: -72.2566298; transform: rotate(3.5turn); animation-timing-function: ease-out; }
+  96%, to { stroke-dashoffset: -288.4484661616; transform: rotate(4.75turn); }
+}
+
+@keyframes ring4_ {
+  from { stroke-dashoffset: -253.9600625988; transform: rotate(-0.25turn); animation-timing-function: ease-in; }
+  23% { stroke-dashoffset: -63.61725015; transform: rotate(1turn); animation-timing-function: ease-out; }
+  46%, 50% { stroke-dashoffset: -253.9600625988; transform: rotate(2.25turn); animation-timing-function: ease-in; }
+  73% { stroke-dashoffset: -63.61725015; transform: rotate(3.5turn); animation-timing-function: ease-out; }
+  96%, to { stroke-dashoffset: -253.9600625988; transform: rotate(4.75turn); }
+}
+
+@keyframes ring5_ {
+  from { stroke-dashoffset: -225.7422778656; transform: rotate(-0.25turn); animation-timing-function: ease-in; }
+  23% { stroke-dashoffset: -56.5486668; transform: rotate(1turn); animation-timing-function: ease-out; }
+  46%, 50% { stroke-dashoffset: -225.7422778656; transform: rotate(2.25turn); animation-timing-function: ease-in; }
+  73% { stroke-dashoffset: -56.5486668; transform: rotate(3.5turn); animation-timing-function: ease-out; }
+  96%, to { stroke-dashoffset: -225.7422778656; transform: rotate(4.75turn); }
+}
+
+@keyframes ring6_ {
+  from { stroke-dashoffset: -203.795111962; transform: rotate(-0.25turn); animation-timing-function: ease-in; }
+  23% { stroke-dashoffset: -51.05087975; transform: rotate(1turn); animation-timing-function: ease-out; }
+  46%, 50% { stroke-dashoffset: -203.795111962; transform: rotate(2.25turn); animation-timing-function: ease-in; }
+  73% { stroke-dashoffset: -51.05087975; transform: rotate(3.5turn); animation-timing-function: ease-out; }
+  96%, to { stroke-dashoffset: -203.795111962; transform: rotate(4.75turn); }
+}

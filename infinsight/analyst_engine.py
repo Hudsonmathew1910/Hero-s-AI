@@ -10,12 +10,16 @@ def load_dataset(file_path: str, file_type: str):
     """Load dataset into a pandas DataFrame."""
     try:
         if file_type == "csv":
-            return pd.read_csv(file_path)
+            df = pd.read_csv(file_path)
+            df.columns = df.columns.str.strip()
+            return df
         elif file_type == "excel":
             # For Excel, we might need to handle multiple sheets. 
             # For simplicity, we'll load the first sheet or allow the LLM to specify if we 
             # pass all sheet names in schema.
-            return pd.read_excel(file_path)
+            df = pd.read_excel(file_path)
+            df.columns = df.columns.str.strip()
+            return df
         else:
             return None
     except Exception as e:

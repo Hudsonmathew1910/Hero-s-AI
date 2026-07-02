@@ -78,12 +78,27 @@ class Baymax:
                         - Highlight key insights.
                         - Avoid unnecessary details."""
 
+    ZENO_PLUS_PROMPT = """You are Zeno Plus, a highly capable and intelligent AI assistant.
+                        Rules:
+                        - Provide detailed, comprehensive, and accurate answers.
+                        - When coding, provide robust, clean code with explanations.
+                        - Keep formatting structured and easy to read.
+                        - Remember previous context effectively."""
+
+    ZENO_ECO_PROMPT = """You are Zeno, a mini AI assistant.
+                        Rules:
+                        - Keep responses short, concise, and straight to the point.
+                        - Do not write long explanations unless explicitly asked.
+                        - Be casual and fast."""
+
     _TOKEN_BUDGETS = {
         "text_chat":      2048,
         "coding":         8192,
         "voice":          256,
         "web_search":     2048,
         "file_analysis":  8192,
+        "zeno_plus":      4096,
+        "zeno_eco":       256,
     }
 
     _TEMPERATURES = {
@@ -93,6 +108,8 @@ class Baymax:
         "file_analysis":  0.2,
         "coding":         0.0,
         "web_search":     0.3,
+        "zeno_plus":      0.8,
+        "zeno_eco":       0.5,
     }
 
     def _get_temperature(self, task: str) -> float:
@@ -125,10 +142,9 @@ class Baymax:
         self.user_name        = user_name        or ""
         self.nlp_result       = nlp_result       or {}
 
-        # Temporary chat: if True, chat_history is intentionally empty and
-        # the caller (views.py) must skip persistence after getting the reply.
+        # Temporary chat: caller (views.py) must skip persistence after getting the reply.
         self.temporary        = temporary
-        self.chat_history     = [] if temporary else (chat_history or [])
+        self.chat_history     = chat_history or []
 
         # Controls whether _safe_error() reveals internal details
         self.is_superuser     = is_superuser
@@ -147,6 +163,8 @@ class Baymax:
             'task_automation': 'nvidia/nemotron-3-super-120b-a12b:free',
             'web_search':      'nvidia/nemotron-3-nano-30b-a3b:free',
             'web_search_preprocessor':      'gemini-3.1-flash-lite',
+            'zeno_plus':       'gemini-3.1-flash-lite',
+            'zeno_eco':        'gemini-2.5-flash-lite',
             'fallback': [
                 'nvidia/nemotron-3-nano-30b-a3b:free',
                 'google/gemma-4-26b-a4b-it:free',
@@ -271,10 +289,16 @@ class Baymax:
 
         if task == "coding":
             prompt = self.CODING_PROMPT
-        elif task == "voice":
+        elif task == "file_analysis":
+            prompt = self.FILE_ANALYSIS_PROMPT
+        elif task == "voice_chat":
             prompt = self.VOICE_PROMPT
         elif task == "web_search":
             prompt = self.WEB_SEARCH_PROMPT
+        elif task == "zeno_plus":
+            prompt = self.ZENO_PLUS_PROMPT
+        elif task == "zeno_eco":
+            prompt = self.ZENO_ECO_PROMPT
         else:
             prompt = self.TEXT_PROMPT
 
@@ -286,6 +310,11 @@ class Baymax:
             prompt += f"\n\nUser Name: {self.user_name} (Only use the name naturally, do NOT start every message with a greeting like 'Hey {self.user_name}')"
 
         prompt = self._enrich_system_prompt(prompt)
+        
+        if task in ("zeno_plus", "zeno_eco"):
+            cache.set(cache_key, prompt, timeout=3600 * 24)
+            return prompt
+            
         prompt = self.BASIC_RULES + "\n\n" + prompt
         
         cache.set(cache_key, prompt, timeout=3600 * 24)
@@ -293,12 +322,19 @@ class Baymax:
 
     def _get_limited_history(self, task: str) -> list:
         """Return the chat history truncated based on the task type to reduce token size."""
+        # For temporary chats (like Zeno), the frontend already sends exactly 
+        # the history it wants to retain (e.g. 8 for Plus, 4 for Eco).
+        if getattr(self, 'temporary', False):
+            return self.chat_history or []
+
         limits = {
             "text_chat":     6,
             "coding":        4,
             "voice":         4,
             "file_analysis": 2,
             "web_search":    4,
+            "zeno_plus":     8,
+            "zeno_eco":      4,
         }
         limit = limits.get(task, 6)
         if not self.chat_history:
@@ -770,13 +806,38 @@ class Baymax:
                     self.models["web_search"], rewritten_query, max_tokens=max_tok, task="web_search"
                 )
             return self._with_fallback(
-                self.models["web_search"],
-                rewritten_query,
-                max_tokens=max_tok,
-                task="web_search",
+                self.models["web_search"], rewritten_query, max_tokens=max_tok, task="web_search"
             )
         except Exception as e:
             return self._safe_error(e, "handle_websearch")
+
+    def handle_zeno_plus(self, text: str) -> str:
+        try:
+            logger.info("[handle_zeno_plus] query=%r", text[:80])
+            max_tok = self._smart_token_budget("zeno_plus")
+            if getattr(self, 'is_fast', False):
+                return self._with_concurrent_fallback(
+                    self.models["zeno_plus"], text, max_tokens=max_tok, task="zeno_plus"
+                )
+            return self._with_fallback(
+                self.models["zeno_plus"], text, max_tokens=max_tok, task="zeno_plus"
+            )
+        except Exception as e:
+            return self._safe_error(e, "handle_zeno_plus")
+
+    def handle_zeno_eco(self, text: str) -> str:
+        try:
+            logger.info("[handle_zeno_eco] query=%r", text[:80])
+            max_tok = self._smart_token_budget("zeno_eco")
+            if getattr(self, 'is_fast', False):
+                return self._with_concurrent_fallback(
+                    self.models["zeno_eco"], text, max_tokens=max_tok, task="zeno_eco"
+                )
+            return self._with_fallback(
+                self.models["zeno_eco"], text, max_tokens=max_tok, task="zeno_eco"
+            )
+        except Exception as e:
+            return self._safe_error(e, "handle_zeno_eco")
 
     def handle_file(self, text: str, files_data: list) -> str:
         """Handle text-based document uploads (pdf, docx, txt)."""

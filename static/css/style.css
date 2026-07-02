@@ -647,7 +647,7 @@ header { height: var(--header-h); display: flex; align-items: center; justify-co
 .modal-footer { padding: 16px 28px 22px; flex-shrink: 0; border-top: 1px solid var(--border); }
 .modal-save-btn { width: 100%; padding: 11px; background: linear-gradient(135deg, #0f8a55, var(--accent)); color: #000; border: none; border-radius: 11px; font-family: var(--font-head); font-size: 0.9rem; font-weight: 700; cursor: pointer; transition: opacity 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
 .modal-save-btn:hover { opacity: 0.88; }
-.help-card { background: var(--surface); border: 1px solid var(--border); border-radius: 22px; padding: 32px; width: 100%; max-width: 440px; animation: fadeUp 0.3s ease both; box-shadow: 0 24px 80px rgba(0,0,0,0.6); }
+.help-card { background: var(--surface); border: 1px solid var(--border); border-radius: 22px; padding: 32px; width: 100%; max-width: 440px; animation: fadeUp 0.3s ease both; box-shadow: 0 24px 80px rgba(0,0,0,0.6); max-height: 70vh; overflow-y: auto; }
 .help-item { display: flex; gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--border); align-items: flex-start; }
 .help-item:last-child { border-bottom: none; }
 .help-icon { width: 36px; height: 36px; border-radius: 10px; background: var(--surface2); display: flex; align-items: center; justify-content: center; font-size: 0.9rem; flex-shrink: 0; color: var(--accent); }
@@ -660,7 +660,7 @@ header { height: var(--header-h); display: flex; align-items: center; justify-co
   background: var(--surface); border: 1px solid var(--border);
   border-radius: 22px; padding: 36px 32px; width: 100%; max-width: 440px;
   animation: fadeUp 0.3s ease both; box-shadow: 0 24px 80px rgba(0,0,0,0.6);
-  text-align: center;
+  text-align: center; max-height: 70vh; overflow-y: auto;
 }
 .about-logo-wrap { display: flex; align-items: center; justify-content: center; margin-bottom: 20px; }
 .about-logo-wrap img { width: 80px; border-radius: 20px; animation: glow-pulse 3s ease-in-out infinite; }
@@ -1173,3 +1173,11 @@ header { height: var(--header-h); display: flex; align-items: center; justify-co
    4. Added glow-pulse animation to the image
    
    ════════════════════════════════════════════════════════════════ */
+ / *   P%P%P%P%P%P%P%P%  G L O B A L   S C R O L L B A R   P%P%P%P%P%P%P%P%  * / 
+ : : - w e b k i t - s c r o l l b a r   {   w i d t h :   6 p x ;   h e i g h t :   6 p x ;   } 
+ : : - w e b k i t - s c r o l l b a r - t r a c k   {   b a c k g r o u n d :   t r a n s p a r e n t ;   } 
+ : : - w e b k i t - s c r o l l b a r - t h u m b   {   b a c k g r o u n d :   v a r ( - - s u r f a c e 3 ) ;   b o r d e r - r a d i u s :   1 0 p x ;   } 
+ : : - w e b k i t - s c r o l l b a r - t h u m b : h o v e r   {   b a c k g r o u n d :   r g b a ( 1 5 0 ,   1 5 0 ,   1 5 0 ,   0 . 4 ) ;   } 
+ h t m l   {   s c r o l l b a r - w i d t h :   t h i n ;   s c r o l l b a r - c o l o r :   v a r ( - - s u r f a c e 3 )   t r a n s p a r e n t ;   } 
+  
+ 

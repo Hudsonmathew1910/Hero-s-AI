@@ -174,6 +174,7 @@ function _loadDisplaySettings() {
   userSettings.rememberHistory          = JSON.parse(localStorage.getItem('hero-remember-history') ?? 'true');
   userSettings.syntaxHighlighting       = JSON.parse(localStorage.getItem('hero-syntax-highlight') ?? 'true');
   userSettings.enableCustomInstructions = JSON.parse(localStorage.getItem('hero-custom-inst')      ?? 'true');
+  userSettings.developerOption          = JSON.parse(localStorage.getItem('hero-developer-option') ?? 'false');
   _syncSettingsUI();
 }
 
@@ -184,12 +185,36 @@ function _syncSettingsUI() {
     'rememberHistory':         'rememberHistory',
     'syntaxHighlighting':      'syntaxHighlighting',
     'enableCustomInstructions':'enableCustomInstructions',
+    'developerOption':         'developerOption',
   };
   Object.entries(map).forEach(([attr, key]) => {
     const btn = document.querySelector(`[data-setting="${attr}"]`);
     if (btn) btn.classList.toggle('on', !!userSettings[key]);
   });
   document.body.classList.toggle('compact-mode', userSettings.compactLayout);
+  
+  // Handle Developer Option in model selects
+  const devSelects = [document.getElementById('modelSelect'), document.getElementById('devModelSelect'), document.getElementById('sideDevModelSelect')];
+  devSelects.forEach(select => {
+    if (!select) return;
+    let opt = select.querySelector('option[value="Developer"]');
+    if (userSettings.developerOption) {
+      if (!opt) {
+        opt = document.createElement('option');
+        opt.value = 'Developer';
+        opt.textContent = 'Developer';
+        select.appendChild(opt);
+      }
+    } else {
+      if (opt) {
+        if (select.value === 'Developer') {
+          select.value = select.options[0].value;
+          if (select.onchange) select.onchange();
+        }
+        opt.remove();
+      }
+    }
+  });
 }
 
 function toggleSetting(settingName) {
@@ -216,6 +241,7 @@ function _getSettingLabel(key) {
     'rememberHistory':         'Conversation history',
     'syntaxHighlighting':      'Syntax highlighting',
     'enableCustomInstructions':'Custom instructions',
+    'developerOption':         'Developer option',
   };
   return labels[key] || key;
 }

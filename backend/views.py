@@ -251,7 +251,8 @@ def home(request):
 
 def landing(request):
     """Public landing / marketing page."""
-    return render(request, 'landing.html')
+    is_authenticated = bool(request.session.get('user_id'))
+    return render(request, 'landing.html', {'is_authenticated': is_authenticated})
 
 
 # ── Auth ──────────────────────────────────────────────────────────────────────
@@ -645,7 +646,7 @@ def chat_api(request):
             })
 
         # ── NLP pre-processing ────────────────────────────────────────────────
-        if mode in ['coding', 'websearch', 'Voice Chat', 'voice_message']:
+        if mode in ['coding', 'websearch', 'Voice Chat', 'voice_message', 'zeno_eco']:
             nlp_result = {"clean_text": raw_message, "intent": "direct", "metadata": {}}
         else:
             nlp_result = preprocess(raw_message, source=mode)
@@ -692,6 +693,8 @@ def chat_api(request):
                 'voice_message':  2,
                 'file_handle':    1,
                 'websearch':      2,
+                'zeno_eco':       2,
+                'zeno_plus':      4,
             }
             turn_limit = history_limits.get(mode, 5)
             
@@ -739,6 +742,8 @@ def chat_api(request):
                 'voice_message': lambda: baymax.handle_voice_message(message),
                 'file_handle':   lambda: baymax.handle_file(message, d.get('files', [])),
                 'live_display':  lambda: baymax.handle_live_display(message),
+                'zeno_eco':      lambda: baymax.handle_zeno_eco(message),
+                'zeno_plus':     lambda: baymax.handle_zeno_plus(message),
             }
             reply = handlers.get(mode, lambda: baymax.handle_text(message))()
         except ImportError as e:

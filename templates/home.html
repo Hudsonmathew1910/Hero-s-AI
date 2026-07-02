@@ -944,6 +944,14 @@
                   onclick="toggleSetting('syntaxHighlighting')"
                 ></button>
               </div>
+              <div class="toggle-row">
+                <span class="toggle-label">Enable developer option in models</span>
+                <button
+                  class="toggle"
+                  data-setting="developerOption"
+                  onclick="toggleSetting('developerOption')"
+                ></button>
+              </div>
             </div>
             <div class="modal-section">
               <div class="modal-section-label">
@@ -1178,19 +1186,29 @@
           <img src="{% static 'images/Hero_ai.png' %}" alt="Hero's AI" />
         </div>
         <div class="about-title">Hero's AI</div>
-        <div class="about-badge">v1.0 · Beta</div>
+        <div class="about-badge">V2.6 · Plus</div>
         <p class="about-desc">
           Hero's AI is your intelligent personal assistant — built for code,
           creativity, conversations, and everything in between. Powered by
           Baymax and the ZORVIN engine.
         </p>
         <div class="about-coming-soon">
-          <i class="fa-solid fa-rocket"></i>
-          <h3>More coming soon</h3>
-          <p>
-            The About Hero's page is currently under construction. Check back
-            soon for a full overview of features, the team, and the roadmap!
+          <i class="fa-solid fa-sparkles"></i>
+          <h3>What's New in Hero's AI</h3>
+          <p style="margin-bottom: 10px;">
+            <strong>Zeno Extension:</strong> Meet Zeno, your mini AI assistant Chrome extension. Enjoy instant text and voice chats right from your browser, powered by our intelligent NLP routing (Plus & Eco modes).
           </p>
+          <p style="margin-bottom: 10px;">
+            <strong>Infinsight (AI Analyst):</strong> Deep dive into your data with our powerful data visualization and analysis tool.
+          </p>
+          <p>
+            <strong>Advanced NLP Pipeline:</strong> Hero's AI automatically routes your prompts (Coding, Web Search, Text) to the best model—like Groq for lightning-fast answers, or Gemini for complex tasks.
+          </p>
+        </div>
+        <div style="margin-bottom: 24px; display: flex; justify-content: center;">
+          <a href="{% url 'landing' %}" class="modal-save-btn" style="text-decoration: none; max-width: 280px; width: 100%;">
+            <i class="fa-solid fa-compass"></i> Discover Hero's AI
+          </a>
         </div>
         <div class="about-version">
           Built with ❤️ by the Hero's AI team &nbsp;·&nbsp; huddy1910@gmail.com
@@ -1253,8 +1271,25 @@
           <div class="help-text-group">
             <div class="help-title">Switch AI model</div>
             <div class="help-desc">
-              Use the model selector inside the input box to switch between
-              Baymax and ZORVIN.
+              Use the model selector to switch between Baymax and ZORVIN. Enable the Developer Option in Settings to access the Developer mode!
+            </div>
+          </div>
+        </div>
+        <div class="help-item">
+          <div class="help-icon"><i class="fa-brands fa-chrome"></i></div>
+          <div class="help-text-group">
+            <div class="help-title">Zeno Chrome Extension</div>
+            <div class="help-desc">
+              Install the Zeno extension to chat with Hero's AI from anywhere on the web. Try Eco mode for fast text, or Plus mode for full NLP coding/search capabilities.
+            </div>
+          </div>
+        </div>
+        <div class="help-item">
+          <div class="help-icon"><i class="fa-solid fa-chart-line"></i></div>
+          <div class="help-text-group">
+            <div class="help-title">AI Analyst (Infinsight)</div>
+            <div class="help-desc">
+              Click the + menu and select AI Analyst to upload data and get intelligent insights and graphs.
             </div>
           </div>
         </div>

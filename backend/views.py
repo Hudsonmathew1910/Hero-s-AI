@@ -28,7 +28,7 @@ from concurrent.futures import ThreadPoolExecutor
 from functools import wraps
 
 from django.shortcuts import render, redirect
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.contrib.auth.hashers import make_password, check_password
 from django.conf import settings as django_settings
 from django.utils import timezone
@@ -212,6 +212,36 @@ def login_required_json(f):
             return JsonResponse({"status": "fail", "message": "Session invalid"}, status=401)
         return f(request, *args, **kwargs)
     return wrapper
+
+
+def privacy_view(request):
+    """
+    Simple privacy policy view for the extension submission.
+    """
+    html = '''
+    <!DOCTYPE html>
+    <html>
+    <head><title>Privacy Policy - Hero AI</title></head>
+    <body style="font-family: sans-serif; max-width: 800px; margin: 40px auto; line-height: 1.6;">
+        <h1>Privacy Policy</h1>
+        <p><strong>Effective Date:</strong> July 2026</p>
+        
+        <h2>Zeno Extension</h2>
+        <p>The Zeno browser extension acts as a mini AI assistant powered by Hero AI. To provide its core functionality, the extension requires access to certain data:</p>
+        <ul>
+            <li><strong>Website Content:</strong> When you use the "Ask Zeno Plus" right-click context menu, the text you have highlighted on the page is temporarily collected and sent to our servers to generate an AI response.</li>
+            <li><strong>Personal Communications:</strong> Chat messages you type into the Zeno popup are transmitted to our servers to communicate with the AI.</li>
+        </ul>
+        <p>We do not collect any browsing history, location data, or keystrokes outside of the explicit text you submit to the AI.</p>
+        
+        <h2>Data Usage & Protection</h2>
+        <p>Your data is strictly used to process and return AI responses. We do not sell your personal data or chat queries to third-party data brokers, nor do we use it for unrelated advertising purposes.</p>
+        
+        <p>If you have any questions, please contact us at support@hero-ai.com.</p>
+    </body>
+    </html>
+    '''
+    return HttpResponse(html)
 
 
 def json_only(f):
@@ -646,7 +676,7 @@ def chat_api(request):
             })
 
         # ── NLP pre-processing ────────────────────────────────────────────────
-        if mode in ['coding', 'websearch', 'Voice Chat', 'voice_message', 'zeno_eco']:
+        if mode in ['coding', 'websearch', 'Voice Chat', 'voice_message', 'zeno_eco', 'zeno_voice']:
             nlp_result = {"clean_text": raw_message, "intent": "direct", "metadata": {}}
         else:
             nlp_result = preprocess(raw_message, source=mode)
@@ -695,6 +725,7 @@ def chat_api(request):
                 'websearch':      2,
                 'zeno_eco':       2,
                 'zeno_plus':      4,
+                'zeno_voice':     2,
             }
             turn_limit = history_limits.get(mode, 5)
             
@@ -744,6 +775,7 @@ def chat_api(request):
                 'live_display':  lambda: baymax.handle_live_display(message),
                 'zeno_eco':      lambda: baymax.handle_zeno_eco(message),
                 'zeno_plus':     lambda: baymax.handle_zeno_plus(message),
+                'zeno_voice':    lambda: baymax.handle_zeno_voice(message),
             }
             reply = handlers.get(mode, lambda: baymax.handle_text(message))()
         except ImportError as e:

@@ -86,19 +86,24 @@ class Baymax:
                         - Remember previous context effectively."""
 
     ZENO_ECO_PROMPT = """You are Zeno, a mini AI assistant.
-                        Rules:
-                        - Keep responses short, concise, and straight to the point.
-                        - Do not write long explanations unless explicitly asked.
-                        - Be casual and fast."""
+                        - Keep your answers brief and to the point. 
+                        - Focus on providing direct value without fluff."""
+
+    ZENO_VOICE_PROMPT = """You are Zeno, a mini AI assistant interacting via voice.
+                        - Keep your answers brief, conversational, and directly to the point. 
+                        - Do not use markdown formatting since your response will be read aloud. 
+                        - If the user interrupts, adjust smoothly.
+                        - If the user asks if you can hear them, confirm enthusiastically that you can hear their voice perfectly."""
 
     _TOKEN_BUDGETS = {
         "text_chat":      2048,
         "coding":         8192,
         "voice":          256,
-        "web_search":     2048,
+        "web_search":     1024,
         "file_analysis":  8192,
         "zeno_plus":      4096,
         "zeno_eco":       256,
+        "zeno_voice":     256,
     }
 
     _TEMPERATURES = {
@@ -110,6 +115,7 @@ class Baymax:
         "web_search":     0.3,
         "zeno_plus":      0.8,
         "zeno_eco":       0.5,
+        "zeno_voice":     0.6,
     }
 
     def _get_temperature(self, task: str) -> float:
@@ -164,7 +170,8 @@ class Baymax:
             'web_search':      'nvidia/nemotron-3-nano-30b-a3b:free',
             'web_search_preprocessor':      'gemini-3.1-flash-lite',
             'zeno_plus':       'gemini-3.1-flash-lite',
-            'zeno_eco':        'gemini-2.5-flash-lite',
+            'zeno_eco':        'gemini-3.1-flash-lite',
+            'zeno_voice':      'gemini-3.1-flash-lite',
             'fallback': [
                 'nvidia/nemotron-3-nano-30b-a3b:free',
                 'google/gemma-4-26b-a4b-it:free',
@@ -183,8 +190,8 @@ class Baymax:
                 "qwen/qwen3-32b",
             ],
             'fallback_with_gemini': [
-                'gemini-2.5-flash',
-                'gemini-2.5-flash-lite',
+                'gemini-3.5-flash',
+                'gemini-3.1-flash-lite',
             ],
            
         }
@@ -299,6 +306,8 @@ class Baymax:
             prompt = self.ZENO_PLUS_PROMPT
         elif task == "zeno_eco":
             prompt = self.ZENO_ECO_PROMPT
+        elif task == "zeno_voice":
+            prompt = self.ZENO_VOICE_PROMPT
         else:
             prompt = self.TEXT_PROMPT
 
@@ -335,6 +344,7 @@ class Baymax:
             "web_search":    4,
             "zeno_plus":     8,
             "zeno_eco":      4,
+            "zeno_voice":    4,
         }
         limit = limits.get(task, 6)
         if not self.chat_history:
@@ -838,6 +848,20 @@ class Baymax:
             )
         except Exception as e:
             return self._safe_error(e, "handle_zeno_eco")
+
+    def handle_zeno_voice(self, text: str) -> str:
+        try:
+            logger.info("[handle_zeno_voice] query=%r", text[:80])
+            max_tok = self._smart_token_budget("zeno_voice")
+            if getattr(self, 'is_fast', False):
+                return self._with_concurrent_fallback(
+                    self.models["zeno_voice"], text, max_tokens=max_tok, task="zeno_voice"
+                )
+            return self._with_fallback(
+                self.models["zeno_voice"], text, max_tokens=max_tok, task="zeno_voice"
+            )
+        except Exception as e:
+            return self._safe_error(e, "handle_zeno_voice")
 
     def handle_file(self, text: str, files_data: list) -> str:
         """Handle text-based document uploads (pdf, docx, txt)."""

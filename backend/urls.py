@@ -5,6 +5,9 @@ urlpatterns = [
     # Home
     path('', views.home, name='home'),
     
+    # Privacy Policy
+    path('privacy', views.privacy_view, name='privacy'),
+    
     # Email/Password Authentication
     path('api/auth/signup', views.signup_view, name='signup'),
     path('api/auth/login', views.login_view, name='login'),

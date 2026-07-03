@@ -1875,16 +1875,14 @@ let devConfig = { provider: 'openrouter', model: '', saveHistory: true };
 
 const devModels = {
   openrouter: [
-    'google/gemma-4-26b-a4b-it:free',
-    'google/gemma-4-31b-it:free',
-    'meta-llama/llama-3.3-70b-instruct:free',
-    'meta-llama/llama-3.2-3b-instruct:free',
-    'nvidia/nemotron-nano-9b-v2:free',
     'nvidia/nemotron-3-nano-30b-a3b:free',
-    'nvidia/nemotron-3-super-120b-a12b:free',
-    'gemini-2.5-flash',
-    'gemini-2.5-flash-lite',
+    'google/gemma-4-26b-a4b-it:free',
+    'meta-llama/llama-3.3-70b-instruct:free',
+    'google/gemma-4-31b-it:free',
+    'nvidia/nemotron-nano-9b-v2:free',
+    'meta-llama/llama-3.2-3b-instruct:free',
     'meta-llama/llama-3.3-70b:free',
+    'nvidia/nemotron-3-super-120b-a12b:free',
     'custom'
   ],
   groq: [
@@ -1897,8 +1895,10 @@ const devModels = {
     'custom'
   ],
   gemini: [
+    'gemini-3.5-flash',
+    'gemini-3.1-flash-lite',
     'gemini-2.5-flash',
-    'gemini-2.5-pro',
+    'gemini-2.5-flash-lite',
     'custom'
   ]
 };

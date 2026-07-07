@@ -47,10 +47,17 @@ Baymax (the core AI dispatcher) intelligently routes requests across **3-tier mo
 
 ### Installation
 
+<<<<<<< HEAD
 ```bash
 # 1. Clone repository
 git clone https://github.com/Hudsonmathew1910/Hero-s-AI.git
 cd Hero-s-AI/hero_ai
+=======
+````bash
+# 1. Clone the repository
+git clone https://github.com/Hudsonmathew1910/hero-ai.git
+cd hero-ai/hero_ai
+>>>>>>> e8bef80 (Hero's AI - V2.6 - Plus - [ Add message encryption ])
 
 # 2. Create virtual environment
 python -m venv .venv
@@ -97,6 +104,7 @@ Copy `.env.example` to `.env` and configure:
 
 **Generate keys:**
 ```bash
+<<<<<<< HEAD
 # Django secret key
 python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
 
@@ -105,11 +113,26 @@ python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().d
 ```
 
 ---
+=======
+# Start Gunicorn in production
+gunicorn hero_ai.wsgi:application --workers 3 --bind 0.0.0.0:8000
+````
+
+### Deployment Configuration
+
+- **Procfile**: Included for easy deployment to Railway, Render, or Heroku.
+- **Static Files**: Remember to run `python manage.py collectstatic` as part of your deployment pipeline.
+- **Environment**: Set `DEBUG=False` in your production environment variables.
+
+```
+>>>>>>> e8bef80 (Hero's AI - V2.6 - Plus - [ Add message encryption ])
 
 ## 📁 Project Structure
 
 ```
+
 hero_ai/
+<<<<<<< HEAD
 ├── backend/                    # Django application
 │   ├── hero_model.py          # Baymax AI dispatcher & 3-tier fallback
 │   ├── Nlp.py                 # Intent detection & routing
@@ -132,6 +155,20 @@ hero_ai/
 ├── requirements.txt           # Python dependencies
 ├── manage.py                  # Django management
 └── Procfile                   # Production deployment config
+=======
+├── backend/ # Django app — models, views, AI logic
+│ ├── hero_model.py # Baymax AI dispatcher + model fallback
+│ ├── views.py # API endpoints
+│ ├── Nlp.py # Intent detection (NLP routing)
+│ ├── handle_file.py # File upload & OCR handling
+│ └── models_task/ # Specialized task handlers (web search, etc.)
+├── hero_ai/ # Django project settings
+├── static/ # CSS, JS, images
+├── templates/ # HTML templates
+├── logs/ # Application logs (gitignored)
+└── manage.py
+
+>>>>>>> e8bef80 (Hero's AI - V2.6 - Plus - [ Add message encryption ])
 ```
 
 ---
@@ -144,6 +181,7 @@ hero_ai/
 - **Token Management**: Intelligent token budgeting per model
 - **Session Awareness**: Maintains conversation context
 
+<<<<<<< HEAD
 ```python
 # Example usage
 baymax = Baymax()
@@ -290,3 +328,7 @@ For issues, feature requests, or questions:
 ---
 
 **Built with ❤️ by Hudson Mathew**
+=======
+MIT
+```
+>>>>>>> e8bef80 (Hero's AI - V2.6 - Plus - [ Add message encryption ])

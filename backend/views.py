@@ -221,7 +221,10 @@ def privacy_view(request):
     html = '''
     <!DOCTYPE html>
     <html>
-    <head><title>Privacy Policy - Hero AI</title></head>
+    <head>
+        <title>Privacy Policy - Hero AI</title>
+        <link rel="icon" type="image/png" href="/static/images/Hero_ai.png">
+    </head>
     <body style="font-family: sans-serif; max-width: 800px; margin: 40px auto; line-height: 1.6;">
         <h1>Privacy Policy</h1>
         <p><strong>Effective Date:</strong> July 2026</p>

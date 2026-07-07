@@ -7,7 +7,7 @@ Three core models: ProjectSession, UploadedFile, ChatMessage.
 
 import uuid
 from django.db import models
-from backend.models import User  # Reference existing User model
+from backend.models import User, EncryptedTextField  # Reference existing User model and encryption field
 
 
 class UploadedFile(models.Model):
@@ -83,8 +83,8 @@ class ChatMessage(models.Model):
     session = models.ForeignKey(
         ProjectSession, on_delete=models.CASCADE, related_name="messages"
     )
-    user_message = models.TextField()
-    ai_response = models.TextField()
+    user_message = EncryptedTextField()
+    ai_response = EncryptedTextField()
     sources_used = models.JSONField(default=list, blank=True)
     # e.g. [{"chunk": "...", "score": 0.91}]
     model_used = models.CharField(max_length=100, default="gemini-1.5-flash")

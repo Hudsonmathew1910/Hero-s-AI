@@ -95,6 +95,13 @@ class Baymax:
                         - If the user interrupts, adjust smoothly.
                         - If the user asks if you can hear them, confirm enthusiastically that you can hear their voice perfectly."""
 
+    ZENO_SHADOW_PROMPT = """You are Zeno Shadow Mode, a high-speed background page summarizer.
+                        Rules:
+                        - Read the provided page content carefully.
+                        - Summarize the core points, purpose, and key takeaways concisely.
+                        - Avoid fluff; get straight to the facts.
+                        - Use clear, bulleted structures if applicable."""
+
     _TOKEN_BUDGETS = {
         "text_chat":      2048,
         "coding":         8192,
@@ -104,6 +111,7 @@ class Baymax:
         "zeno_plus":      4096,
         "zeno_eco":       256,
         "zeno_voice":     256,
+        "zeno_shadow":    4096,
     }
 
     _TEMPERATURES = {
@@ -116,6 +124,7 @@ class Baymax:
         "zeno_plus":      0.8,
         "zeno_eco":       0.5,
         "zeno_voice":     0.6,
+        "zeno_shadow":    0.3,
     }
 
     def _get_temperature(self, task: str) -> float:
@@ -172,6 +181,7 @@ class Baymax:
             'zeno_plus':       'gemini-3.1-flash-lite',
             'zeno_eco':        'gemini-3.1-flash-lite',
             'zeno_voice':      'gemini-3.1-flash-lite',
+            'zeno_shadow':     'llama-3.1-8b-instant',
             'fallback': [
                 'nvidia/nemotron-3-nano-30b-a3b:free',
                 'google/gemma-4-26b-a4b-it:free',
@@ -308,6 +318,8 @@ class Baymax:
             prompt = self.ZENO_ECO_PROMPT
         elif task == "zeno_voice":
             prompt = self.ZENO_VOICE_PROMPT
+        elif task == "zeno_shadow":
+            prompt = self.ZENO_SHADOW_PROMPT
         else:
             prompt = self.TEXT_PROMPT
 
@@ -320,7 +332,7 @@ class Baymax:
 
         prompt = self._enrich_system_prompt(prompt)
         
-        if task in ("zeno_plus", "zeno_eco"):
+        if task in ("zeno_plus", "zeno_eco", "zeno_shadow"):
             cache.set(cache_key, prompt, timeout=3600 * 24)
             return prompt
             
@@ -345,6 +357,7 @@ class Baymax:
             "zeno_plus":     8,
             "zeno_eco":      4,
             "zeno_voice":    4,
+            "zeno_shadow":   2,
         }
         limit = limits.get(task, 6)
         if not self.chat_history:
@@ -862,6 +875,17 @@ class Baymax:
             )
         except Exception as e:
             return self._safe_error(e, "handle_zeno_voice")
+
+    def handle_zeno_shadow(self, text: str) -> str:
+        try:
+            logger.info("[handle_zeno_shadow] query=%r", text[:80])
+            max_tok = self._smart_token_budget("zeno_shadow")
+            # Always force concurrent fallback / fast for shadow mode
+            return self._with_concurrent_fallback(
+                self.models["zeno_shadow"], text, max_tokens=max_tok, task="zeno_shadow"
+            )
+        except Exception as e:
+            return self._safe_error(e, "handle_zeno_shadow")
 
     def handle_file(self, text: str, files_data: list) -> str:
         """Handle text-based document uploads (pdf, docx, txt)."""

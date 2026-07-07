@@ -641,7 +641,27 @@ function appendMessage(role, content, model = "") {
       <div class="ins-bubble">${isUser ? esc(content) : renderMarkdown(content)}</div>
     </div>
   `;
+  `;
   messagesEl.appendChild(row);
+
+  // Initialize any charts that were just appended
+  const charts = row.querySelectorAll('.ins-auto-chart:not(.initialized)');
+  charts.forEach(canvas => {
+    try {
+      const configStr = decodeURIComponent(canvas.getAttribute('data-chart-config'));
+      const config = JSON.parse(configStr);
+      
+      // Enforce responsive defaults
+      if (!config.options) config.options = {};
+      config.options.responsive = true;
+      config.options.maintainAspectRatio = false;
+      
+      new Chart(canvas, config);
+      canvas.classList.add('initialized');
+    } catch (e) {
+      console.error("Failed to initialize Chart.js:", e);
+    }
+  });
 }
 
 function insCopyMsg(btn) {
@@ -716,14 +736,31 @@ function renderMarkdown(text) {
   let html = esc(text);
 
   // Code blocks (before inline code)
-  html = html.replace(/```([a-z0-9+#]*)\n?([\s\S]*?)```/gi, (_, lang, code) => {
+  const unesc = (s) => s.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#039;/g, "'");
+
+  html = html.replace(/```([a-z0-9+# ]*)\n?([\s\S]*?)```/gi, (_, lang, code) => {
+    const language = (lang || '').trim().toLowerCase();
+    
+    // Auto-Graph Chart detection
+    if (language === 'json chart' || language === 'chart') {
+      try {
+        const rawJson = unesc(code.trim());
+        JSON.parse(rawJson); // Validate JSON
+        const encodedJson = encodeURIComponent(rawJson);
+        return `<div class="ins-chart-container"><canvas class="ins-auto-chart" data-chart-config="${encodedJson}"></canvas></div>`;
+      } catch (e) {
+        console.error("Invalid chart JSON:", e);
+        // Fallback to normal rendering if JSON is invalid
+      }
+    }
+
     return `
       <div class="ins-code-block">
         <div class="ins-code-header">
-          <span>${lang || 'code'}</span>
+          <span>${language || 'code'}</span>
           <button class="ins-copy-msg-btn" onclick="insCopyCodeBlock(this)" title="Copy code"><i class="fa-regular fa-copy"></i></button>
         </div>
-        <pre><code class="language-${lang}">${code.trim()}</code></pre>
+        <pre><code class="language-${language}">${code.trim()}</code></pre>
       </div>`;
   });
   // Inline code

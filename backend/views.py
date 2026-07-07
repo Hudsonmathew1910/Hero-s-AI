@@ -679,7 +679,7 @@ def chat_api(request):
             })
 
         # ── NLP pre-processing ────────────────────────────────────────────────
-        if mode in ['coding', 'websearch', 'Voice Chat', 'voice_message', 'zeno_eco', 'zeno_voice']:
+        if mode in ['coding', 'websearch', 'Voice Chat', 'voice_message', 'zeno_eco', 'zeno_plus', 'zeno_voice', 'zeno_shadow']:
             nlp_result = {"clean_text": raw_message, "intent": "direct", "metadata": {}}
         else:
             nlp_result = preprocess(raw_message, source=mode)
@@ -729,6 +729,7 @@ def chat_api(request):
                 'zeno_eco':       2,
                 'zeno_plus':      4,
                 'zeno_voice':     2,
+                'zeno_shadow':    0,
             }
             turn_limit = history_limits.get(mode, 5)
             
@@ -779,6 +780,7 @@ def chat_api(request):
                 'zeno_eco':      lambda: baymax.handle_zeno_eco(message),
                 'zeno_plus':     lambda: baymax.handle_zeno_plus(message),
                 'zeno_voice':    lambda: baymax.handle_zeno_voice(message),
+                'zeno_shadow':   lambda: baymax.handle_zeno_shadow(message),
             }
             reply = handlers.get(mode, lambda: baymax.handle_text(message))()
         except ImportError as e:

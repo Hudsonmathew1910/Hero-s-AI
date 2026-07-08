@@ -4,7 +4,6 @@ from django.shortcuts import render
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from groq import Groq
-import pywhatkit
 from ytmusicapi import YTMusic
 
 # Initialize Groq client
@@ -119,7 +118,11 @@ def process_audio(request):
                         "url": fallback_url
                     })
                 else:
-                    pywhatkit.playonyt(query + " official audio")
+                    try:
+                        import pywhatkit
+                        pywhatkit.playonyt(query + " official audio")
+                    except Exception as e:
+                        print(f"Server-side playback unavailable: {e}")
                     return JsonResponse({
                         "status": "success",
                         "intent": "play_song",

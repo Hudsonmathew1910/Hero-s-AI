@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zuno AI Music Assistant</title>
+    <!-- Use Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0d0f12;
+            --primary-color: #7b2cbf;
+            --secondary-color: #c77dff;
+            --text-color: #ffffff;
+            --text-muted: #a0aab2;
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(123, 44, 191, 0.15), transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(199, 125, 255, 0.15), transparent 25%);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            text-align: center;
+            z-index: 10;
+            padding: 2rem;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        p.subtitle {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            margin-bottom: 3rem;
+        }
+
+        .mic-container {
+            position: relative;
+            width: 150px;
+            height: 150px;
+            margin: 0 auto;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .mic-container:hover {
+            transform: scale(1.05);
+        }
+
+        .mic-button {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 30px rgba(123, 44, 191, 0.4);
+            z-index: 2;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .mic-button svg {
+            width: 40px;
+            height: 40px;
+            fill: #ffffff;
+        }
+
+        .mic-ripple {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: rgba(199, 125, 255, 0.3);
+            z-index: 1;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .listening .mic-ripple {
+            animation: ripple 1.5s infinite;
+        }
+
+        @keyframes ripple {
+            0% { width: 100px; height: 100px; opacity: 1; }
+            100% { width: 250px; height: 250px; opacity: 0; }
+        }
+
+        .status-text {
+            margin-top: 2rem;
+            font-size: 1.2rem;
+            min-height: 1.5rem;
+            color: var(--text-color);
+            transition: opacity 0.3s ease;
+        }
+
+        .transcription {
+            margin-top: 1rem;
+            font-size: 1.1rem;
+            color: var(--secondary-color);
+            font-style: italic;
+            min-height: 1.5rem;
+        }
+
+        .results-container {
+            margin-top: 2rem;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 15px;
+            padding: 1.5rem;
+            backdrop-filter: blur(10px);
+            display: none;
+            text-align: left;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .results-container h3 {
+            margin-top: 0;
+            color: var(--secondary-color);
+            font-weight: 600;
+        }
+
+        .song-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .song-item {
+            padding: 0.8rem;
+            border-bottom: 1px solid var(--glass-border);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .song-item:last-child {
+            border-bottom: none;
+        }
+
+        .song-title {
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .song-artist {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-top: 0.2rem;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 60, 60, 0.9);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        .toast.show {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Zuno</h1>
+        <p class="subtitle">Your intelligent voice-controlled music assistant</p>
+
+        <div class="mic-container" id="micContainer">
+            <div class="mic-ripple"></div>
+            <button class="mic-button" id="micBtn" aria-label="Start recording">
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 14c1.66 0 2.99-1.34 2.99-3L15 5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/>
+                </svg>
+            </button>
+        </div>
+
+        <div class="status-text" id="statusText">Tap to speak</div>
+        <div class="transcription" id="transcriptionText"></div>
+
+        <div class="results-container" id="resultsContainer">
+            <h3 id="resultsTitle">Search Results</h3>
+            <ul class="song-list" id="songList">
+                <!-- Dynamic results inserted here -->
+            </ul>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        const micBtn = document.getElementById('micBtn');
+        const micContainer = document.getElementById('micContainer');
+        const statusText = document.getElementById('statusText');
+        const transcriptionText = document.getElementById('transcriptionText');
+        const resultsContainer = document.getElementById('resultsContainer');
+        const songList = document.getElementById('songList');
+        const resultsTitle = document.getElementById('resultsTitle');
+        const toast = document.getElementById('toast');
+
+        let isListening = false;
+        
+        // Initialize Speech Recognition
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+            showToast("Speech Recognition API not supported in this browser.");
+            micBtn.disabled = true;
+        } else {
+            const recognition = new SpeechRecognition();
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            recognition.lang = 'en-US';
+
+            recognition.onstart = function() {
+                isListening = true;
+                micContainer.classList.add('listening');
+                statusText.innerText = "Listening...";
+                transcriptionText.innerText = "";
+                resultsContainer.style.display = 'none';
+            };
+
+            recognition.onresult = function(event) {
+                const transcript = event.results[0][0].transcript;
+                transcriptionText.innerText = `"${transcript}"`;
+                statusText.innerText = "Processing...";
+                
+                // Send to backend
+                processAudio(transcript);
+            };
+
+            recognition.onerror = function(event) {
+                isListening = false;
+                micContainer.classList.remove('listening');
+                statusText.innerText = "Error capturing audio.";
+                showToast(`Error: ${event.error}`);
+            };
+
+            recognition.onend = function() {
+                isListening = false;
+                micContainer.classList.remove('listening');
+                if (statusText.innerText === "Listening...") {
+                    statusText.innerText = "Tap to speak";
+                }
+            };
+
+            micBtn.addEventListener('click', () => {
+                if (isListening) {
+                    recognition.stop();
+                } else {
+                    recognition.start();
+                }
+            });
+        }
+
+        async function processAudio(text) {
+            try {
+                const response = await fetch('/zuno/process_audio/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ text: text })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Unknown error occurred');
+                }
+
+                statusText.innerText = "Done!";
+                
+                if (data.intent === 'play_song') {
+                    showToast(data.message);
+                    resultsContainer.style.display = 'block';
+                    resultsTitle.innerText = "Action";
+                    songList.innerHTML = `<li class="song-item"><div class="song-title">${data.message}</div></li>`;
+                } else if (data.intent === 'search_artist') {
+                    displayResults(data.query, data.results);
+                }
+
+            } catch (error) {
+                console.error('Error:', error);
+                statusText.innerText = "Failed to process request.";
+                showToast(error.message);
+            }
+        }
+
+        function displayResults(query, results) {
+            resultsContainer.style.display = 'block';
+            resultsTitle.innerText = `Search Results for "${query}"`;
+            
+            songList.innerHTML = '';
+            
+            if (!results || results.length === 0) {
+                songList.innerHTML = '<li class="song-item"><div class="song-title">No results found.</div></li>';
+                return;
+            }
+
+            results.forEach(song => {
+                const li = document.createElement('li');
+                li.className = 'song-item';
+                
+                const titleDiv = document.createElement('div');
+                titleDiv.className = 'song-title';
+                titleDiv.innerText = song.title;
+                
+                const artistDiv = document.createElement('div');
+                artistDiv.className = 'song-artist';
+                artistDiv.innerText = song.artists;
+
+                li.appendChild(titleDiv);
+                li.appendChild(artistDiv);
+                songList.appendChild(li);
+            });
+        }
+
+        function showToast(message) {
+            toast.innerText = message;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

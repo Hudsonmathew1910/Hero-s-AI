@@ -33,3 +33,8 @@ django-cryptography>=1.1
 # Web search
 ddgs==9.13.0
 wikipedia==1.4.0
+
+# Zuno App dependencies
+groq>=0.9.0
+pywhatkit>=5.4.0
+ytmusicapi>=1.5.4

@@ -12,4 +12,5 @@ urlpatterns = [
     path('landing/', views.landing, name='landing'),
     path('', include('backend.urls')),
     path('infinsight/', include('infinsight.urls')),
+    path('zuno/', include('zuno.urls')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -641,7 +641,6 @@ function appendMessage(role, content, model = "") {
       <div class="ins-bubble">${isUser ? esc(content) : renderMarkdown(content)}</div>
     </div>
   `;
-  `;
   messagesEl.appendChild(row);
 
   // Initialize any charts that were just appended

@@ -202,6 +202,14 @@ def login_required_json(f):
     def wrapper(request, *args, **kwargs):
         uid = request.session.get('user_id')
         if not uid:
+            session_key = request.headers.get('X-Session-Id')
+            if session_key:
+                from django.contrib.sessions.backends.db import SessionStore
+                s = SessionStore(session_key=session_key)
+                uid = s.get('user_id')
+                if uid:
+                    request.session = s
+        if not uid:
             return JsonResponse({"status": "fail", "message": "Authentication required"}, status=401)
         try:
             if not hasattr(request, '_cached_user'):

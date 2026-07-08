@@ -1,0 +1,163 @@
+import json
+import os
+from django.shortcuts import render
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from groq import Groq
+import pywhatkit
+from ytmusicapi import YTMusic
+
+# Initialize Groq client
+# Fallback to empty string if not found, but it will error on request if missing.
+GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
+try:
+    groq_client = Groq(api_key=GROQ_API_KEY)
+except Exception:
+    groq_client = None
+
+def index(request):
+    """Render the Zuno AI Music Assistant frontend."""
+    return render(request, 'zuno/zuno.html')
+
+@csrf_exempt
+def process_audio(request):
+    """Process voice transcription, extract intent via Groq, and execute."""
+    if request.method != 'POST':
+        return JsonResponse({"error": "Method not allowed"}, status=405)
+    
+    if not groq_client:
+        return JsonResponse({"error": "Groq API key not configured."}, status=500)
+
+    try:
+        data = json.loads(request.body)
+        text = data.get('text', '')
+
+        if not text:
+            return JsonResponse({"error": "No text provided"}, status=400)
+
+        # 1. Intent Routing with Groq
+        system_prompt = (
+            "You are an AI music assistant. Extract the user's intent and query from the given text. "
+            "You MUST respond with ONLY a strict JSON object (no markdown, no extra text) with two keys: "
+            "'intent' and 'query'. "
+            "'intent' MUST be either 'play_song' or 'search_artist'. "
+            "'query' is the name of the song or artist. "
+            "If the user wants to play a song, use 'play_song'. "
+            "If the user wants to search for an artist or song details, use 'search_artist'."
+        )
+
+        models_to_try = [
+            "llama-3.1-8b-instant",
+            "openai/gpt-oss-120b",
+            "openai/gpt-oss-20b",
+            "llama-3.3-70b-versatile",
+            "qwen/qwen3.6-27b",
+            "qwen/qwen3-32b",
+        ]
+
+        response_content = None
+        for model_name in models_to_try:
+            try:
+                completion = groq_client.chat.completions.create(
+                    model=model_name,
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": text}
+                    ],
+                    temperature=0,
+                    response_format={"type": "json_object"}
+                )
+                response_content = completion.choices[0].message.content
+                break  # Stop if successful
+            except Exception as e:
+                print(f"Model {model_name} failed: {e}")
+                continue
+
+        if not response_content:
+            return JsonResponse({"error": "All fallback models failed to generate a response."}, status=500)
+
+        intent_data = json.loads(response_content)
+
+        intent = intent_data.get("intent")
+        query = intent_data.get("query")
+
+        if not intent or not query:
+            return JsonResponse({"error": "Failed to parse intent or query."}, status=500)
+
+        source = data.get('source', '')
+
+        # 2. Action Execution
+        if intent == "play_song":
+            try:
+                import webbrowser
+                ytmusic = YTMusic()
+                results = ytmusic.search(query, filter="songs")
+                
+                if results and len(results) > 0:
+                    video_id = results[0].get("videoId")
+                    if video_id:
+                        url = f"https://www.youtube.com/watch?v={video_id}"
+                        
+                        if source == 'extension':
+                            return JsonResponse({
+                                "status": "play_extension",
+                                "url": url
+                            })
+                        else:
+                            webbrowser.open(url)
+                            return JsonResponse({
+                                "status": "success",
+                                "intent": "play_song",
+                                "message": f"Playing '{results[0].get('title', query)}' on YouTube."
+                            })
+                
+                # Fallback if ytmusic fails to find a videoId
+                fallback_url = f"https://www.youtube.com/results?search_query={query}+official+audio"
+                if source == 'extension':
+                    return JsonResponse({
+                        "status": "play_extension",
+                        "url": fallback_url
+                    })
+                else:
+                    pywhatkit.playonyt(query + " official audio")
+                    return JsonResponse({
+                        "status": "success",
+                        "intent": "play_song",
+                        "message": f"Playing '{query}' on YouTube."
+                    })
+            except Exception as e:
+                return JsonResponse({"error": f"Failed to play on YouTube: {str(e)}"}, status=500)
+                
+        elif intent == "search_artist":
+            try:
+                ytmusic = YTMusic()
+                results = ytmusic.search(query, filter="songs")
+                
+                # Extract top 5
+                top_5 = []
+                for item in results[:5]:
+                    title = item.get("title", "Unknown Title")
+                    artists = ", ".join([a.get("name", "") for a in item.get("artists", [])])
+                    video_id = item.get("videoId", "")
+                    top_5.append({
+                        "title": title,
+                        "artists": artists,
+                        "videoId": video_id
+                    })
+
+                return JsonResponse({
+                    "status": "success",
+                    "intent": "search_artist",
+                    "query": query,
+                    "results": top_5
+                })
+            except Exception as e:
+                return JsonResponse({"error": f"Failed to search YT Music: {str(e)}"}, status=500)
+                
+        else:
+             return JsonResponse({"error": f"Unknown intent: {intent}"}, status=400)
+
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Invalid JSON payload"}, status=400)
+    except Exception as e:
+        return JsonResponse({"error": f"Internal server error: {str(e)}"}, status=500)

@@ -163,13 +163,14 @@ INSTRUCTIONS:
 - Provide a professional, verbal summary of the findings.
 - Use formatting (tables/bold) to highlight key numbers.
 - If the result contains tabular data suitable for comparison (e.g., time series, counts, aggregations), you MUST include a Chart.js JSON configuration wrapped in a ```json chart``` block.
+- NEVER write Python code or ASCII/text-based charts to visualize the data. ONLY use the ```json chart``` format for visualizations.
 - Example chart format:
   ```json chart
-  {
+  {{
      "type": "bar",
-     "data": { "labels": ["A", "B"], "datasets": [{ "label": "Sales", "data": [10, 20] }] },
-     "options": { "responsive": true }
-  }
+     "data": {{ "labels": ["A", "B"], "datasets": [{{ "label": "Sales", "data": [10, 20] }}] }},
+     "options": {{ "responsive": true }}
+  }}
   ```
 - If the result contains an error, explain it simply to the user.
 """

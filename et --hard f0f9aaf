@@ -1,0 +1,86 @@
+[33m59785d6[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m HEAD@{0}: rebase (finish): returning to refs/heads/main
+[33m59785d6[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m HEAD@{1}: rebase (pick): Hero's AI - V2.6 - Plus - [ Zuno | Shadow mode ]
+[33m61a6b30[m HEAD@{2}: rebase (pick): Hero's AI - V2.6 - Plus - [ Add message encryption ]
+[33m99be5ec[m HEAD@{3}: rebase (continue): Hero's AI - V2.6 - Plus - [ Add message encryption ]
+[33m7bc7a80[m[33m ([m[1;31morigin/main[m[33m)[m HEAD@{4}: pull origin main --rebase (start): checkout 7bc7a80cf5a25adb7862c99e81393d6b65b0b624
+[33mf0f9aaf[m HEAD@{5}: commit: Hero's AI - V2.6 - Plus - [ Zuno | Shadow mode ]
+[33m8bb3c8b[m HEAD@{6}: commit: Hero's AI - V2.6 - Plus - [ Add message encryption ]
+[33me8bef80[m HEAD@{7}: commit: Hero's AI - V2.6 - Plus - [ Add message encryption ]
+[33m14be209[m HEAD@{8}: commit: Hero's AI - V2.6 - Plus - [ Add privacy page ]
+[33maf90fc9[m HEAD@{9}: commit: Hero's AI - V2.6 - Plus
+[33m0a070da[m HEAD@{10}: commit: Added Landing page
+[33m8671081[m HEAD@{11}: commit: Developer mode added
+[33m6fa37b3[m HEAD@{12}: commit: Add groq fallback - Fast mode
+[33m0e95268[m HEAD@{13}: commit: Add groq fallback - Fast mode | Reduce delay for respone
+[33m452dc8e[m HEAD@{14}: commit: Add groq fallback - Fast mode
+[33mdbad7f1[m HEAD@{15}: commit: Add groq fallback - Fast mode
+[33m6d79617[m HEAD@{16}: commit: css bug fix
+[33mc1bc05b[m HEAD@{17}: commit: CSRF missing bug fix
+[33me4f6322[m HEAD@{18}: commit: Fix many Bugs & Errors
+[33m671de05[m HEAD@{19}: commit: add web search modules in req.txt
+[33m48e48ea[m HEAD@{20}: commit: Apply @csrf_exempt to critical chat, auth, and upload endpoints for production stability
+[33ma6701b0[m HEAD@{21}: commit: Fix CSRF_TRUSTED_ORIGINS overwrite and consolidate production security settings
+[33mf620cab[m HEAD@{22}: commit: Final cleanup: removed all references to text-embedding-004 and updated comments
+[33m802228b[m HEAD@{23}: commit: Finalized Embedding.py with robust fallback logic and clean structure
+[33m5659ed3[m HEAD@{24}: commit: Clean up requirements.txt and stabilize production dependencies
+[33me3666b1[m HEAD@{25}: commit: Final Gemini embedding fix: gemini-embedding-001
+[33mc4d5004[m HEAD@{26}: commit: Hero's AI = Infinsight - 2
+[33m895da79[m HEAD@{27}: commit: Add model discovery logging and fix local CSRF settings
+[33m111c0a1[m HEAD@{28}: commit: Final production fixes: explicit CSRF origins and embedding-001 model
+[33m408d9ec[m HEAD@{29}: commit: Fix Gemini embedding model name and production CSRF settings
+[33mea47141[m HEAD@{30}: commit: Debug not define - error
+[33me01909d[m HEAD@{31}: commit: issues in my Django + AI project
+[33m6113161[m HEAD@{32}: commit: Hero's AI = InfinsightChecked again in your current code:
+[33mea0b407[m HEAD@{33}: checkout: moving from infinsight to main
+[33mbfb5a8a[m[33m ([m[1;31morigin/infinsight[m[33m, [m[1;32minfinsight[m[33m)[m HEAD@{34}: checkout: moving from main to infinsight
+[33mea0b407[m HEAD@{35}: checkout: moving from infinsight to main
+[33mbfb5a8a[m[33m ([m[1;31morigin/infinsight[m[33m, [m[1;32minfinsight[m[33m)[m HEAD@{36}: checkout: moving from main to infinsight
+[33mea0b407[m HEAD@{37}: checkout: moving from infinsight to main
+[33mbfb5a8a[m[33m ([m[1;31morigin/infinsight[m[33m, [m[1;32minfinsight[m[33m)[m HEAD@{38}: checkout: moving from main to infinsight
+[33mea0b407[m HEAD@{39}: reset: moving to HEAD
+[33mea0b407[m HEAD@{40}: pull origin main: Fast-forward
+[33m276d28b[m HEAD@{41}: reset: moving to 276d28bccf69b3da386dda5b9865434446f702d4
+[33m276d28b[m HEAD@{42}: checkout: moving from main to main
+[33m276d28b[m HEAD@{43}: reset: moving to HEAD~1
+[33m41d20da[m HEAD@{44}: reset: moving to HEAD~1
+[33mea0b407[m HEAD@{45}: revert: Revert "Infinsight - V2.6"
+[33m41d20da[m HEAD@{46}: revert: Revert "Infinsight - V2.6"
+[33m276d28b[m HEAD@{47}: commit: Infinsight - V2.6
+[33m7cd8b9a[m HEAD@{48}: commit: Infinsight - V2.6
+[33mde3eb5f[m HEAD@{49}: commit: Infinsight - V2.8
+[33m63e1520[m HEAD@{50}: commit: Infinsight - V2.8
+[33m569e6cf[m HEAD@{51}: commit: Infinsight - V2.8
+[33m8524fbc[m HEAD@{52}: commit: Infinsight - V2.6
+[33m0b9dafe[m HEAD@{53}: commit: Infinsight - V2.4
+[33m8785160[m HEAD@{54}: commit: Infinsight - V2.4
+[33mb06cf0f[m HEAD@{55}: commit: Infinsight - V2.4
+[33m8c9bb51[m HEAD@{56}: commit: Infinsight - V2.8
+[33m9eb13f1[m HEAD@{57}: commit (merge): Infinsight - V2.6
+[33m70439b1[m HEAD@{58}: checkout: moving from infinsight to main
+[33mbfb5a8a[m[33m ([m[1;31morigin/infinsight[m[33m, [m[1;32minfinsight[m[33m)[m HEAD@{59}: commit: Infinsight - V2.4
+[33mcfc53b9[m HEAD@{60}: commit: Infinsight - V2.4
+[33meccbad1[m HEAD@{61}: commit: Infinsight - V2.2
+[33mf5f4681[m HEAD@{62}: checkout: moving from main to infinsight
+[33m70439b1[m HEAD@{63}: commit: Infinsight - V2.0
+[33mf5f4681[m HEAD@{64}: commit: New Feature --> Infinsight AI Analyst
+[33m1b34c3e[m HEAD@{65}: commit: Hero AI project- V2.1.2
+[33m29be8f2[m HEAD@{66}: commit: Hero AI project- V2.1.1
+[33m938e709[m HEAD@{67}: commit: Hero AI project- V2.1.0
+[33mbb9a45a[m HEAD@{68}: commit: Hero AI project- V2.9
+[33macdd815[m HEAD@{69}: commit: Hero AI project- V2.8
+[33md77df94[m HEAD@{70}: commit: Hero AI project- V2.7
+[33md057cbf[m HEAD@{71}: commit: Hero AI project- V2.6 / Sign in using google mail id
+[33m7cd73aa[m HEAD@{72}: commit: Hero AI project- V2.5
+[33m6daa1f1[m HEAD@{73}: commit: Hero AI project- V2.5
+[33m8330dbc[m HEAD@{74}: commit: Hero AI project- V2.5
+[33m1a21326[m HEAD@{75}: commit: Hero AI project- V2.4
+[33m5dc41a2[m HEAD@{76}: commit: Hero AI project- V2.3
+[33ma252991[m HEAD@{77}: commit: Hero AI project- V2.3
+[33mb3de5d3[m HEAD@{78}: commit: Hero AI project- V2.2
+[33me981af9[m HEAD@{79}: commit: Hero AI project- V2.1
+[33m0902081[m HEAD@{80}: commit: Hero AI project- V2.0
+[33m385a197[m HEAD@{81}: commit: fix: auto-create logs directory on startup for Render deployment
+[33mccdd5d8[m HEAD@{82}: commit: Hero AI project- V1.4
+[33md8a9aee[m HEAD@{83}: commit: Hero AI project- V1.2
+[33m9f8244d[m HEAD@{84}: Branch: renamed refs/heads/master to refs/heads/main
+[33m9f8244d[m HEAD@{86}: commit (initial): Initial commit - Hero AI project

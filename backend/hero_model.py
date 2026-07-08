@@ -624,15 +624,19 @@ class Baymax:
     ) -> str:
         """Run Primary/OpenRouter, Gemini, and Groq models concurrently attempt by attempt."""
         No_API = """
-        Steps to add API keys:
-        1. Click on your account   
-        2. Select API Key
-        3. Add your API keys for Gemini and OpenRouter
+🔑 **API Key Configuration Required**
 
-        API keys are stored securely. All keys are encrypted and stored on the server — never exposed to the browser.
-        """
+To start chatting, please configure your API Keys in your Hero AI profile settings:
+1. Log in to your Hero AI account website.
+2. Go to **Settings** / **API Keys**.
+3. Add your key (Gemini, OpenRouter, or Groq) and save.
+
+*Your API keys are encrypted and stored securely on the server—they are never exposed to the browser.*
+"""
         if not self.groq_key:
-            return "Add Groq API key for Fast response.\n\n" + No_API
+            if task == "zeno_shadow":
+                return "🔑 **Groq API Key Required for Shadow Mode**\n\nPlease add your Groq API key in your Hero AI profile settings to enable background page summarization.\n" + No_API
+            return "🔑 **Groq API Key Required for Fast Response**\n\nPlease add your Groq API key in settings to enable Fast mode.\n" + No_API
             
         import concurrent.futures
 
@@ -689,21 +693,23 @@ class Baymax:
     ) -> str:
         """Try the primary model, then Gemini fallbacks, then OpenRouter fallbacks."""
         No_API = """
-        Steps to add API keys:
-        1. Click on your account   
-        2. Select API Key
-        3. Add your API keys for Gemini and OpenRouter
+🔑 **API Key Configuration Required**
 
-        API keys are stored securely. All keys are encrypted and stored on the server — never exposed to the browser.
-        """
+To start chatting, please configure your API Keys in your Hero AI profile settings:
+1. Log in to your Hero AI account website.
+2. Go to **Settings** / **API Keys**.
+3. Add your key (Gemini, OpenRouter, or Groq) and save.
+
+*Your API keys are encrypted and stored securely on the server—they are never exposed to the browser.*
+"""
         if primary_model.lower().startswith("gemini-"):
             if not self.gemini_key:
                 from django.conf import settings
                 if not getattr(settings, "GEMINI_API_KEY", None):
-                    return "Gemini API key not configured. Please provide your api key in profile.\n" + No_API
+                    return "🔑 **Gemini API Key Required**\n\nPlease configure your Gemini API Key in settings to chat.\n" + No_API
         else:
             if not self.openrouter_key:
-                return "OpenRouter API key not configured. Please provide your api key in profile.\n" + No_API
+                return "🔑 **OpenRouter API Key Required**\n\nPlease configure your OpenRouter API Key in settings to chat.\n" + No_API
 
         logger.info("AI dispatch | task=%s | primary=%s | temporary=%s", task, primary_model, self.temporary)
 

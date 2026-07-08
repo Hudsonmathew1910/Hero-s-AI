@@ -1,31 +1,61 @@
 import json
 import os
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from groq import Groq
 from ytmusicapi import YTMusic
 
-# Initialize Groq client
-# Fallback to empty string if not found, but it will error on request if missing.
-GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
-try:
-    groq_client = Groq(api_key=GROQ_API_KEY)
-except Exception:
-    groq_client = None
+def get_groq_client(request):
+    """Resolve the Groq API key dynamically from the database for the authenticated user."""
+    from backend.models import User, Api
+    from backend.encryption import decrypt_api_key
+
+    # Strictly fetch from the logged-in user's database settings
+    user_id = request.session.get('user_id')
+    if not user_id:
+        # Check X-Session-Id header (for extension requests)
+        session_key = request.headers.get('X-Session-Id')
+        if session_key:
+            from django.contrib.sessions.backends.db import SessionStore
+            s = SessionStore(session_key=session_key)
+            user_id = s.get('user_id')
+
+    if user_id:
+        try:
+            user = User.objects.get(user_id=user_id)
+            api_obj = Api.objects.filter(user=user, model_name='Groq').first()
+            if api_obj:
+                api_key = decrypt_api_key(api_obj.api_key_encrypted)
+                if api_key:
+                    return Groq(api_key=api_key)
+        except Exception:
+            pass
+
+    return None
+
 
 def index(request):
     """Render the Zuno AI Music Assistant frontend."""
+    # Require authentication to view the Zuno page
+    if not request.session.get('user_id'):
+        return redirect('/')
     return render(request, 'zuno/zuno.html')
+
 
 @csrf_exempt
 def process_audio(request):
     """Process voice transcription, extract intent via Groq, and execute."""
     if request.method != 'POST':
         return JsonResponse({"error": "Method not allowed"}, status=405)
-    
+
+    groq_client = get_groq_client(request)
     if not groq_client:
-        return JsonResponse({"error": "Groq API key not configured."}, status=500)
+        return JsonResponse({
+            "error": "Groq API key not configured.",
+            "message": "🔑 **Groq API Key Missing**\n\nTo use Zuno, please configure your Groq API key in your Hero AI profile settings:\n1. Log in to your Hero AI account.\n2. Navigate to **Settings** / **API Keys**.\n3. Add your Groq API Key and save.",
+            "details": ["Please log in and configure your Groq API key in your profile settings."]
+        }, status=500)
 
     try:
         data = json.loads(request.body)
@@ -91,7 +121,7 @@ def process_audio(request):
                 import webbrowser
                 ytmusic = YTMusic()
                 results = ytmusic.search(query, filter="songs")
-                
+
                 if results and len(results) > 0:
                     video_id = results[0].get("videoId")
                     if video_id:
@@ -102,7 +132,7 @@ def process_audio(request):
                             "intent": "play_song",
                             "message": f"Playing '{results[0].get('title', query)}' on YouTube."
                         })
-                
+
                 # Fallback if ytmusic fails to find a videoId
                 fallback_url = f"https://www.youtube.com/results?search_query={query}+official+audio"
                 return JsonResponse({
@@ -113,17 +143,18 @@ def process_audio(request):
                 })
             except Exception as e:
                 return JsonResponse({"error": f"Failed to play on YouTube: {str(e)}"}, status=500)
-                
+
         elif intent == "search_artist":
             try:
                 ytmusic = YTMusic()
                 results = ytmusic.search(query, filter="songs")
-                
+
                 # Extract top 5
                 top_5 = []
                 for item in results[:5]:
                     title = item.get("title", "Unknown Title")
-                    artists = ", ".join([a.get("name", "") for a in item.get("artists", [])])
+                    artists = ", ".join([a.get("name", "")
+                                        for a in item.get("artists", [])])
                     video_id = item.get("videoId", "")
                     top_5.append({
                         "title": title,
@@ -139,9 +170,9 @@ def process_audio(request):
                 })
             except Exception as e:
                 return JsonResponse({"error": f"Failed to search YT Music: {str(e)}"}, status=500)
-                
+
         else:
-             return JsonResponse({"error": f"Unknown intent: {intent}"}, status=400)
+            return JsonResponse({"error": f"Unknown intent: {intent}"}, status=400)
 
     except json.JSONDecodeError:
         return JsonResponse({"error": "Invalid JSON payload"}, status=400)

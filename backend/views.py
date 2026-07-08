@@ -571,7 +571,7 @@ def save_api_keys(request):
                 user=request.user_obj, model_name='Groq',
                 defaults={'api_key_encrypted': encrypt_api_key(groq), 'is_mandatory': False},
             )
-        if 'groq' in d:
+        elif 'groq' in d:
             Api.objects.filter(user=request.user_obj, model_name='Groq').delete()
             
         cache.delete(f"api_keys_{request.user_obj.user_id}")

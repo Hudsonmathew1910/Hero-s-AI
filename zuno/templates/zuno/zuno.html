@@ -318,11 +318,28 @@
 
                 statusText.innerText = "Done!";
                 
-                if (data.intent === 'play_song') {
-                    showToast(data.message);
+                if (data.intent === 'play_song' || data.status === 'play_extension') {
+                    showToast(data.message || "Playing song...");
                     resultsContainer.style.display = 'block';
                     resultsTitle.innerText = "Action";
-                    songList.innerHTML = `<li class="song-item"><div class="song-title">${data.message}</div></li>`;
+                    songList.innerHTML = `<li class="song-item"><div class="song-title">${data.message || "Playing song..."}</div></li>`;
+                    
+                    if (data.url) {
+                        const EXTENSION_ID = "egobkkfkdjagkggbpfkadhfknjeofjab";
+                        if (typeof chrome !== 'undefined' && chrome.runtime) {
+                            try {
+                                chrome.runtime.sendMessage(EXTENSION_ID, { action: "play_music", url: data.url }, response => {
+                                    if (chrome.runtime.lastError || !response || !response.success) {
+                                        window.open(data.url, '_blank');
+                                    }
+                                });
+                            } catch (e) {
+                                window.open(data.url, '_blank');
+                            }
+                        } else {
+                            window.open(data.url, '_blank');
+                        }
+                    }
                 } else if (data.intent === 'search_artist') {
                     displayResults(data.query, data.results);
                 }

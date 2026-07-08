@@ -80,6 +80,7 @@ def process_audio(request):
 
         intent = intent_data.get("intent")
         query = intent_data.get("query")
+        print(f"[Zuno] Status -> Intent: {intent} | Query: {query}")
 
         if not intent or not query:
             return JsonResponse({"error": "Failed to parse intent or query."}, status=500)
@@ -97,38 +98,21 @@ def process_audio(request):
                     video_id = results[0].get("videoId")
                     if video_id:
                         url = f"https://www.youtube.com/watch?v={video_id}"
-                        
-                        if source == 'extension':
-                            return JsonResponse({
-                                "status": "play_extension",
-                                "url": url
-                            })
-                        else:
-                            webbrowser.open(url)
-                            return JsonResponse({
-                                "status": "success",
-                                "intent": "play_song",
-                                "message": f"Playing '{results[0].get('title', query)}' on YouTube."
-                            })
+                        return JsonResponse({
+                            "status": "play_extension",
+                            "url": url,
+                            "intent": "play_song",
+                            "message": f"Playing '{results[0].get('title', query)}' on YouTube."
+                        })
                 
                 # Fallback if ytmusic fails to find a videoId
                 fallback_url = f"https://www.youtube.com/results?search_query={query}+official+audio"
-                if source == 'extension':
-                    return JsonResponse({
-                        "status": "play_extension",
-                        "url": fallback_url
-                    })
-                else:
-                    try:
-                        import pywhatkit
-                        pywhatkit.playonyt(query + " official audio")
-                    except Exception as e:
-                        print(f"Server-side playback unavailable: {e}")
-                    return JsonResponse({
-                        "status": "success",
-                        "intent": "play_song",
-                        "message": f"Playing '{query}' on YouTube."
-                    })
+                return JsonResponse({
+                    "status": "play_extension",
+                    "url": fallback_url,
+                    "intent": "play_song",
+                    "message": f"Playing '{query}' on YouTube."
+                })
             except Exception as e:
                 return JsonResponse({"error": f"Failed to play on YouTube: {str(e)}"}, status=500)
                 

@@ -46,6 +46,13 @@ _INTENT_RULES: list[tuple[str, list[str]]] = [
         r"\brecent\b", r"\bcurrent\b", r"\blive\b",
     ]),
 
+    # ── Music / Zuno ──────────────────────────────────────────────────────
+    ("play_song", [
+        r"^(?:hey\s+zuno\s+|zuno\s+)?(?:play|search\s+artist)\b",
+        r"\b(?:play|listen\s+to)\s+(?:song|music|track|album|artist)\b",
+        r"\b(?:put\s+on|queue)\s+(?:some|a)?\s*(?:music|song)\b"
+    ]),
+
     # ── Task automation / actions ─────────────────────────────────────────
     ("task", [
         r"\bremind\b", r"\bschedule\b", r"\bset\s+(?:a\s+)?(?:timer|alarm|reminder)\b",

@@ -687,7 +687,7 @@ def chat_api(request):
             })
 
         # ── NLP pre-processing ────────────────────────────────────────────────
-        if mode in ['coding', 'websearch', 'Voice Chat', 'voice_message', 'zeno_eco', 'zeno_plus', 'zeno_voice', 'zeno_shadow']:
+        if mode in ['coding', 'websearch', 'Voice Chat', 'voice_message', 'zeno_shadow']:
             nlp_result = {"clean_text": raw_message, "intent": "direct", "metadata": {}}
         else:
             nlp_result = preprocess(raw_message, source=mode)
@@ -695,6 +695,40 @@ def chat_api(request):
         message    = nlp_result["clean_text"] or raw_message
         mode       = resolve_mode(nlp_result, mode)
         nlp_intent = nlp_result["intent"]
+
+        if nlp_intent == "play_song":
+            try:
+                import re
+                from ytmusicapi import YTMusic
+                
+                # Extract the query
+                query = re.sub(r'^(?:hey\s+zuno\s+|zuno\s+)?(?:play|listen\s+to|search\s+artist)\s+', '', raw_message, flags=re.IGNORECASE).strip()
+                if not query:
+                    query = raw_message
+
+                ytmusic = YTMusic()
+                results = ytmusic.search(query, filter="songs")
+                
+                if results and len(results) > 0:
+                    video_id = results[0].get("videoId")
+                    if video_id:
+                        return JsonResponse({
+                            "status": "play_extension",
+                            "url": f"https://www.youtube.com/watch?v={video_id}",
+                            "intent": "play_song",
+                            "message": f"Playing '{results[0].get('title', query)}' on YouTube."
+                        })
+                
+                return JsonResponse({
+                    "status": "play_extension",
+                    "url": f"https://www.youtube.com/results?search_query={query}+official+audio",
+                    "intent": "play_song",
+                    "message": f"Playing '{query}' on YouTube."
+                })
+            except Exception as e:
+                logger.error(f"Music intent failure in chat_api: {e}")
+                # If ytmusicapi fails, fallback to standard LLM response
+                pass
 
         logger.info(
             "chat_api | user=%s | mode=%s | intent=%s | temporary=%s | tokens≈%s",

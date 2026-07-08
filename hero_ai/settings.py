@@ -44,10 +44,10 @@ FILE_UPLOAD_MAX_MEMORY_SIZE = 20971520   # 20MB
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 SESSION_COOKIE_AGE = 1209600  # 2 weeks
 SESSION_COOKIE_HTTPONLY = True
-SESSION_COOKIE_SECURE = True   # 🔥 MUST in production
+SESSION_COOKIE_SECURE = not DEBUG   # 🔥 False in development (HTTP), True in production (HTTPS)
 SESSION_SAVE_EVERY_REQUEST = False
-SESSION_COOKIE_SAMESITE = "None" # 🔥 MUST in production
-CSRF_COOKIE_SAMESITE = "None"    # 🔥 MUST in production
+SESSION_COOKIE_SAMESITE = "None" if not DEBUG else "Lax" # 🔥 Lax in development, None in production
+CSRF_COOKIE_SAMESITE = "None" if not DEBUG else "Lax"    # 🔥 Lax in development, None in production
 
 # SITE_URL for dynamic origin trust
 SITE_URL = os.getenv('SITE_URL', 'http://localhost:8000')
@@ -63,9 +63,9 @@ if os.getenv('RENDER_EXTERNAL_URL'):
     CSRF_TRUSTED_ORIGINS.append(os.getenv('RENDER_EXTERNAL_URL'))
 
 CSRF_COOKIE_HTTPONLY = True  # Hardened
-CSRF_COOKIE_SECURE = True    # 🔥 MUST in production
+CSRF_COOKIE_SECURE = not DEBUG    # 🔥 False in development (HTTP), True in production (HTTPS)
 CSRF_USE_SESSIONS = False
-CSRF_COOKIE_SAMESITE = "None" # 🔥 MUST in production
+CSRF_COOKIE_SAMESITE = "None" if not DEBUG else "Lax" # 🔥 Lax in development, None in production
 
 # Authentication
 AUTH_USER_MODEL = 'auth.User'  # Use default Django user model

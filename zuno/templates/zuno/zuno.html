@@ -206,6 +206,158 @@
         .toast.show {
             opacity: 1;
         }
+
+        /* Zuno Music Card styles */
+        .main-music-card {
+            max-width: 420px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 18px;
+            border-radius: 35px;
+            background: #000;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            font-family: -apple-system, system-ui, sans-serif;
+            color: white;
+            transition: all 0.3s ease;
+            box-sizing: border-box;
+        }
+
+        .track-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .album-art {
+            width: 64px;
+            height: 64px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, #ff9a9e, #fad0c4);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+            flex-shrink: 0;
+            transition: transform 0.3s ease;
+        }
+
+        .album-art:hover {
+            transform: scale(1.05);
+        }
+
+        .track-details {
+            flex-grow: 1;
+            overflow: hidden;
+        }
+
+        .track-title {
+            font-size: 1.3em;
+            font-weight: 600;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            overflow: hidden;
+            text-align: left;
+        }
+
+        .artist-name {
+            font-size: 0.9em;
+            color: #d1d1d6;
+            margin-top: 2px;
+            text-align: left;
+        }
+
+        .volume-bars {
+            display: flex;
+            align-items: flex-end;
+            gap: 2px;
+            width: 38px;
+            height: 32px;
+        }
+
+        .volume-bars .bar {
+            width: 3px;
+            background: linear-gradient(180deg, #00c6ff, #0072ff);
+            border-radius: 2px;
+            animation: bounce 0.8s infinite ease-in-out;
+            animation-delay: var(--delay);
+            animation-play-state: running;
+        }
+
+        .volume-bars.paused .bar {
+            animation-play-state: paused !important;
+        }
+
+        @keyframes bounce {
+            0%, 100% { height: 6px; }
+            50% { height: 26px; }
+        }
+
+        .playback-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .time-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8em;
+            color: #8e8e93;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #00c6ff, #0072ff);
+            border-radius: 2px;
+        }
+
+        .button-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .control-button {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: none;
+            background: none;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.2s;
+            color: #fff;
+            padding: 0;
+        }
+
+        .control-button:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: scale(1.05);
+        }
+
+        .main-control-btns {
+            justify-content: center;
+            align-items: center;
+            display: flex;
+            flex: 1;
+            gap: 8px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
     </style>
 </head>
 <body>
@@ -225,6 +377,80 @@
 
         <div class="status-text" id="statusText">Tap to speak</div>
         <div class="transcription" id="transcriptionText"></div>
+
+        <!-- Zuno Music Player Card -->
+        <div id="zuno-music-player" style="display: none; align-items: center; justify-content: center; margin: 2rem 0;">
+            <div class="main-music-card">
+                <div class="track-info">
+                    <div class="album-art" id="zuno-album-art"></div>
+                    <div class="track-details">
+                        <div class="track-title" id="zuno-track-title">Not Playing</div>
+                        <div class="artist-name" id="zuno-artist-name">Trigger Zuno to play music</div>
+                    </div>
+                    <div class="volume-bars paused" id="zuno-volume-bars">
+                        <div class="bar" style="--delay:0s"></div>
+                        <div class="bar" style="--delay:0.1s"></div>
+                        <div class="bar" style="--delay:0.2s"></div>
+                        <div class="bar" style="--delay:0.3s"></div>
+                        <div class="bar" style="--delay:0.4s"></div>
+                        <div class="bar" style="--delay:0.5s"></div>
+                        <div class="bar" style="--delay:0.6s"></div>
+                        <div class="bar" style="--delay:0.7s"></div>
+                    </div>
+                </div>
+
+                <div class="playback-controls">
+                    <div class="time-info">
+                        <span class="current-time" id="zuno-current-time">0:00</span>
+                        <span class="remaining-time" id="zuno-remaining-time">-0:00</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="zuno-progress-fill" style="width: 0%;"></div>
+                    </div>
+                    <div class="button-row">
+                        <div class="main-control-btns">
+                            <button class="control-button back" id="zuno-btn-prev" title="Previous Track">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                    <path d="M4 4a.5.5 0 0 1 1 0v3.248l6.267-3.636c.54-.313 1.233.066 1.233.696v7.384c0 .63-.692 1.01-1.233.697L5 8.753V12a.5.5 0 0 1-1 0V4z"/>
+                                </svg>
+                            </button>
+                            <button class="control-button back" id="zuno-btn-skip-back" title="Skip Back 10s">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                    <path fill-rule="evenodd" d="M8 3a5 5 0 1 1-4.546 2.914.5.5 0 0 0-.908-.417A6 6 0 1 0 8 2v1z"/>
+                                    <path d="M3.102 4c.04-.316.025-.617-.05-.9L2 3.5l-.2-.5 1.5-.7.5.2-.2 1.5H3.102z"/>
+                                </svg>
+                            </button>
+                            <div class="play-pause-btns">
+                                <button class="control-button play-pause-button" id="zuno-btn-play-pause" title="Play/Pause">
+                                    <svg class="icon-play" xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 16 16">
+                                        <path d="M11.596 8.697l-6.363 3.692c-.54.314-1.233-.065-1.233-.696V4.308c0-.63.693-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393"/>
+                                    </svg>
+                                    <svg class="icon-pause hidden" xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 16 16">
+                                        <path d="M5.5 3.5A1.5 1.5 0 0 1 7 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5m5 0A1.5 1.5 0 0 1 12 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5"/>
+                                    </svg>
+                                </button>
+                            </div>
+                            <button class="control-button next" id="zuno-btn-skip-forward" title="Skip Forward 10s">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                    <path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/>
+                                    <path d="M12.898 4c-.04-.316-.025-.617.05-.9L14 3.5l.2-.5-1.5-.7-.5.2.2 1.5h.5z"/>
+                                </svg>
+                            </button>
+                            <button class="control-button next" id="zuno-btn-next" title="Next Track">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                    <path d="M12.5 4a.5.5 0 0 0-1 0v3.248L5.233 3.612C4.693 3.3 4 3.678 4 4.308v7.384c0 .63.692 1.01 1.233.697L11.5 8.753V12a.5.5 0 0 0 1 0V4z"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <button class="control-button d" id="zuno-btn-radar" title="Open YouTube Tab">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                <path d="M6.634 1.135A7 7 0 0 1 15 8a.5.5 0 0 1-1 0 6 6 0 1 0-6.5 5.98v-1.005A5 5 0 1 1 13 8a.5.5 0 0 1-1 0 4 4 0 1 0-4.5 3.969v-1.011A2.999 2.999 0 1 1 11 8a.5.5 0 0 1-1 0 2 2 0 1 0-2.5 1.936v-1.07a1 1 0 1 1 1 0V15.5a.5.5 0 0 1-1 0v-.518a7 7 0 0 1-.866-13.847"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <div class="results-container" id="resultsContainer">
             <h3 id="resultsTitle">Search Results</h3>
@@ -246,8 +472,27 @@
         const resultsTitle = document.getElementById('resultsTitle');
         const toast = document.getElementById('toast');
 
+        // Zuno Music Player DOM Elements
+        const zunoMusicPlayer = document.getElementById('zuno-music-player');
+        const zunoTrackTitle = document.getElementById('zuno-track-title');
+        const zunoArtistName = document.getElementById('zuno-artist-name');
+        const zunoAlbumArt = document.getElementById('zuno-album-art');
+        const zunoVolumeBars = document.getElementById('zuno-volume-bars');
+        const zunoCurrentTime = document.getElementById('zuno-current-time');
+        const zunoRemainingTime = document.getElementById('zuno-remaining-time');
+        const zunoProgressFill = document.getElementById('zuno-progress-fill');
+
+        const zunoBtnPrev = document.getElementById('zuno-btn-prev');
+        const zunoBtnSkipBack = document.getElementById('zuno-btn-skip-back');
+        const zunoBtnPlayPause = document.getElementById('zuno-btn-play-pause');
+        const zunoBtnSkipForward = document.getElementById('zuno-btn-skip-forward');
+        const zunoBtnNext = document.getElementById('zuno-btn-next');
+        const zunoBtnRadar = document.getElementById('zuno-btn-radar');
+
+        const EXTENSION_ID = "egobkkfkdjagkggbpfkadhfknjeofjab";
         let isListening = false;
-        
+        let musicStatusInterval = null;
+
         // Initialize Speech Recognition
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) {
@@ -320,17 +565,17 @@
                 
                 if (data.intent === 'play_song' || data.status === 'play_extension') {
                     showToast(data.message || "Playing song...");
-                    resultsContainer.style.display = 'block';
-                    resultsTitle.innerText = "Action";
-                    songList.innerHTML = `<li class="song-item"><div class="song-title">${data.message || "Playing song..."}</div></li>`;
+                    zunoMusicPlayer.style.display = 'flex';
+                    resultsContainer.style.display = 'none';
                     
                     if (data.url) {
-                        const EXTENSION_ID = "egobkkfkdjagkggbpfkadhfknjeofjab";
                         if (typeof chrome !== 'undefined' && chrome.runtime) {
                             try {
                                 chrome.runtime.sendMessage(EXTENSION_ID, { action: "play_music", url: data.url }, response => {
                                     if (chrome.runtime.lastError || !response || !response.success) {
                                         window.location.href = data.url;
+                                    } else {
+                                        setTimeout(startPollingMusicStatus, 1500);
                                     }
                                 });
                             } catch (e) {
@@ -341,6 +586,7 @@
                         }
                     }
                 } else if (data.intent === 'search_artist') {
+                    zunoMusicPlayer.style.display = 'none';
                     displayResults(data.query, data.results);
                 }
 
@@ -378,6 +624,113 @@
                 li.appendChild(artistDiv);
                 songList.appendChild(li);
             });
+        }
+
+        function formatTime(seconds) {
+            if (isNaN(seconds) || seconds === null) return "0:00";
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+        }
+
+        function updateMusicCardUI(data) {
+            zunoTrackTitle.textContent = data.title || "Not Playing";
+            zunoArtistName.textContent = data.artist || "Trigger Zuno to play music";
+            
+            if (data.albumArt) {
+                zunoAlbumArt.style.backgroundImage = `url(${data.albumArt})`;
+                zunoAlbumArt.style.backgroundSize = "cover";
+                zunoAlbumArt.style.backgroundPosition = "center";
+            } else {
+                zunoAlbumArt.style.backgroundImage = "linear-gradient(135deg, #ff9a9e, #fad0c4)";
+            }
+
+            const iconPlay = zunoBtnPlayPause.querySelector(".icon-play");
+            const iconPause = zunoBtnPlayPause.querySelector(".icon-pause");
+
+            if (data.paused) {
+                iconPlay.classList.remove("hidden");
+                iconPause.classList.add("hidden");
+                zunoVolumeBars.classList.add("paused");
+            } else {
+                iconPlay.classList.add("hidden");
+                iconPause.classList.remove("hidden");
+                zunoVolumeBars.classList.remove("paused");
+            }
+
+            const curTime = data.currentTime || 0;
+            const durTime = data.duration || 0;
+            zunoCurrentTime.textContent = formatTime(curTime);
+            zunoRemainingTime.textContent = durTime > 0 ? `-${formatTime(durTime - curTime)}` : "-0:00";
+            
+            if (durTime > 0) {
+                zunoProgressFill.style.width = `${(curTime / durTime) * 100}%`;
+            } else {
+                zunoProgressFill.style.width = "0%";
+            }
+        }
+
+        function startPollingMusicStatus() {
+            if (typeof chrome === 'undefined' || !chrome.runtime) return;
+            if (musicStatusInterval) clearInterval(musicStatusInterval);
+            
+            zunoMusicPlayer.style.display = "flex";
+            
+            pollMusicStatus();
+            musicStatusInterval = setInterval(pollMusicStatus, 1000);
+        }
+
+        function stopPollingMusicStatus() {
+            if (musicStatusInterval) {
+                clearInterval(musicStatusInterval);
+                musicStatusInterval = null;
+            }
+        }
+
+        function pollMusicStatus() {
+            try {
+                chrome.runtime.sendMessage(EXTENSION_ID, { action: "get_music_status" }, (response) => {
+                    if (chrome.runtime.lastError) {
+                        return;
+                    }
+                    if (response && response.success && response.data) {
+                        updateMusicCardUI(response.data);
+                    }
+                });
+            } catch (e) {
+                // Ignore
+            }
+        }
+
+        // Initialize control listeners
+        if (typeof chrome !== 'undefined' && chrome.runtime) {
+            zunoBtnPrev.addEventListener("click", () => {
+                chrome.runtime.sendMessage(EXTENSION_ID, { action: "control_music", command: "previous" });
+            });
+            zunoBtnSkipBack.addEventListener("click", () => {
+                chrome.runtime.sendMessage(EXTENSION_ID, { action: "control_music", command: "skip_backward" });
+            });
+            zunoBtnPlayPause.addEventListener("click", () => {
+                chrome.runtime.sendMessage(EXTENSION_ID, { action: "control_music", command: "toggle_play" });
+            });
+            zunoBtnSkipForward.addEventListener("click", () => {
+                chrome.runtime.sendMessage(EXTENSION_ID, { action: "control_music", command: "skip_forward" });
+            });
+            zunoBtnNext.addEventListener("click", () => {
+                chrome.runtime.sendMessage(EXTENSION_ID, { action: "control_music", command: "next" });
+            });
+            zunoBtnRadar.addEventListener("click", () => {
+                chrome.runtime.sendMessage(EXTENSION_ID, { action: "control_music", command: "focus_tab" });
+            });
+            
+            // Check status if tab query contains music pages already
+            chrome.runtime.sendMessage(EXTENSION_ID, { action: "get_music_status" }, (response) => {
+                if (response && response.success) {
+                    startPollingMusicStatus();
+                }
+            });
+        } else {
+            zunoBtnRadar.style.display = 'none';
         }
 
         function showToast(message) {

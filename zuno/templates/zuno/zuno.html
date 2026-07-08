@@ -330,14 +330,14 @@
                             try {
                                 chrome.runtime.sendMessage(EXTENSION_ID, { action: "play_music", url: data.url }, response => {
                                     if (chrome.runtime.lastError || !response || !response.success) {
-                                        window.open(data.url, '_blank');
+                                        window.location.href = data.url;
                                     }
                                 });
                             } catch (e) {
-                                window.open(data.url, '_blank');
+                                window.location.href = data.url;
                             }
                         } else {
-                            window.open(data.url, '_blank');
+                            window.location.href = data.url;
                         }
                     }
                 } else if (data.intent === 'search_artist') {

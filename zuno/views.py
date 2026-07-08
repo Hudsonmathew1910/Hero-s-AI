@@ -55,6 +55,7 @@ def process_audio(request):
         ]
 
         response_content = None
+        errors = []
         for model_name in models_to_try:
             try:
                 completion = groq_client.chat.completions.create(
@@ -69,11 +70,11 @@ def process_audio(request):
                 response_content = completion.choices[0].message.content
                 break  # Stop if successful
             except Exception as e:
-                print(f"Model {model_name} failed: {e}")
+                errors.append(f"{model_name}: {str(e)}")
                 continue
 
         if not response_content:
-            return JsonResponse({"error": "All fallback models failed to generate a response."}, status=500)
+            return JsonResponse({"error": "All models failed", "details": errors}, status=500)
 
         intent_data = json.loads(response_content)
 

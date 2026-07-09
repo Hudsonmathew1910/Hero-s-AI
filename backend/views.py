@@ -1041,3 +1041,9 @@ def delete_chat(request, chat_id):
         return JsonResponse({"status": "fail", "message": "Chat not found"}, status=404)
     except Exception as e:
         return safe_error_response(request, logger, "delete_chat", e)
+
+# =============================================================================
+# Custom 404 Error Handler
+# =============================================================================
+def custom_404(request, exception=None):
+    return render(request, "404.html", status=404)

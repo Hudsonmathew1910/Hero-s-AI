@@ -9,6 +9,7 @@ Fallback: gemini-3.1-flash-lite, gemini-2.5-flash, gemini-2.5-flash-lite, gemini
 import logging
 import time
 import traceback
+from backend.hero_model import Baymax
 
 logger = logging.getLogger("infinsight.llm")
 
@@ -42,11 +43,9 @@ Your goal is to provide deep, actionable insights from datasets using real-time 
 - If the question is purely descriptive or you already have the answer in the RAG context, provide a direct answer.
 - **NEVER** guess numbers. If you need a number and it's not in the context, use `python_pandas` to find it.
 - Always explain the "Why" behind the data. Don't just give numbers; interpret them.
-- Use markdown tables and bold text for clarity.
-
-### Dataset Schema:
-The user will provide the schema (columns, types, samples) below. Use it to write accurate code.
-"""
+- Format your response with markdown. Use tables if it makes data easier to read.
+- Do NOT output ```markdown blocks. Just plain markdown.
+""" + Baymax.HERO_AI_UNIVERSE
 
 
 
@@ -82,10 +81,6 @@ def _build_prompt(user_message: str, context_chunks: list[dict], chat_history: l
 
 ### USER QUESTION:
 {user_message}
-
-### INSTRUCTIONS:
-- If calculation is needed, output only the `python_pandas` code block first.
-- If you have enough info to answer, summarize the findings clearly.
 """
     return prompt.strip()
 

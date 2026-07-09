@@ -5,6 +5,7 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from groq import Groq
 from ytmusicapi import YTMusic
+from backend.hero_model import Baymax
 
 def get_groq_client(request):
     """Resolve the Groq API key dynamically from the database for the authenticated user."""
@@ -72,8 +73,8 @@ def process_audio(request):
             "'intent' MUST be either 'play_song' or 'search_artist'. "
             "'query' is the name of the song or artist. "
             "If the user wants to play a song, use 'play_song'. "
-            "If the user wants to search for an artist or song details, use 'search_artist'."
-        )
+            "If the user wants to search for an artist or song details, use 'search_artist'.\n\n"
+        ) + Baymax.HERO_AI_UNIVERSE
 
         models_to_try = [
             "llama-3.1-8b-instant",

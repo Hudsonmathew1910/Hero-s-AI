@@ -1,0 +1,140 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>404 - Page Not Found | Hero's AI</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Font Awesome -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+
+    <style>
+      :root {
+        --bg: #0d0d0f;
+        --surface: #141417;
+        --surface-2: #1e1e24;
+        --border: rgba(255, 255, 255, 0.08);
+        --text: #ffffff;
+        --text-dim: #a1a1aa;
+        --cyan: #00c6ff;
+        --cyan-dim: rgba(0, 198, 255, 0.15);
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: "Inter", sans-serif;
+        background-color: var(--bg);
+        color: var(--text);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        overflow: hidden;
+      }
+
+      .container {
+        text-align: center;
+        z-index: 2;
+        padding: 2rem;
+      }
+
+      .error-code {
+        font-size: 8rem;
+        font-weight: 700;
+        line-height: 1;
+        background: linear-gradient(135deg, var(--cyan), #3b82f6);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 1rem;
+        font-family: 'JetBrains Mono', monospace;
+      }
+
+      h1 {
+        font-size: 2rem;
+        margin-bottom: 1rem;
+        font-weight: 600;
+      }
+
+      p {
+        color: var(--text-dim);
+        font-size: 1.1rem;
+        max-width: 400px;
+        margin: 0 auto 2.5rem;
+        line-height: 1.6;
+      }
+
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        background-color: var(--text);
+        color: var(--bg);
+        text-decoration: none;
+        padding: 0.8rem 1.5rem;
+        border-radius: 99px;
+        font-weight: 600;
+        transition: transform 0.2s, background 0.2s;
+      }
+
+      .btn:hover {
+        transform: translateY(-2px);
+        background-color: #e4e4e7;
+      }
+
+      /* Background Grid (from landing page) */
+      .bg-grid {
+        position: fixed;
+        inset: 0;
+        background-image: linear-gradient(var(--border) 1px, transparent 1px),
+          linear-gradient(90deg, var(--border) 1px, transparent 1px);
+        background-size: 40px 40px;
+        background-position: center center;
+        z-index: 0;
+        opacity: 0.3;
+        pointer-events: none;
+      }
+      .bg-fade {
+        position: fixed;
+        inset: 0;
+        background: radial-gradient(
+          circle at 50% 50%,
+          transparent 20%,
+          var(--bg) 80%
+        );
+        z-index: 1;
+        pointer-events: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="bg-grid"></div>
+    <div class="bg-fade"></div>
+
+    <div class="container">
+      <div class="error-code">404</div>
+      <h1>Page not found</h1>
+      <p>
+        The page you are looking for doesn't exist or has been moved. Let's get you back to safety.
+      </p>
+      <a href="/" class="btn">
+        <i class="fa-solid fa-arrow-left"></i> Return Home
+      </a>
+    </div>
+  </body>
+</html>

@@ -305,10 +305,12 @@
         <button class="menu-toggle" onclick="toggleSidebar()">
           <i class="fa-solid fa-bars"></i>
         </button>
-        <div class="logo">
-          <div class="logo-dot"></div>
-          Hero's AI
-        </div>
+        <a href="{% url 'landing' %}" style="text-decoration: none;">
+          <div class="logo">
+            <div class="logo-dot"></div>
+            Hero's AI
+          </div>
+        </a>
       </div>
       <div class="header-right">
         <!-- Talk to AI button beside input box -->

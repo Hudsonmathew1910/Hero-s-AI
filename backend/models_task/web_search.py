@@ -12,6 +12,7 @@ Dependencies:
 import logging
 import requests
 import time
+from bs4 import BeautifulSoup
 
 try:
     from .query_rewriter import rewrite_query_for_search
@@ -105,6 +106,7 @@ def _summarise_with_gemini(
     gemini_key: str,
 ) -> str:
     """Feed raw search data into Gemini and return a clean answer."""
+    from backend.hero_model import Baymax
 
     context_parts = []
 
@@ -133,7 +135,8 @@ def _summarise_with_gemini(
         f"2. **Accuracy & Relevance**: Prioritize factual correctness and direct relevance.\n"
         f"3. **Structure**: Provide a clear, concise, and complete answer. Include supporting details or context only where necessary.\n"
         f"4. **Citations**: At the end of your response, list the URLs or titles of the sources you used.\n\n"
-        f"Deliver a professional and helpful response that directly addresses the user's intent."
+        f"Deliver a professional and helpful response that directly addresses the user's intent.\n"
+        f"{Baymax.HERO_AI_UNIVERSE}"
     )
 
     url = (

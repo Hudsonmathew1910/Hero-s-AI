@@ -384,8 +384,8 @@
                 <div class="track-info">
                     <div class="album-art" id="zuno-album-art"></div>
                     <div class="track-details">
-                        <div class="track-title" id="zuno-track-title">Not Playing</div>
-                        <div class="artist-name" id="zuno-artist-name">Trigger Zuno to play music</div>
+                        <div class="track-title" id="zuno-track-title">Say play [song]</div>
+                        <div class="artist-name" id="zuno-artist-name">to start playing</div>
                     </div>
                     <div class="volume-bars paused" id="zuno-volume-bars">
                         <div class="bar" style="--delay:0s"></div>
@@ -634,8 +634,8 @@
         }
 
         function updateMusicCardUI(data) {
-            zunoTrackTitle.textContent = data.title || "Not Playing";
-            zunoArtistName.textContent = data.artist || "Trigger Zuno to play music";
+            zunoTrackTitle.textContent = data.title || "Say play [song]";
+            zunoArtistName.textContent = data.artist || "to start playing";
             
             if (data.albumArt) {
                 zunoAlbumArt.style.backgroundImage = `url(${data.albumArt})`;

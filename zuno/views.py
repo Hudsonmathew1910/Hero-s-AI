@@ -41,7 +41,13 @@ def index(request):
     # Require authentication to view the Zuno page
     if not request.session.get('user_id'):
         return redirect('/')
-    return render(request, 'zuno/zuno.html')
+
+    # Check if the user has a Groq API key configured
+    groq_client = get_groq_client(request)
+    context = {
+        'groq_missing': groq_client is None,
+    }
+    return render(request, 'zuno/zuno.html', context)
 
 
 @csrf_exempt
@@ -53,7 +59,7 @@ def process_audio(request):
     groq_client = get_groq_client(request)
     if not groq_client:
         return JsonResponse({
-            "error": "Groq API key not configured.",
+            "error": "⚠️ Please log in to Hero AI and add your Groq API Key to use Zuno.",
             "message": "🔑 **Groq API Key Missing**\n\nTo use Zuno, please configure your Groq API key in your Hero AI profile settings:\n1. Log in to your Hero AI account.\n2. Navigate to **Settings** / **API Keys**.\n3. Add your Groq API Key and save.",
             "details": ["Please log in and configure your Groq API key in your profile settings."]
         }, status=500)

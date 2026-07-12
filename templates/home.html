@@ -4,7 +4,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Hero's AI | Home</title>
+    <title>Hero's</title>
     <link
       rel="icon"
       type="image/png"
@@ -131,7 +131,7 @@
     <!-- ══════════════════════════════
      AUTH SCREEN
 ══════════════════════════════ -->
-    <div class="auth-screen" id="authScreen">
+    <div class="auth-screen" id="authScreen" style="display: none;">
       <div class="auth-card">
         <div class="auth-logo">
           <div class="auth-logo-dot"></div>
@@ -315,7 +315,7 @@
       <div class="header-right">
         <!-- Talk to AI button beside input box -->
         <button class="cssbuttons-io-button" onclick="openVoiceModal()">
-          <span>Talk to Baymax</span>
+          <span>Talk to Halo</span>
           <div class="icon">
             <svg
               height="20"
@@ -404,7 +404,14 @@
               <i class="fa-solid fa-right-from-bracket"></i>Log out
             </div>
           </div>
-          <div class="user-info-row" onclick="toggleUserMenu()">
+          <!-- Logged out row -->
+          <div class="user-info-row" id="userInfoRowLoggedOut" style="display: flex; gap: 8px; padding: 12px; cursor: default; background: transparent;">
+             <button style="flex: 1; padding: 8px 0; border: none; border-radius: 6px; background: var(--accent); color: white; font-size: 0.85rem; font-weight: 500; cursor: pointer; transition: opacity 0.2s; display: flex; align-items: center; justify-content: center; gap: 6px;" onclick="showAuthScreen()" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
+                 <i class="fa-solid fa-right-to-bracket"></i> Login
+             </button>
+          </div>
+          <!-- Logged in row -->
+          <div class="user-info-row" id="userInfoRowLoggedIn" onclick="toggleUserMenu()" style="display: none;">
             <div class="user-avatar" id="userAvatarInitials">H</div>
             <div class="user-details">
               <div class="user-name" id="sidebarUserName">Loading…</div>
@@ -580,8 +587,8 @@
                   "
                 >
                   <option value="Baymax">Baymax</option>
+                  <option value="Halo" selected>Halo v2.6</option>
                   <option value="ZORVIN">ZORVIN</option>
-                  <option value="Developer">Developer</option>
                 </select>
 
                 <div
@@ -1273,7 +1280,7 @@
           <div class="help-text-group">
             <div class="help-title">Switch AI model</div>
             <div class="help-desc">
-              Use the model selector to switch between Baymax and ZORVIN. Enable the Developer Option in Settings to access the Developer mode!
+              Use the model selector to switch between Baymax, Halo, and ZORVIN. Enable the Developer Option in Settings to access the Developer mode!
             </div>
           </div>
         </div>

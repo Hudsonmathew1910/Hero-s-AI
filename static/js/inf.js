@@ -61,12 +61,10 @@ async function bootstrapAuth() {
     } else {
       state.loggedIn = false;
       renderAuthUI();
-      showAuthModal();
     }
   } catch (e) {
     console.error("Session check failed:", e);
     renderAuthUI();
-    showAuthModal();
   }
 }
 

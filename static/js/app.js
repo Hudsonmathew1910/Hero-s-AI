@@ -38,7 +38,7 @@
 let messages = [];
 let attachedFiles = [];
 let isLoading = false;
-let currentModel = 'Baymax';
+let currentModel = 'Halo';
 let inlineMicOn = false;
 let inlineRecog = null;
 let userMenuOpen = false;
@@ -198,7 +198,7 @@ function _syncSettingsUI() {
   devSelects.forEach(select => {
     if (!select) return;
     let opt = select.querySelector('option[value="Developer"]');
-    if (userSettings.developerOption) {
+    if (userSettings.developerOption && currentUser) {
       if (!opt) {
         opt = document.createElement('option');
         opt.value = 'Developer';
@@ -399,11 +399,28 @@ async function checkSession() {
         }, 1000);
       }
     } else {
-      showAuthScreen();
+      handleLoggedOutState();
     }
   } catch (err) {
     console.error('Session check failed:', err);
-    showAuthScreen();
+    handleLoggedOutState();
+  }
+  onModelChange(); // Init UI based on default model
+}
+
+function handleLoggedOutState() {
+  const rowIn = $('userInfoRowLoggedIn'); if (rowIn) rowIn.style.display = 'none';
+  const rowOut = $('userInfoRowLoggedOut'); if (rowOut) rowOut.style.display = 'flex';
+  
+  const modelSelect = $('modelSelect');
+  if (modelSelect) {
+      Array.from(modelSelect.options).forEach(opt => {
+          if (opt.value !== 'Halo') opt.disabled = true;
+      });
+      if (modelSelect.value !== 'Halo') {
+          modelSelect.value = 'Halo';
+          onModelChange();
+      }
   }
 }
 
@@ -485,6 +502,14 @@ async function handleLogin() {
 }
 
 function loginUser(user) {
+  const rowIn = $('userInfoRowLoggedIn'); if (rowIn) rowIn.style.display = 'flex';
+  const rowOut = $('userInfoRowLoggedOut'); if (rowOut) rowOut.style.display = 'none';
+  
+  const modelSelect = $('modelSelect');
+  if (modelSelect) {
+      Array.from(modelSelect.options).forEach(opt => opt.disabled = false);
+  }
+  
   const parts = user.name.trim().split(' ');
   user.initials = parts.length >= 2
     ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
@@ -512,6 +537,7 @@ async function handleLogout() {
       const data = await getJsonResponse(res);
       if (data.status === 'success') {
         currentUser = null; closeUserMenu();
+        _syncSettingsUI();
         messages = []; attachedFiles = []; hasExistingApiKeys = false; hasGroqKey = false;
         updateFastModeDefault();
         currentSessionId = null;
@@ -671,11 +697,21 @@ function onModelChange() {
     currentModel = newModel;
     const chip = $('modelChipName');
     if (chip) chip.textContent = currentModel;
-    const talkBtn = document.querySelector('.cssbuttons-io-button');
+    
+    const talkBtn = document.querySelector('.cssbuttons-io-button span');
     if (talkBtn) {
-      const textNode = Array.from(talkBtn.childNodes).find(n => n.nodeType === 3);
-      if (textNode) textNode.textContent = 'Talk to ' + currentModel + ' ';
+      talkBtn.textContent = 'Talk to ' + currentModel;
     }
+    
+    if (currentModel === 'Baymax' && !hasExistingApiKeys) {
+        showNotification('Please add Gemini or OpenRouter API key to use Baymax.', 'info');
+    }
+    
+    const fastBtn = $('fastModeBtn');
+    if (fastBtn) {
+        fastBtn.style.display = (currentModel === 'Halo') ? 'none' : '';
+    }
+    
     addSystemNote('Switched to ' + currentModel);
   }
 }
@@ -723,7 +759,6 @@ async function sendMessage() {
   const inp = $('chatInput'); if (!inp) return;
   const text = inp.value.trim();
   if (!text && attachedFiles.length === 0) return;
-  if (!currentUser) { showNotification('Please login first', 'error'); return; }
 
   activateChatBg();
 
@@ -906,6 +941,25 @@ function renderMessage(msg) {
       <div class="bubble">${formatContent(msg.content || '')}${devFooter}</div>
     </div>`;
 
+  // If the reply is a login-required alert, inject navigation buttons into the bubble
+  if (!isUser && msg.content && msg.content.includes('Login Required')) {
+    const bubble = row.querySelector('.bubble');
+    if (bubble) {
+      const btnRow = document.createElement('div');
+      btnRow.style.cssText = 'display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;';
+      btnRow.innerHTML = `
+        <a href="/" style="display:inline-flex;align-items:center;gap:6px;padding:7px 18px;border-radius:30px;background:linear-gradient(135deg,#7b2cbf,#c77dff);color:#fff;font-size:0.9rem;font-weight:600;text-decoration:none;transition:transform 0.2s,box-shadow 0.2s;box-shadow:0 4px 14px rgba(123,44,191,0.35);" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 22px rgba(123,44,191,0.5)'" onmouseout="this.style.transform='';this.style.boxShadow='0 4px 14px rgba(123,44,191,0.35)'">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M8.354 1.146a.5.5 0 0 0-.708 0l-6 6A.5.5 0 0 0 1.5 7.5v7a.5.5 0 0 0 .5.5h4.5a.5.5 0 0 0 .5-.5v-4h2v4a.5.5 0 0 0 .5.5H14a.5.5 0 0 0 .5-.5v-7a.5.5 0 0 0-.146-.354L13 5.793V2.5a.5.5 0 0 0-.5-.5h-1a.5.5 0 0 0-.5.5v1.293L8.354 1.146z"/></svg>
+          Go to Home
+        </a>
+        <a href="http://127.0.0.1:8000/" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:7px 18px;border-radius:30px;background:transparent;color:#c77dff;font-size:0.9rem;font-weight:600;text-decoration:none;border:1.5px solid #c77dff;transition:transform 0.2s,background 0.2s;" onmouseover="this.style.transform='translateY(-2px)';this.style.background='rgba(199,125,255,0.1)'" onmouseout="this.style.transform='';this.style.background='transparent'">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8zm7.5-6.923c-.67.204-1.335.82-1.887 1.855A7.97 7.97 0 0 0 5.145 4H7.5V1.077zM4.09 4a9.267 9.267 0 0 1 .64-1.539 6.7 6.7 0 0 1 .597-.933A7.025 7.025 0 0 0 2.255 4H4.09zm-.582 3.5c.03-.877.138-1.718.312-2.5H1.674a6.958 6.958 0 0 0-.656 2.5h2.49zM4.847 5a12.5 12.5 0 0 0-.338 2.5H7.5V5H4.847zM8.5 5v2.5h2.99a12.495 12.495 0 0 0-.337-2.5H8.5zM4.51 8.5a12.5 12.5 0 0 0 .337 2.5H7.5V8.5H4.51zm3.99 0V11h2.653c.187-.765.306-1.608.338-2.5H8.5zM5.145 12c.138.386.295.744.468 1.068.552 1.035 1.218 1.65 1.887 1.855V12H5.145zm.182 2.472a6.696 6.696 0 0 1-.597-.933A9.268 9.268 0 0 1 4.09 12H2.255a7.024 7.024 0 0 0 3.072 2.472zM3.82 11a13.652 13.652 0 0 1-.312-2.5h-2.49c.062.89.291 1.733.656 2.5H3.82zm6.853 3.472A7.024 7.024 0 0 0 13.745 12H11.91a9.27 9.27 0 0 1-.64 1.539 6.688 6.688 0 0 1-.597.933zM8.5 12v2.923c.67-.204 1.335-.82 1.887-1.855.173-.324.33-.682.468-1.068H8.5zm3.68-1h2.146c.365-.767.594-1.61.656-2.5h-2.49a13.65 13.65 0 0 1-.312 2.5zm2.802-3.5a6.959 6.959 0 0 0-.656-2.5H11.68c.174.782.282 1.623.312 2.5h2.49zM11.27 2.461c.247.464.462.98.64 1.539h1.835a7.024 7.024 0 0 0-3.072-2.472c.218.284.418.598.597.933zM10.855 4a7.966 7.966 0 0 0-.468-1.068C9.835 1.897 9.17 1.282 8.5 1.077V4h2.355z"/></svg>
+          Go to Localhost
+        </a>`;
+      bubble.appendChild(btnRow);
+    }
+  }
+
   container.appendChild(row);
   
   if (isUser) {
@@ -915,6 +969,7 @@ function renderMessage(msg) {
     container.scrollTo({ top: Math.max(0, offset), behavior: 'smooth' });
   }
 }
+
 
 /* ════════ TYPING INDICATOR ════════ */
 function showTyping(mode) {
@@ -1041,6 +1096,14 @@ function formatContent(raw) {
   // ── Step 0b: linkify bare URLs before any HTML processing ────
   text = _linkifyUrls(text);
 
+  // ── Protect raw HTML blocks (extracted before escaping) ───────
+  const rawHtmlBlocks = [];
+  text = text.replace(/<div data-raw[^>]*>[\s\S]*?<\/div>/g, (match) => {
+    const i = rawHtmlBlocks.length;
+    rawHtmlBlocks.push(match);
+    return `%%RAWHTML_${i}%%`;
+  });
+
   // ── Protect code blocks (extract before escaping) ─────────────
   const codeBlocks = [];
   text = text.replace(/```(\w+)?\n?([\s\S]*?)```/g, (_, lang, code) => {
@@ -1142,6 +1205,7 @@ function formatContent(raw) {
   codeBlocks.forEach((block, i) => { text = text.replace(`%%CODEBLOCK_${i}%%`, () => block); });
   inlineCodes.forEach((block, i) => { text = text.replace(`%%INLINE_${i}%%`,   () => block); });
   tables.forEach((block, i)      => { text = text.replace(`%%TABLE_${i}%%`,    () => block); });
+  rawHtmlBlocks.forEach((block, i) => { text = text.replace(`%%RAWHTML_${i}%%`, () => block); });
 
   // ── FIX 2: Restore clickable link placeholders ────────────────
   text = _restoreLinks(text);
@@ -1557,10 +1621,6 @@ function _startRecognition() {
 
 async function _sendToAI(userText) {
   if (!voiceActive || !userText) return;
-  if (!currentUser) {
-    const el = $('voiceStatus'); if (el) el.textContent = 'Please login first.';
-    _setVoiceState(VOICE_STATE.LISTENING); _startRecognition(); return;
-  }
   if (voiceState !== VOICE_STATE.THINKING) _setVoiceState(VOICE_STATE.THINKING);
   _showTranscript(userText, '');
   voiceFinalText = ''; voiceInterimText = '';

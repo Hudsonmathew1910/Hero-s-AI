@@ -221,6 +221,34 @@ def login_required_json(f):
         return f(request, *args, **kwargs)
     return wrapper
 
+def optional_login_json(f):
+    @wraps(f)
+    def wrapper(request, *args, **kwargs):
+        uid = request.session.get('user_id')
+        if not uid:
+            session_key_raw = request.headers.get('X-Session-Id', '')
+            print(f"[DEBUG] {request.path} | X-Session-Id: {session_key_raw} | Cookie: {request.COOKIES.get('sessionid')}")
+            if session_key_raw:
+                from django.contrib.sessions.backends.db import SessionStore
+                for sk in session_key_raw.split(','):
+                    sk = sk.strip()
+                    if not sk: continue
+                    s = SessionStore(session_key=sk)
+                    uid = s.get('user_id')
+                    if uid:
+                        request.session = s
+                        break
+        
+        request.user_obj = None
+        if uid:
+            try:
+                if not hasattr(request, '_cached_user'):
+                    request._cached_user = User.objects.get(user_id=uid)
+                request.user_obj = request._cached_user
+            except User.DoesNotExist:
+                pass
+        return f(request, *args, **kwargs)
+    return wrapper
 
 def privacy_view(request):
     """
@@ -386,17 +414,21 @@ def logout_view(request):
         return JsonResponse({"status": "fail", "message": "Method not allowed"}, status=405)
     request.session.flush()
     return JsonResponse({"status": "success", "message": "Logged out"})
+@csrf_exempt
+@optional_login_json
 def check_session(request):
     uid = request.session.get('user_id')
-    if not uid:
-        return JsonResponse({"status": "fail", "logged_in": False})
+    if not getattr(request, 'user_obj', None):
+        return JsonResponse({"status": "fail", "logged_in": False, "authenticated": False})
+    
     try:
-        user     = User.objects.get(user_id=uid)
+        user = request.user_obj
         has_keys = Api.objects.filter(user=user, model_name__in=['Gemini', 'OpenRouter']).exists()
         has_groq = Api.objects.filter(user=user, model_name='Groq').exists()
         return JsonResponse({
             "status":    "success",
             "logged_in": True,
+            "authenticated": True,
             "user": {
                 "user_id":      str(user.user_id),
                 "name":         user.name,
@@ -405,11 +437,8 @@ def check_session(request):
                 "has_groq_key": has_groq,
             },
         })
-    except User.DoesNotExist:
-        request.session.flush()
-        return JsonResponse({"status": "fail", "logged_in": False})
-
-
+    except Exception as e:
+        return JsonResponse({"status": "fail", "logged_in": False, "authenticated": False})
 # ── Google OAuth ──────────────────────────────────────────────────────────────
 
 def google_login(request):
@@ -595,7 +624,7 @@ def check_api_keys(request):
 
 # ── Chat ──────────────────────────────────────────────────────────────────────
 @csrf_exempt
-@login_required_json
+@optional_login_json
 @json_only
 def chat_api(request):
     """
@@ -629,7 +658,27 @@ def chat_api(request):
 
     # ── Determine whether this user has superuser privileges ──────────────────
     # A user is a superuser if their is_superuser flag is set to True.
-    is_superuser: bool = getattr(request.user_obj, 'is_superuser', False)
+    is_superuser: bool = getattr(request.user_obj, 'is_superuser', False) if getattr(request, 'user_obj', None) else False
+    
+    if not getattr(request, 'user_obj', None):
+        temporary_chat = True
+        
+        if mode in ['zeno_plus', 'zeno_voice']:
+            return JsonResponse({
+                "status": "success",
+                "reply": "⚠️ **Login Required**\n\nPlease log in to your Hero AI account and configure your API keys to use this feature.",
+                "session_id": session_id_str,
+                "is_new_chat": False,
+                "temporary": True
+            })
+            
+        model = 'Halo'
+
+    if mode.startswith('zeno_'):
+        if mode in ['zeno_plus', 'zeno_voice']:
+            model = 'Baymax'
+        else:
+            model = 'Halo'
 
     if not raw_message:
         return JsonResponse({"status": "fail", "message": "Message required"}, status=400)
@@ -732,26 +781,29 @@ def chat_api(request):
 
         logger.info(
             "chat_api | user=%s | mode=%s | intent=%s | temporary=%s | tokens≈%s",
-            request.user_obj.user_id, mode, nlp_intent,
+            request.user_obj.user_id if request.user_obj else "Anonymous", mode, nlp_intent,
             temporary_chat, nlp_result["metadata"].get("token_estimate"),
         )
 
         # ── Parallel DB lookups ───────────────────────────────────────────────
-        with ThreadPoolExecutor(max_workers=4) as pool:
-            f_keys = pool.submit(get_user_api_keys,      request.user_obj)
-            f_sett = pool.submit(get_user_settings,      request.user_obj)
-            f_sess = pool.submit(
-                _get_or_create_session,
-                request.user_obj,
-                # For temporary chats: always start a brand-new session by
-                # passing None so _get_or_create_session never re-uses one.
-                None if temporary_chat else session_id_str,
-                message,
-            )
+        if getattr(request, 'user_obj', None):
+            with ThreadPoolExecutor(max_workers=4) as pool:
+                f_keys = pool.submit(get_user_api_keys,      request.user_obj)
+                f_sett = pool.submit(get_user_settings,      request.user_obj)
+                f_sess = pool.submit(
+                    _get_or_create_session,
+                    request.user_obj,
+                    None if temporary_chat else session_id_str,
+                    message,
+                )
 
-            gemini_key, openrouter_key, groq_key = f_keys.result()
-            user_settings                         = f_sett.result()
-            chat_session, is_new_session          = f_sess.result()
+                gemini_key, openrouter_key, groq_key = f_keys.result()
+                user_settings                        = f_sett.result()
+                chat_session, is_new_session         = f_sess.result()
+        else:
+            gemini_key, openrouter_key, groq_key = None, None, None
+            user_settings = {}
+            chat_session, is_new_session = None, True
 
         # ── Session history ───────────────────────────────────────────────────
         if temporary_chat:
@@ -783,30 +835,29 @@ def chat_api(request):
 
         logger.debug("DB lookup: %.2fs", time.time() - t0)
 
-        # ── Build Baymax instance ─────────────────────────────────────────────
-        user_instruction = (
-            user_settings['user_instruction']
-            if user_settings['enable_custom_instructions'] else None
-        )
-        user_about_me = (
-            user_settings['user_about_me']
-            if user_settings['enable_custom_instructions'] else None
-        )
-
-        baymax = Baymax(
-            gemini_key=gemini_key,
-            openrouter_key=openrouter_key,
-            groq_key=groq_key,
-            user_instruction=user_instruction,
-            user_about_me=user_about_me,
-            user_name=user_settings['user_name'],
-            chat_history=chat_history,
-            nlp_result=nlp_result,
-            # Pass new flags so Baymax behaves correctly
-            temporary=temporary_chat,
-            is_superuser=is_superuser,
-            is_fast=is_fast,
-        )
+        if model == 'Halo':
+            from .halo import Halo
+            baymax = Halo(
+                chat_history=chat_history,
+                temporary=temporary_chat,
+                is_superuser=is_superuser,
+                is_fast=is_fast,
+            )
+        else:
+            baymax = Baymax(
+                gemini_key=gemini_key,
+                openrouter_key=openrouter_key,
+                groq_key=groq_key,
+                user_instruction=user_settings.get('user_instruction'),
+                user_about_me=user_settings.get('user_about_me'),
+                user_name=user_settings.get('user_name'),
+                chat_history=chat_history,
+                nlp_result=nlp_result,
+                # Pass new flags so Baymax behaves correctly
+                temporary=temporary_chat,
+                is_superuser=is_superuser,
+                is_fast=is_fast,
+            )
 
         t1 = time.time()
 
@@ -869,13 +920,13 @@ def chat_api(request):
             )
         else:
             logger.debug(
-                "Temporary chat — skipping DB save for session %s", chat_session.session_id
+                "Temporary chat — skipping DB save for session %s", getattr(chat_session, 'session_id', session_id_str)
             )
 
         return JsonResponse({
             "status":      "success",
             "reply":       reply,
-            "session_id":  str(chat_session.session_id),
+            "session_id":  str(chat_session.session_id) if chat_session else session_id_str,
             "is_new_chat": is_new_session,
             # Let the frontend know whether this was a temporary session so it
             # can avoid storing the session_id in its own history list.
@@ -943,21 +994,34 @@ def save_user_settings(request):
 
 
 # ── Chat History ──────────────────────────────────────────────────────────────
+from django.db.models import OuterRef, Subquery
+
 @login_required_json
 def get_chat_history(request):
     try:
-        sessions  = ChatSession.objects.filter(user=request.user_obj).order_by('-updated_at')
+        first_task_type = Chat.objects.filter(
+            session=OuterRef('pk')
+        ).order_by('timestamp').values('task_type')[:1]
+        
+        first_model = Chat.objects.filter(
+            session=OuterRef('pk')
+        ).order_by('timestamp').values('model_used')[:1]
+
+        sessions = ChatSession.objects.filter(user=request.user_obj).annotate(
+            first_task_type=Subquery(first_task_type),
+            first_model=Subquery(first_model)
+        ).order_by('-updated_at')
+        
         chat_list = []
         for sess in sessions:
-            first = sess.messages.order_by('timestamp').first()
-            if not first:
+            if not sess.first_task_type:
                 continue
             chat_list.append({
                 'chat_id':    str(sess.session_id),
                 'session_id': str(sess.session_id),
                 'preview':    sess.title,
-                'task_type':  first.task_type,
-                'model_used': first.model_used,
+                'task_type':  sess.first_task_type,
+                'model_used': sess.first_model,
                 'created_at': sess.created_at.isoformat(),
                 'date':       sess.updated_at.strftime('%Y-%m-%d'),
             })

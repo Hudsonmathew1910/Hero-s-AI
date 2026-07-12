@@ -835,29 +835,47 @@ def chat_api(request):
 
         logger.debug("DB lookup: %.2fs", time.time() - t0)
 
-        if model == 'Halo':
-            from .halo import Halo
-            baymax = Halo(
-                chat_history=chat_history,
-                temporary=temporary_chat,
-                is_superuser=is_superuser,
-                is_fast=is_fast,
-            )
-        else:
-            baymax = Baymax(
-                gemini_key=gemini_key,
-                openrouter_key=openrouter_key,
-                groq_key=groq_key,
-                user_instruction=user_settings.get('user_instruction'),
-                user_about_me=user_settings.get('user_about_me'),
-                user_name=user_settings.get('user_name'),
-                chat_history=chat_history,
-                nlp_result=nlp_result,
-                # Pass new flags so Baymax behaves correctly
-                temporary=temporary_chat,
-                is_superuser=is_superuser,
-                is_fast=is_fast,
-            )
+        try:
+            if model == 'Halo':
+                from .halo import Halo
+                baymax = Halo(
+                    chat_history=chat_history,
+                    temporary=temporary_chat,
+                    is_superuser=is_superuser,
+                    is_fast=is_fast,
+                )
+            else:
+                baymax = Baymax(
+                    gemini_key=gemini_key,
+                    openrouter_key=openrouter_key,
+                    groq_key=groq_key,
+                    user_instruction=user_settings.get('user_instruction'),
+                    user_about_me=user_settings.get('user_about_me'),
+                    user_name=user_settings.get('user_name'),
+                    chat_history=chat_history,
+                    nlp_result=nlp_result,
+                    # Pass new flags so Baymax behaves correctly
+                    temporary=temporary_chat,
+                    is_superuser=is_superuser,
+                    is_fast=is_fast,
+                )
+        except ImportError as e:
+            missing = str(e).replace("No module named ", "").strip("'")
+            return JsonResponse({
+                "status": "success",
+                "reply": f"Missing library: **{missing}** is not installed on the server.\n\nTo fix this, run:\n```\npip install {missing}\n```",
+                "session_id": session_id_str,
+                "is_new_chat": False,
+                "temporary": True
+            })
+        except Exception as e:
+            return JsonResponse({
+                "status": "success",
+                "reply": f"Server Configuration Error: {str(e)}\n\nPlease ensure your server has all required environment variables.",
+                "session_id": session_id_str,
+                "is_new_chat": False,
+                "temporary": True
+            })
 
         t1 = time.time()
 

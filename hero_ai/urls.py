@@ -14,8 +14,8 @@ urlpatterns = [
     path('infinsight/', include('infinsight.urls')),
     path('zuno/', include('zuno.urls')),
     
-    # Catch-all pattern to force custom 404 even in DEBUG mode
-    re_path(r'^.*$', views.custom_404),
+    # Catch-all pattern to force custom 404 even in DEBUG mode (excluding admin so APPEND_SLASH still works)
+    re_path(r'^(?!admin(?:/|$)).*$', views.custom_404),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 handler404 = 'backend.views.custom_404'

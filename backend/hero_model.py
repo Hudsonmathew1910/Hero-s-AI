@@ -22,6 +22,33 @@ from backend.Nlp import PreprocessedInput
 logger = logging.getLogger("hero_ai.baymax")
 
 
+class GroqProviderError(Exception):
+    """Errors related to Groq provider traffic, auth, or network."""
+    pass
+
+
+class GroqModelError(Exception):
+    """Errors specific to model availability or parameter issues."""
+    pass
+
+
+class LocalLoggerProxy:
+    def __init__(self, inst):
+        self.inst = inst
+    def debug(self, msg, *args, **kwargs):
+        if not getattr(self.inst, "_winner_declared", False):
+            logger.debug(msg, *args, **kwargs)
+    def info(self, msg, *args, **kwargs):
+        if not getattr(self.inst, "_winner_declared", False):
+            logger.info(msg, *args, **kwargs)
+    def warning(self, msg, *args, **kwargs):
+        if not getattr(self.inst, "_winner_declared", False):
+            logger.warning(msg, *args, **kwargs)
+    def error(self, msg, *args, **kwargs):
+        if not getattr(self.inst, "_winner_declared", False):
+            logger.error(msg, *args, **kwargs)
+
+
 class Baymax:
     # ── System prompt constants (unchanged) ──────────────────────────────────
 
@@ -35,7 +62,7 @@ class Baymax:
                     4. Zuno: The built-in intelligent music assistant that controls YouTube and YouTube Music seamlessly via voice or UI. Users can access Zuno directly inside the Zeno browser extension.
                     5. Infinsight: The advanced data analyst and RAG engine that processes and computes answers from CSV/Excel/PDF data using Pandas. Users can access Infinsight by uploading spreadsheets in the Hero AI web interface(need login for storing files for long term use).
 
-                    If a user asks about you, your creators, your capabilities, or how to use a specific feature, acknowledge your place within the Hero's AI ecosystem, explain your sibling components, and tell them exactly how to get or use them.
+                    If a user asks about you, your creators, your capabilities, or how to use a specific feature, acknowledge your place within the Hero's AI ecosystem, explain your sibling components, and tell them how to get or use them but only if user asks, don't tell without reason.
                     """
 
     BASIC_RULES = """You are Baymax, an LLM-powered AI assistant with multi-model capabilities.
@@ -67,13 +94,14 @@ class Baymax:
                     - Ask follow-up questions when helpful.""" + HERO_AI_UNIVERSE
 
     CODING_PROMPT = """You are Baymax, an expert programmer and coding mentor.
-                        Rules:
-                        - Provide correct, clean, and efficient code.
-                        - Use beginner-friendly explanations.
-                        - Add comments for complex logic.
-                        - Show example usage and expected output.
-                        - Suggest best practices and improvements.
-                        - Keep explanations clear and structured.""" + HERO_AI_UNIVERSE
+    Provide highly optimized, readable, and well-documented code. Always explain complex parts briefly.
+    Use best practices for the language. When debugging, explain the root cause before providing the fix.
+    """ + HERO_AI_UNIVERSE
+
+    FILE_ANALYSIS_PROMPT = """You are Baymax, an expert file analyst and AI assistant.
+    You will receive text extracted from files along with a user's prompt. 
+    Analyze the contents carefully, answer the user's questions, and provide insights or code modifications as requested based on the file contents.
+    """ + HERO_AI_UNIVERSE
 
     VOICE_PROMPT = """You are Baymax, a voice assistant.
                         Rules:
@@ -85,13 +113,14 @@ class Baymax:
 
     WEB_SEARCH_PROMPT = """You are Baymax, a research assistant with web access.
                         Rules:
+                        - Always give the direct answer to the user's main question first, before providing other details or summaries.
                         - Provide accurate and up-to-date information.
                         - Base responses only on given search results.
                         - Summarize clearly and concisely.
                         - Highlight key insights.
                         - Avoid unnecessary details.""" + HERO_AI_UNIVERSE
 
-    ZENO_PLUS_PROMPT = """You are Zeno Plus, a highly capable and intelligent AI assistant.
+    ZENO_PLUS_PROMPT = """You are Zeno, mini model of hero's ai combination of halo and baymax.
                         Rules:
                         - Respond in a warm, natural, and human-like conversational tone, not robotic or like a written program. Use everyday contractions (e.g. "I'll", "you're", "can't") to sound friendly and approachable.
                         - Provide detailed, comprehensive, and accurate answers, but explain them with a friendly and engaging human touch.
@@ -106,7 +135,7 @@ class Baymax:
                         - Keep formatting structured yet easy and natural to read.
                         - Remember previous context effectively.""" + HERO_AI_UNIVERSE
 
-    ZENO_ECO_PROMPT = """You are Zeno, a mini AI assistant.
+    ZENO_ECO_PROMPT = """You are Zeno, mini model of hero's ai combination of halo and baymax.
                         Rules:
                         - Respond in a brief, warm, and human-like conversational tone, not robotic or like a structured written program.
                         - When analyzing user-provided selected text or code (from context menus):
@@ -117,8 +146,9 @@ class Baymax:
                         - Be efficient, practical, and helpful.
                         - Prioritize clarity, natural flow, and speed.""" + HERO_AI_UNIVERSE
 
-    ZENO_VOICE_PROMPT = """You are Zeno, a mini AI assistant interacting via voice.
+    ZENO_VOICE_PROMPT = """You are Zeno, mini model of hero's ai combination of halo and baymax, interacting via voice.
                         Rules:
+                        - Always give the direct answer to the user's main question first, before providing other details.
                         - Respond in a warm, natural, friendly, and human-like conversational voice (not robotic or like a written program).
                         - Give your voice response in short. Only give a long response if absolutely needed or if the user explicitly asks for a detailed response.
                         - Do not use markdown formatting since your response will be read aloud.
@@ -126,7 +156,7 @@ class Baymax:
                         - If the user interrupts, adjust smoothly.
                         - If the user asks if you can hear them, confirm enthusiastically that you can hear their voice perfectly.""" + HERO_AI_UNIVERSE
 
-    ZENO_SHADOW_PROMPT = """You are Zeno Shadow Mode, a high-speed background page summarizer.
+    ZENO_SHADOW_PROMPT = """You are Zeno, mini model of hero's ai combination of halo and baymax, operating in Shadow Mode as a high-speed background page summarizer.
                         Rules:
                         - Read the provided page content carefully.
                         - Summarize the core points, purpose, and key takeaways concisely.
@@ -141,7 +171,7 @@ class Baymax:
         "web_search":     1024,
         "file_analysis":  8192,
         "zeno_plus":      4096,
-        "zeno_eco":       256,
+        "zeno_eco":       2048,
         "zeno_voice":     256,
         "zeno_shadow":    4096,
     }
@@ -180,7 +210,11 @@ class Baymax:
         is_superuser:     bool = False,
         # ── NEW: fast response mode flag ───
         is_fast:          bool = False,
+        db_lookup_time:   float = 0.0,
     ):
+        self.db_lookup_time = db_lookup_time
+        self._initial_steps_logged = False
+        self.t_start = time.time()
         self.gemini_key       = gemini_key
         self.openrouter_key   = openrouter_key
         self.groq_key         = groq_key
@@ -364,7 +398,7 @@ class Baymax:
 
         prompt = self._enrich_system_prompt(prompt)
         
-        if task in ("zeno_plus", "zeno_eco", "zeno_shadow"):
+        if task in ("zeno_plus", "zeno_eco", "zeno_shadow", "zeno_voice"):
             cache.set(cache_key, prompt, timeout=3600 * 24)
             return prompt
             
@@ -429,7 +463,7 @@ class Baymax:
             "parts": [{"text": self._build_system_prompt(task)}]
         }
 
-    def _build_cnt_gemini(self, user_text: str, task: str = "text_chat") -> list:
+    def _build_cnt_gemini(self, user_text: str, task: str = "text_chat", current_files: list = None) -> list:
         """
         Build the contents array for Gemini's generateContent API.
         Previously we 'hacked' the system prompt into the first turn; now we
@@ -440,12 +474,48 @@ class Baymax:
 
         for msg in history:
             role = "user" if msg["role"] == "user" else "model"
+            parts = [{"text": msg["content"]}]
+            
+            # Inject past files natively into Gemini's context
+            for f in msg.get("files", []):
+                data_url = f.get("dataUrl")
+                if data_url and "," in data_url:
+                    try:
+                        header, encoded = data_url.split(",", 1)
+                        # Extract mime type from "data:application/pdf;base64"
+                        mime = header.split(":")[1].split(";")[0]
+                        parts.append({
+                            "inline_data": {
+                                "mime_type": mime,
+                                "data": encoded
+                            }
+                        })
+                    except Exception as e:
+                        logger.warning(f"Failed to parse history file {f.get('name')}: {e}")
+
             contents.append({
                 "role":  role,
-                "parts": [{"text": msg["content"]}],
+                "parts": parts,
             })
 
-        contents.append({"role": "user", "parts": [{"text": user_text}]})
+        current_parts = [{"text": user_text}]
+        if current_files:
+            for f in current_files:
+                data_url = f.get("dataUrl")
+                if data_url and "," in data_url:
+                    try:
+                        header, encoded = data_url.split(",", 1)
+                        mime = header.split(":")[1].split(";")[0]
+                        current_parts.append({
+                            "inline_data": {
+                                "mime_type": mime,
+                                "data": encoded
+                            }
+                        })
+                    except Exception as e:
+                        logger.warning(f"Failed to parse current file {f.get('name')}: {e}")
+
+        contents.append({"role": "user", "parts": current_parts})
         return contents
 
     # =========================================================================
@@ -459,8 +529,10 @@ class Baymax:
         max_tokens: int,
         task:       str   = "text_chat",
         timeout:    float = 10.0,
+        current_files: list = None,
     ) -> str | None:
         """Send a request to the Gemini API using the official google-genai SDK."""
+        logger = LocalLoggerProxy(self)
         from google import genai
         
         # Load API key securely from the instance attribute (which should be provided by the caller)
@@ -487,7 +559,7 @@ class Baymax:
                 t_start = time.time()
                 response = client.models.generate_content(
                     model=model,
-                    contents=self._build_cnt_gemini(user_text, task),
+                    contents=self._build_cnt_gemini(user_text, task, current_files=current_files),
                     config={
                         "system_instruction": self._build_system_prompt(task),
                         "temperature": self._get_temperature(task),
@@ -495,13 +567,16 @@ class Baymax:
                         "top_p": 0.9,
                     }
                 )
-                logger.debug("Gemini %s generated in %.2fs", model, time.time() - t_start)
+                if not getattr(self, "_winner_declared", False):
+                    logger.debug("Gemini %s generated in %.2fs", model, time.time() - t_start)
                 return response.text.strip() if response.text else None
 
             except Exception as e:
-                logger.warning("Gemini attempt %d failed: %s", i, str(e))
+                if not getattr(self, "_winner_declared", False):
+                    logger.warning("Gemini attempt %d failed: %s", i, str(e))
                 if i == loop:
-                    logger.error("Gemini final attempt failed: %s", str(e))
+                    if not getattr(self, "_winner_declared", False):
+                        logger.error("Gemini final attempt failed: %s", str(e))
                     return None
                 time.sleep(2)
         return None
@@ -515,6 +590,7 @@ class Baymax:
         timeout:    float = 2.5,
     ) -> str | None:
         """Send a request to the OpenRouter chat completions API."""
+        logger = LocalLoggerProxy(self)
         headers = {
             "Authorization": f"Bearer {self.openrouter_key}",
             "Content-Type":  "application/json",
@@ -585,6 +661,7 @@ class Baymax:
         task:       str = "text_chat",
     ) -> str | None:
         """Send a request to the Groq chat completions API."""
+        logger = LocalLoggerProxy(self)
         headers = {
             "Authorization": f"Bearer {self.groq_key}",
             "Content-Type":  "application/json",
@@ -614,15 +691,29 @@ class Baymax:
                 return content.strip() if content else None
             if r.status_code == 401:
                 logger.error("Groq 401: invalid API key")
-                return None
-            return None
+                raise GroqProviderError("Invalid API key")
+            if r.status_code == 429:
+                logger.warning("Groq 429: rate limit / traffic")
+                raise GroqProviderError("Rate limit / traffic")
+            if r.status_code in [500, 502, 503, 504]:
+                logger.warning("Groq 5xx: %d", r.status_code)
+                raise GroqProviderError(f"Server error: {r.status_code}")
+            if r.status_code == 400:
+                logger.warning("Groq 400: Bad Request")
+                raise GroqModelError("Bad Request")
+            if r.status_code == 404:
+                logger.warning("Groq 404: Model not found")
+                raise GroqModelError("Model not found")
+            raise GroqProviderError(f"HTTP {r.status_code}")
 
         except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
             logger.warning("Groq network error (%s): %s", model, e)
-            return None
+            raise GroqProviderError(f"Network error: {e}")
         except Exception as e:
+            if isinstance(e, (GroqProviderError, GroqModelError)):
+                raise e
             logger.error("Groq unexpected error (%s): %s", model, str(e))
-            return None
+            raise GroqProviderError(f"Unexpected error: {e}")
 
     # =========================================================================
     # UNIFIED DISPATCHER & FALLBACK ORCHESTRATION (unchanged logic)
@@ -634,11 +725,32 @@ class Baymax:
         user_text:  str,
         max_tokens: int,
         task:       str = "text_chat",
+        current_files: list = None,
     ) -> str | None:
         """Route to the correct provider based on the model name."""
         if model.lower().startswith("gemini-"):
-            return self._call_gemini(model, user_text, max_tokens, task)
+            return self._call_gemini(model, user_text, max_tokens, task, current_files=current_files)
         return self._call_openrouter(model, user_text, max_tokens, task)
+
+    def _log_initial_steps(self, task: str):
+        if getattr(self, "_initial_steps_logged", False):
+            return
+        self._initial_steps_logged = True
+        self.t_start = time.time()
+        
+        # 1. DB lookup
+        logger.info("DB lookup: %.3fs", getattr(self, "db_lookup_time", 0.0))
+        
+        # 2. Which model
+        model_name = "Baymax"
+        if task.startswith("zeno"):
+            model_name = "Zeno (Baymax)"
+        logger.info("Model: %s | temporary=%s | superuser=%s | raw_history_len=%d", 
+                    model_name, self.temporary, self.is_superuser, len(self.chat_history))
+        
+        # 3. Which task
+        active_history = self._get_limited_history(task)
+        logger.info("Task: %s | active_history=%d", task, len(active_history))
 
     def _with_concurrent_fallback(
         self,
@@ -647,22 +759,24 @@ class Baymax:
         max_tokens:    int,
         fallback_key:  str = "fallback",
         task:          str = "text_chat",
+        current_files: list = None,
     ) -> str:
         """Run Primary/OpenRouter, Gemini, and Groq models concurrently attempt by attempt."""
+        self._log_initial_steps(task)
         No_API = """
 🔑 **API Key Configuration Required**
 
 To start chatting, please configure your API Keys in your Hero AI profile settings:
 1. Log in to your Hero AI account website.
-2. Go to **Settings** / **API Keys**.
+2. Go to **Profile** / **API Keys**.
 3. Add your key (Gemini, OpenRouter, or Groq) and save.
 
 *Your API keys are encrypted and stored securely on the server—they are never exposed to the browser.*
 """
         if not self.groq_key:
             if task == "zeno_shadow":
-                return "🔑 **Groq API Key Required for Shadow Mode**\n\nPlease add your Groq API key in your Hero AI profile settings to enable background page summarization.\n" + No_API
-            return "🔑 **Groq API Key Required for Fast Response**\n\nPlease add your Groq API key in settings to enable Fast mode.\n" + No_API
+                return "🔑 **Groq API Key Required for Shadow Mode**\n\nPlease add your Groq API key in your Hero AI profile to enable background page summarization.\n" + No_API
+            return "🔑 **Groq API Key Required for Fast Response**\n\nPlease add your Groq API key in your profile to enable Fast mode.\n" + No_API
             
         import concurrent.futures
 
@@ -671,8 +785,10 @@ To start chatting, please configure your API Keys in your Hero AI profile settin
         groq_models = self.models.get("fallback_with_groq", [])
         max_len = max(len(or_models), len(gemini_models), len(groq_models))
         
-        logger.info("AI dispatch (Fast Mode) | task=%s", task)
-
+        # 6. Primary LLM model name
+        logger.info("Primary LLM model name: %s", primary_model)
+        logger.info("Fallback LLM model names (Fast Mode Concurrent):")
+        
         def run_model(model_type, model_name, call_fn):
             if not model_name:
                 raise Exception("No model provided")
@@ -681,32 +797,47 @@ To start chatting, please configure your API Keys in your Hero AI profile settin
                 return (model_type, model_name, result)
             raise Exception(f"{model_type} model {model_name} failed")
 
+        winner = None
+        result = None
+
         for attempt in range(max_len):
             or_model = or_models[attempt] if attempt < len(or_models) else None
             gemini_model = gemini_models[attempt] if attempt < len(gemini_models) else None
             groq_model = groq_models[attempt] if attempt < len(groq_models) else None
             
-            print(f"Fast Mode Attempt {attempt + 1}: Running '{or_model}', '{gemini_model}' and '{groq_model}' concurrently...")
+            # Log attempt matrix
+            logger.info("Attempt %d matrix: %s | %s | %s", attempt + 1, or_model or "None", gemini_model or "None", groq_model or "None")
             
             futures = []
-            with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
-                if or_model:
-                    futures.append(executor.submit(run_model, "Primary/Fallback", or_model, self._call))
-                if gemini_model:
-                    futures.append(executor.submit(run_model, "Gemini", gemini_model, self._call))
-                if groq_model:
-                    futures.append(executor.submit(run_model, "Groq", groq_model, self._call_groq))
+            executor = concurrent.futures.ThreadPoolExecutor(max_workers=3)
+            if or_model:
+                futures.append(executor.submit(run_model, "Primary/Fallback", or_model, lambda m, t, max_t, tsk: self._call(m, t, max_t, tsk, current_files=current_files)))
+            if gemini_model:
+                futures.append(executor.submit(run_model, "Gemini", gemini_model, lambda m, t, max_t, tsk: self._call(m, t, max_t, tsk, current_files=current_files)))
+            if groq_model:
+                futures.append(executor.submit(run_model, "Groq", groq_model, self._call_groq))
+            
+            for future in concurrent.futures.as_completed(futures):
+                try:
+                    m_type, m_name, res = future.result()
+                    if res and not winner:
+                        winner = m_name
+                        result = res
+                        break  # Stop waiting as soon as one succeeds
+                except Exception as e:
+                    pass
+            
+            executor.shutdown(wait=False)
+            
+            if winner:
+                logger.info("Winner: fallback model: %s | status code: 200", winner)
+                break
                 
-                for future in concurrent.futures.as_completed(futures):
-                    try:
-                        m_type, m_name, result = future.result()
-                        logger.info("Fast Mode Attempt %d succeeded using %s (%s)", attempt + 1, m_type, m_name)
-                        print(f"-> Succeeded on attempt {attempt + 1} with {m_name}")
-                        return result
-                    except Exception as e:
-                        logger.debug("Fast Mode Thread generated an exception on attempt %d: %s", attempt + 1, e)
-                        
-        logger.error("All models failed for fast task=%s", task)
+        elapsed = time.time() - self.t_start
+        logger.info("Total time taken: %.3fs", elapsed)
+        logger.info("----------------------------------------------------------")
+        if result:
+            return result
         return "All models failed. Please try again later."
 
     def _with_fallback(
@@ -716,6 +847,7 @@ To start chatting, please configure your API Keys in your Hero AI profile settin
         max_tokens:    int,
         fallback_key:  str = "fallback",
         task:          str = "text_chat",
+        current_files: list = None,
     ) -> str:
         """Try the primary model, then Gemini fallbacks, then OpenRouter fallbacks."""
         No_API = """
@@ -723,7 +855,7 @@ To start chatting, please configure your API Keys in your Hero AI profile settin
 
 To start chatting, please configure your API Keys in your Hero AI profile settings:
 1. Log in to your Hero AI account website.
-2. Go to **Settings** / **API Keys**.
+2. Go to **Profile** / **API Keys**.
 3. Add your key (Gemini, OpenRouter, or Groq) and save.
 
 *Your API keys are encrypted and stored securely on the server—they are never exposed to the browser.*
@@ -732,35 +864,64 @@ To start chatting, please configure your API Keys in your Hero AI profile settin
             if not self.gemini_key:
                 from django.conf import settings
                 if not getattr(settings, "GEMINI_API_KEY", None):
-                    return "🔑 **Gemini API Key Required**\n\nPlease configure your Gemini API Key in settings to chat.\n" + No_API
+                    return "🔑 **Gemini API Key Required**\n\nPlease configure your Gemini API Key in your profile to chat.\n" + No_API
         else:
             if not self.openrouter_key:
-                return "🔑 **OpenRouter API Key Required**\n\nPlease configure your OpenRouter API Key in settings to chat.\n" + No_API
+                return "🔑 **OpenRouter API Key Required**\n\nPlease configure your OpenRouter API Key in your profile to chat.\n" + No_API
 
-        logger.info("AI dispatch | task=%s | primary=%s | temporary=%s", task, primary_model, self.temporary)
+        self._log_initial_steps(task)
+        # 6. Primary LLM model name
+        logger.info("Primary LLM model name: %s", primary_model)
 
-        result = self._call(primary_model, text, max_tokens, task)
+        result = self._call(primary_model, text, max_tokens, task, current_files=current_files)
         if result:
-            logger.debug("Primary model succeeded: %s", primary_model)
+            logger.info("Winner: %s | status code: 200", primary_model)
+            elapsed = time.time() - self.t_start
+            logger.info("Total time taken: %.3fs", elapsed)
+            logger.info("----------------------------------------------------------")
             return result
 
+        logger.info("Primary model failed. Fallback LLM model names:")
+        fallback_models = []
+        if self.gemini_key:
+            fallback_models.extend(self.models.get("fallback_with_gemini", []))
+        if self.openrouter_key:
+            fallback_models.extend(self.models.get(fallback_key, []))
+            
+        for m in fallback_models:
+            logger.info(" - %s", m)
+
+        winner = None
         for model in self.models.get("fallback_with_gemini", []):
-            logger.debug("Trying Gemini fallback: %s", model)
-            result = self._call(model, text, max_tokens, task)
-            if result:
-                logger.info("Gemini fallback succeeded: %s", model)
-                return result
-
-        for model in self.models.get(fallback_key, []):
-            if not self.openrouter_key:
+            if not self.gemini_key:
                 break
-            logger.debug("Trying OpenRouter fallback: %s", model)
-            result = self._call(model, text, max_tokens, task)
+            logger.info("Trying Gemini fallback: %s", model)
+            result = self._call(model, text, max_tokens, task, current_files=current_files)
             if result:
-                logger.info("OpenRouter fallback succeeded: %s", model)
-                return result
+                logger.info("Winner: fallback model: %s | status code: 200", model)
+                winner = model
+                break
+            else:
+                logger.info("Gemini fallback model %s failed | status code: error/timeout", model)
 
-        logger.error("All models failed for task=%s", task)
+        if not winner:
+            for model in self.models.get(fallback_key, []):
+                if not self.openrouter_key:
+                    break
+                logger.info("Trying OpenRouter fallback: %s", model)
+                result = self._call(model, text, max_tokens, task, current_files=current_files)
+                if result:
+                    logger.info("Winner: fallback model: %s | status code: 200", model)
+                    winner = model
+                    break
+                else:
+                    logger.info("OpenRouter fallback model %s failed | status code: error/timeout", model)
+
+        elapsed = time.time() - self.t_start
+        logger.info("Total time taken: %.3fs", elapsed)
+        logger.info("----------------------------------------------------------")
+        if winner and result:
+            return result
         return "All models failed. Please try again later."
 
     # =========================================================================
@@ -769,17 +930,74 @@ To start chatting, please configure your API Keys in your Hero AI profile settin
     # formatting to _safe_error() so the right level of detail is shown.
     # =========================================================================
 
+    def _enrich_with_web_search(self, text: str, task: str) -> str:
+        import concurrent.futures
+        from backend.models_task.web_search import _search_duckduckgo, _search_wikipedia, _summarise_with_gemini, _plain_summary
+        from backend.models_task.query_rewriter import rewrite_query_for_search
+        
+        gemini_key = getattr(self, "gemini_key", "") or ""
+        chat_history = self._get_limited_history(task)
+        
+        timeout_val = 4.0 if getattr(self, "is_fast", False) else 10.0
+        
+        ddg_results = []
+        wiki_summary = ""
+        rewritten_query = text
+        
+        # Start 3 parallel tasks
+        with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
+            future_ddg = executor.submit(_search_duckduckgo, text, 5)
+            future_wiki = executor.submit(_search_wikipedia, text, 5)
+            future_preprocess = executor.submit(rewrite_query_for_search, text, chat_history, gemini_key)
+            
+            try:
+                ddg_results = future_ddg.result(timeout=timeout_val)
+            except Exception as e:
+                logger.error("[web_search_enrich] DDG failed: %s", e)
+                
+            try:
+                wiki_summary = future_wiki.result(timeout=timeout_val)
+            except Exception as e:
+                logger.error("[web_search_enrich] Wiki failed: %s", e)
+                
+            try:
+                rewritten_query = future_preprocess.result(timeout=timeout_val)
+            except Exception as e:
+                logger.error("[web_search_enrich] Preprocess failed: %s", e)
+                rewritten_query = text
+                
+        # Merge available results using the summarizer
+        if gemini_key:
+            try:
+                answer = _summarise_with_gemini(rewritten_query, ddg_results, wiki_summary, gemini_key)
+            except Exception as e:
+                logger.error("[web_search_enrich] Gemini summary failed: %s", e)
+                answer = _plain_summary(rewritten_query, ddg_results, wiki_summary)
+        else:
+            answer = _plain_summary(rewritten_query, ddg_results, wiki_summary)
+
+        if answer and not answer.startswith("No results"):
+            system_note = (
+                "System Instruction: Below is some retrieved Live Data related to the user query.\n"
+                "1. If the user message needs live or current data, use this Live Data to answer.\n"
+                "2. Otherwise, ignore the Live Data and reply normally.\n"
+                "3. If you use the Live Data, do NOT mention 'Wikipedia', 'DuckDuckGo', search results, or provide any URLs/links unless the user explicitly asks for them."
+            )
+            return f"{system_note}\n\nLive Data:\n{answer}\n\nUser Message: {text}"
+            
+        return text
+
     def handle_text(self, text: str) -> str:
         """Handle general text chat with NLP-adaptive token budget."""
         try:
+            enriched_text = text
             max_tok = self._smart_token_budget("text_chat")
             if getattr(self, 'is_fast', False):
-                return self._with_concurrent_fallback(
-                    self.models["text_chat"], text, max_tokens=max_tok, task="text_chat"
-                )
+                from backend.fast import run_fast_route
+                return run_fast_route(self, enriched_text, max_tokens=max_tok, task="text_chat")
             return self._with_fallback(
                 self.models["text_chat"],
-                text,
+                enriched_text,
                 max_tokens=max_tok,
                 task="text_chat",
             )
@@ -790,9 +1008,8 @@ To start chatting, please configure your API Keys in your Hero AI profile settin
         """Handle coding/programming requests with full token budget."""
         try:
             if getattr(self, 'is_fast', False):
-                return self._with_concurrent_fallback(
-                    self.models["coding"], text, max_tokens=self._TOKEN_BUDGETS["coding"], task="coding"
-                )
+                from backend.fast import run_fast_route
+                return run_fast_route(self, text, max_tokens=self._TOKEN_BUDGETS["coding"], task="coding")
             return self._with_fallback(
                 self.models["coding"],
                 text,
@@ -805,14 +1022,14 @@ To start chatting, please configure your API Keys in your Hero AI profile settin
     def handle_voice_chat(self, text: str) -> str:
         """Handle full voice conversation with short, spoken-word-friendly replies."""
         try:
+            enriched_text = text
             max_tok = self._smart_token_budget("voice")
             if getattr(self, 'is_fast', False):
-                return self._with_concurrent_fallback(
-                    self.models["voice_chat"], text, max_tokens=max_tok, task="voice"
-                )
+                from backend.fast import run_fast_route
+                return run_fast_route(self, enriched_text, max_tokens=max_tok, task="voice")
             return self._with_fallback(
                 self.models["voice_chat"],
-                text,
+                enriched_text,
                 max_tokens=max_tok,
                 task="voice",
             )
@@ -822,14 +1039,14 @@ To start chatting, please configure your API Keys in your Hero AI profile settin
     def handle_voice_message(self, text: str) -> str:
         """Handle inline mic voice messages routed through the normal chat thread."""
         try:
+            enriched_text = text
             max_tok = self._smart_token_budget("voice")
             if getattr(self, 'is_fast', False):
-                return self._with_concurrent_fallback(
-                    self.models["voice_chat"], text, max_tokens=max_tok, task="voice"
-                )
+                from backend.fast import run_fast_route
+                return run_fast_route(self, enriched_text, max_tokens=max_tok, task="voice")
             return self._with_fallback(
                 self.models["voice_chat"],
-                text,
+                enriched_text,
                 max_tokens=max_tok,
                 task="voice",
             )
@@ -863,9 +1080,8 @@ To start chatting, please configure your API Keys in your Hero AI profile settin
             logger.info("[handle_websearch] falling back to LLM-only")
             max_tok = self._smart_token_budget("web_search")
             if getattr(self, 'is_fast', False):
-                return self._with_concurrent_fallback(
-                    self.models["web_search"], rewritten_query, max_tokens=max_tok, task="web_search"
-                )
+                from backend.fast import run_fast_route
+                return run_fast_route(self, rewritten_query, max_tokens=max_tok, task="web_search")
             return self._with_fallback(
                 self.models["web_search"], rewritten_query, max_tokens=max_tok, task="web_search"
             )
@@ -877,9 +1093,8 @@ To start chatting, please configure your API Keys in your Hero AI profile settin
             logger.info("[handle_zeno_plus] query=%r", text[:80])
             max_tok = self._smart_token_budget("zeno_plus")
             if getattr(self, 'is_fast', False):
-                return self._with_concurrent_fallback(
-                    self.models["zeno_plus"], text, max_tokens=max_tok, task="zeno_plus"
-                )
+                from backend.fast import run_fast_route
+                return run_fast_route(self, text, max_tokens=max_tok, task="zeno_plus")
             return self._with_fallback(
                 self.models["zeno_plus"], text, max_tokens=max_tok, task="zeno_plus"
             )
@@ -891,9 +1106,8 @@ To start chatting, please configure your API Keys in your Hero AI profile settin
             logger.info("[handle_zeno_eco] query=%r", text[:80])
             max_tok = self._smart_token_budget("zeno_eco")
             if getattr(self, 'is_fast', False):
-                return self._with_concurrent_fallback(
-                    self.models["zeno_eco"], text, max_tokens=max_tok, task="zeno_eco"
-                )
+                from backend.fast import run_fast_route
+                return run_fast_route(self, text, max_tokens=max_tok, task="zeno_eco")
             return self._with_fallback(
                 self.models["zeno_eco"], text, max_tokens=max_tok, task="zeno_eco"
             )
@@ -905,9 +1119,8 @@ To start chatting, please configure your API Keys in your Hero AI profile settin
             logger.info("[handle_zeno_voice] query=%r", text[:80])
             max_tok = self._smart_token_budget("zeno_voice")
             if getattr(self, 'is_fast', False):
-                return self._with_concurrent_fallback(
-                    self.models["zeno_voice"], text, max_tokens=max_tok, task="zeno_voice"
-                )
+                from backend.fast import run_fast_route
+                return run_fast_route(self, text, max_tokens=max_tok, task="zeno_voice")
             return self._with_fallback(
                 self.models["zeno_voice"], text, max_tokens=max_tok, task="zeno_voice"
             )
@@ -1050,6 +1263,14 @@ class Developer:
             prompt = Baymax.VOICE_PROMPT
         elif mode == 'websearch':
             prompt = Baymax.WEB_SEARCH_PROMPT
+        elif mode == 'zeno_eco':
+            prompt = Baymax.ZENO_ECO_PROMPT
+        elif mode == 'zeno_plus':
+            prompt = Baymax.ZENO_PLUS_PROMPT
+        elif mode == 'zeno_voice':
+            prompt = Baymax.ZENO_VOICE_PROMPT
+        elif mode == 'zeno_shadow':
+            prompt = Baymax.ZENO_SHADOW_PROMPT
         else:
             prompt = Baymax.TEXT_PROMPT
 
@@ -1065,7 +1286,8 @@ class Developer:
         if user_name:
             prompt += f"\n\nUser Name: {user_name} (Only use the name naturally, do NOT start every message with a greeting like 'Hey {user_name}')"
 
-        prompt = Baymax.BASIC_RULES + "\n\n" + prompt
+        if mode not in ['zeno_eco', 'zeno_plus', 'zeno_voice', 'zeno_shadow']:
+            prompt = Baymax.BASIC_RULES + "\n\n" + prompt
         return prompt
 
     def generate(self, messages):

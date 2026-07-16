@@ -2,8 +2,8 @@
 
     /* Accent color for Infinsight: electric teal-blue */
     :root {
-      --ins-accent: #3b82f6;
-      --ins-accent2: #06b6d4;
+      --ins-accent: #0F4C75;
+      --ins-accent2: #3282B8;
       --ins-accent-glow: rgba(59,130,246,0.25);
       --ins-surface: #12121a;
       --ins-card: #1a1a2e;
@@ -12,9 +12,9 @@
       --sidebar-w: 280px;
     }
     [data-theme="light"] {
-      --ins-surface: #f0f4ff;
-      --ins-card: #ffffff;
-      --ins-border: rgba(59,130,246,0.2);
+      --ins-surface: #F3F4F6;
+      --ins-card: #FFFFFF;
+      --ins-border: rgba(0, 0, 0, 0.08);
     }
 
     body { overflow: hidden; }
@@ -305,66 +305,58 @@
       animation: fadeUp 0.5s ease both;
     }
 
-    .ins-welcome-icon {
-      width: 80px; height: 80px;
-      border-radius: 22px;
-      background: linear-gradient(135deg, var(--ins-accent), var(--ins-accent2));
-      display: flex; align-items: center; justify-content: center;
-      font-size: 2rem; color: #fff;
-      margin: 0 auto 24px;
-      box-shadow: 0 0 40px var(--ins-accent-glow);
-      animation: glow-pulse 3s ease-in-out infinite;
-    }
-    @keyframes glow-pulse {
-      0%,100% { box-shadow: 0 0 20px var(--ins-accent-glow); }
-      50% { box-shadow: 0 0 40px rgba(59,130,246,0.5); }
-    }
-
     .ins-welcome h1 {
-      font-family: var(--font-head); font-size: 1.3rem; font-weight: 800;
-      margin-bottom: 10px; color: var(--text);
+      font-family: var(--font-body); font-size: 1.8rem; font-weight: 500;
+      margin-bottom: 8px; color: var(--text); letter-spacing: -0.02em;
     }
-    .ins-welcome p { color: var(--text-muted); font-size: 0.9rem; max-width: 380px; line-height: 1.7; }
+    .ins-welcome p { color: var(--text-muted); font-size: 1rem; max-width: 480px; line-height: 1.6; margin-bottom: 32px; }
+
+    /* Upload drag zone */
+    .ins-drop-zone {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px 20px;
+      margin-bottom: 32px;
+      max-width: 520px;
+      width: 100%;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: var(--surface);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+    .ins-drop-zone:hover, .ins-drop-zone.drag-over {
+      border-color: var(--text-muted);
+      background: var(--surface2);
+    }
+    .ins-drop-icon { font-size: 1.5rem; color: var(--text-muted); margin-bottom: 4px; }
+    .ins-drop-text { color: var(--text); font-size: 0.9rem; font-weight: 500; }
+    .ins-drop-text .primary { color: var(--ins-accent); }
+    .ins-drop-hint { font-size: 0.8rem; color: var(--text-dim); }
 
     .ins-capabilities {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
-      margin-top: 28px;
-      max-width: 520px;
+      gap: 12px;
+      max-width: 600px;
       width: 100%;
     }
     .ins-cap-card {
-      background: var(--surface2);
+      background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 12px;
-      padding: 14px 12px;
-      text-align: center;
-      font-size: 0.78rem;
-      color: var(--text-muted);
-      line-height: 1.5;
-    }
-    .ins-cap-card i { display: block; font-size: 1.1rem; margin-bottom: 6px; color: var(--ins-accent); }
-
-    /* Upload drag zone */
-    .ins-drop-zone {
-      border: 2px dashed rgba(59,130,246,0.3);
-      border-radius: 16px;
-      padding: 28px 20px;
-      margin-top: 24px;
-      max-width: 420px;
-      width: 100%;
-      cursor: pointer;
+      padding: 16px 14px;
+      text-align: left;
       transition: all 0.2s;
-      background: rgba(59,130,246,0.03);
     }
-    .ins-drop-zone:hover, .ins-drop-zone.drag-over {
-      border-color: var(--ins-accent);
-      background: rgba(59,130,246,0.08);
+    .ins-cap-card:hover {
+      background: var(--surface2);
     }
-    .ins-drop-zone i { font-size: 1.8rem; color: var(--ins-accent); margin-bottom: 10px; display: block; }
-    .ins-drop-zone p { color: var(--text-muted); font-size: 0.82rem; margin-bottom: 4px; }
-    .ins-drop-zone span { font-size: 0.72rem; color: var(--text-dim); }
+    .cap-title { font-size: 0.9rem; font-weight: 600; color: var(--text); margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+    .cap-title i { color: var(--text-muted); font-size: 1rem; }
+    .cap-desc { font-size: 0.82rem; color: var(--text-muted); line-height: 1.4; }
 
     /* ── Chat area ── */
     .ins-chat-area {
@@ -631,7 +623,7 @@
     .ins-file-drop i { font-size: 2rem; color: var(--ins-accent); margin-bottom: 12px; display: block; }
     .ins-file-drop .drop-text { font-size: 0.88rem; color: var(--text-muted); }
     .ins-file-drop .drop-sub { font-size: 0.73rem; color: var(--text-dim); margin-top: 4px; }
-    .ins-file-drop.has-file { border-color: var(--accent); background: rgba(25,195,125,0.08); }
+    .ins-file-drop.has-file { border-color: var(--ins-accent); background: rgba(25,195,125,0.08); }
 
     .ins-selected-file {
       display: none; align-items: center; gap: 10px;

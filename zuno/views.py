@@ -16,11 +16,16 @@ def get_groq_client(request):
     user_id = request.session.get('user_id')
     if not user_id:
         # Check X-Session-Id header (for extension requests)
-        session_key = request.headers.get('X-Session-Id')
-        if session_key:
+        session_key_raw = request.headers.get('X-Session-Id')
+        if session_key_raw:
             from django.contrib.sessions.backends.db import SessionStore
-            s = SessionStore(session_key=session_key)
-            user_id = s.get('user_id')
+            for sk in session_key_raw.split(','):
+                sk = sk.strip()
+                if not sk: continue
+                s = SessionStore(session_key=sk)
+                user_id = s.get('user_id')
+                if user_id:
+                    break
 
     if user_id:
         try:

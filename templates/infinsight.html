@@ -578,7 +578,7 @@
         <div class="ins-brand-icon"><i class="fa-solid fa-chart-line"></i></div>
         <div>
           <div class="ins-brand-name">Infinsight</div>
-          <div class="ins-brand-tag">Hero's AI Powered</div>
+          <div class="ins-brand-tag">Heros Powered</div>
         </div>
       </div>
     </div>
@@ -623,9 +623,9 @@
       </div>
     </div>
 
-    <a href="{% url 'home' %}" class="ins-sidebar-hero-btn" title="Go to Hero's AI">
-      <img src="{% static 'images/Hero_ai.png' %}" alt="Hero AI">
-      Chat with Hero's AI
+    <a href="{% url 'home' %}" class="ins-sidebar-hero-btn" title="Go to Heros">
+      <img src="{% static 'images/Hero_ai.png' %}" alt="Heros">
+      Chat with Heros
     </a>
   </aside>
 
@@ -660,29 +660,31 @@
 
     <!-- Welcome screen -->
     <div class="ins-welcome" id="insWelcome">
-      <div class="ins-welcome-icon"><i class="fa-solid fa-chart-line"></i></div>
-      <h1>Hello{% if username %}, {{ username }}{% endif %}!</h1>
-      <p>Upload a CSV, Excel, or PDF file to start an AI-powered data analysis session. Ask anything about your data.</p>
-      <div class="ins-capabilities">
-        <div class="ins-cap-card">
-          <i class="fa-solid fa-magnifying-glass-chart"></i>
-          Explore trends & patterns
-        </div>
-        <div class="ins-cap-card">
-          <i class="fa-solid fa-table"></i>
-          Summarize & filter data
-        </div>
-        <div class="ins-cap-card">
-          <i class="fa-solid fa-lightbulb"></i>
-          Ask natural questions
-        </div>
-      </div>
+      <h1>Welcome{% if username %} back {{ username }}{% endif %}</h1>
+      <p>Upload a dataset to start an AI-powered data analysis session.</p>
 
       <div class="ins-drop-zone" id="welcomeDropZone" onclick="handleUploadClick()"
            ondragover="handleWelcomeDrag(event)" ondrop="handleWelcomeDrop(event)" ondragleave="this.classList.remove('drag-over')">
-        <i class="fa-solid fa-cloud-arrow-up"></i>
-        <p>Drop your file here, or <strong style="color:var(--ins-accent)">click to upload</strong></p>
-        <span>CSV, Excel, PDF — up to 20MB</span>
+        <div class="ins-drop-icon"><i class="fa-solid fa-file-arrow-up"></i></div>
+        <div class="ins-drop-text">
+          <span class="primary">Click to upload</span> or drag and drop
+        </div>
+        <div class="ins-drop-hint">CSV, Excel, or PDF (max. 20MB)</div>
+      </div>
+
+      <div class="ins-capabilities">
+        <div class="ins-cap-card">
+          <div class="cap-title"><i class="fa-solid fa-magnifying-glass-chart"></i> Explore data</div>
+          <div class="cap-desc">Find trends and patterns instantly</div>
+        </div>
+        <div class="ins-cap-card">
+          <div class="cap-title"><i class="fa-solid fa-table"></i> Summarize</div>
+          <div class="cap-desc">Clean, filter, and organize rows</div>
+        </div>
+        <div class="ins-cap-card">
+          <div class="cap-title"><i class="fa-solid fa-lightbulb"></i> Ask questions</div>
+          <div class="cap-desc">Get insights using natural language</div>
+        </div>
       </div>
     </div>
 
@@ -691,8 +693,8 @@
       <div class="ins-messages" id="insMessages"></div>
       <div class="ins-input-wrap">
         <div class="ins-input-box">
-          <a href="{% url 'home' %}" class="ins-home-btn" title="Go to Hero's AI">
-            <img src="{% static 'images/Hero_ai.png' %}" alt="Hero AI" style="width: 20px; height: 20px; border-radius: 4px; object-fit: cover;">
+          <a href="{% url 'home' %}" class="ins-home-btn" title="Go to Heros">
+            <img src="{% static 'images/Hero_ai.png' %}" alt="Heros" style="width: 20px; height: 20px; border-radius: 4px; object-fit: cover;">
           </a>
           <textarea
             class="ins-textarea"
@@ -706,7 +708,7 @@
             <i class="fa-solid fa-paper-plane"></i>
           </button>
         </div>
-        <div class="ins-hint">Infinsight answers from your file's data only — powered by Hero AI + Pinecone RAG</div>
+        <div class="ins-hint">Infinsight answers from your file's data only — powered by Heros + Pinecone RAG</div>
       </div>
     </div>
 
@@ -722,7 +724,7 @@
       <div class="modal-brand-icon"><i class="fa-solid fa-chart-line"></i></div>
       <div>
         <div class="modal-brand-name">Infinsight</div>
-        <div class="modal-brand-tag">Hero's AI Powered</div>
+        <div class="modal-brand-tag">Heros Powered</div>
       </div>
     </div>
 

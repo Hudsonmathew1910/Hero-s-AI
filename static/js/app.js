@@ -45,6 +45,8 @@ let userMenuOpen = false;
 let currentUser = null;
 let plusMenuOpen = false;
 let activeMode = null;
+let isSearchMode = false;
+let isCodeMode = false;
 let tempChatActive = false;
 let currentSessionId = null;
 
@@ -256,17 +258,18 @@ function setTheme(theme, btn) {
 }
 
 function _syncThemeSwitch(theme) {
-  const checkbox = $('themeCheckbox');
-  if (checkbox) checkbox.checked = (theme === 'light');
-}
-
-function toggleThemeSwitch(checkbox) {
-  const theme = checkbox.checked ? 'light' : 'dark';
-  document.documentElement.setAttribute('data-theme', theme);
-  localStorage.setItem('hero-theme', theme);
+  // Keeping this function for backwards compatibility with the Settings menu buttons
   const db = $('theme-dark-btn'), lb = $('theme-light-btn');
   if (theme === 'light') { lb?.classList.add('active'); db?.classList.remove('active'); }
   else                   { db?.classList.add('active'); lb?.classList.remove('active'); }
+}
+
+function toggleThemeSimple() {
+  const current = document.documentElement.getAttribute('data-theme') || 'dark';
+  const newTheme = current === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', newTheme);
+  localStorage.setItem('hero-theme', newTheme);
+  _syncThemeSwitch(newTheme);
 }
 
 (function () {
@@ -394,9 +397,9 @@ async function checkSession() {
         setTimeout(() => {
           showConfirm(
             'API keys are required to use Hero\'s AI. Would you like to configure them now?',
-            () => openApiKeys(), null, 'Configure Keys', 'Later'
+            () => openSettings('apikeys'), null, 'Configure Keys', 'Later'
           );
-        }, 1000);
+        }, 3000);
       }
     } else {
       handleLoggedOutState();
@@ -508,6 +511,10 @@ function loginUser(user) {
   const modelSelect = $('modelSelect');
   if (modelSelect) {
       Array.from(modelSelect.options).forEach(opt => opt.disabled = false);
+      if (modelSelect.value === 'Halo') {
+          modelSelect.value = 'Baymax';
+          onModelChange();
+      }
   }
   
   const parts = user.name.trim().split(' ');
@@ -584,7 +591,7 @@ async function openApiKeys() {
       if (gri) gri.placeholder = data.keys.groq       ? 'Modify your Groq API key'       : 'Enter your Groq API key (optional)';
     }
   } catch (err) { console.error('Failed to check API keys:', err); }
-  $('apiKeysModal')?.classList.add('active');
+  openSettings('apikeys');
 }
 
 async function saveApiKeys() {
@@ -669,6 +676,26 @@ async function savePersonalization() {
 }
 
 /* ════════ MODEL SELECTION ════════ */
+function syncFastModeVisibility(model) {
+  const fastBtn = $('fastModeBtn');
+  if (fastBtn) {
+    const hideFast = ['Halo', 'ZORVIN', 'Developer'].includes(model);
+    fastBtn.style.display = hideFast ? 'none' : 'flex';
+    if (hideFast) {
+      isFastMode = false;
+      fastBtn.classList.remove('active');
+    }
+  }
+}
+
+function toggleSearchMode() {
+  isSearchMode = !isSearchMode;
+  const btn = $('searchToggleBtn');
+  if (btn) {
+    btn.classList.toggle('active', isSearchMode);
+  }
+}
+
 function onModelChange() {
   const select = $('modelSelect'); if (!select) return;
   const newModel = select.value;
@@ -677,11 +704,16 @@ function onModelChange() {
       () => {
         showNotification('Currently in development status', 'info');
         select.value = currentModel;
+        syncFastModeVisibility(currentModel);
       },
-      () => { select.value = currentModel; },
+      () => {
+        select.value = currentModel;
+        syncFastModeVisibility(currentModel);
+      },
       'Download', 'Cancel');
   } else if (newModel === 'Developer') {
     openDeveloperModal();
+    syncFastModeVisibility('Developer');
   } else {
     if (isDeveloperMode) {
       isDeveloperMode = false;
@@ -689,29 +721,23 @@ function onModelChange() {
       if (devSidebar) devSidebar.style.display = 'none';
       const toggleBtn = $('devSidebarToggleBtn');
       if (toggleBtn) toggleBtn.style.display = 'none';
-      const fastBtn = $('fastModeBtn');
-      if (fastBtn) fastBtn.style.display = '';
-      updateFastModeDefault();
       newChat();
     }
     currentModel = newModel;
     const chip = $('modelChipName');
     if (chip) chip.textContent = currentModel;
     
-    const talkBtn = document.querySelector('.cssbuttons-io-button span');
-    if (talkBtn) {
-      talkBtn.textContent = 'Talk to ' + currentModel;
+    const voiceModelSpan = $('voiceModelName');
+    if (voiceModelSpan) {
+      voiceModelSpan.textContent = select.options[select.selectedIndex].text;
     }
     
     if (currentModel === 'Baymax' && !hasExistingApiKeys) {
         showNotification('Please add Gemini or OpenRouter API key to use Baymax.', 'info');
     }
     
-    const fastBtn = $('fastModeBtn');
-    if (fastBtn) {
-        fastBtn.style.display = (currentModel === 'Halo') ? 'none' : '';
-    }
-    
+    syncFastModeVisibility(currentModel);
+    updateFastModeDefault();
     addSystemNote('Switched to ' + currentModel);
   }
 }
@@ -763,9 +789,19 @@ async function sendMessage() {
   activateChatBg();
 
   let taskType = activeMode;
-  if (isDeveloperMode) taskType = 'developer';
-  else if (attachedFiles.length > 0) taskType = 'file_handle';
-  else if (!taskType)            taskType = 'text';
+  if (isDeveloperMode) {
+    taskType = 'developer';
+  } else {
+    const hasFile = attachedFiles.length > 0;
+    if (isSearchMode && isCodeMode && hasFile) taskType = 'search_code_file';
+    else if (isSearchMode && isCodeMode) taskType = 'search_code';
+    else if (isSearchMode && hasFile) taskType = 'search_file';
+    else if (isCodeMode && hasFile) taskType = 'code_file';
+    else if (hasFile) taskType = 'file_handle';
+    else if (isSearchMode) taskType = 'websearch';
+    else if (isCodeMode) taskType = 'coding';
+    else if (!taskType) taskType = 'text';
+  }
 
   // Transient modes: Reset after use so the next message defaults to text
   if (activeMode === 'voice_message') {
@@ -835,7 +871,9 @@ async function sendMessage() {
         content: data.reply,
         is_developer: isDeveloperMode,
         status_code: data.status_code,
-        error: data.error
+        error: data.error,
+        dev_model: data.dev_model,
+        time_taken: data.time_taken
       };
       messages.push(aiMsg);
       renderMessage(aiMsg);
@@ -862,7 +900,7 @@ async function sendMessage() {
     typingRow.remove();
     let userMsg = err.message;
     if (userMsg.includes('is not valid JSON') || userMsg.includes('unexpected response format')) {
-      userMsg = "Hero's AI encountered a server processing error. Please try again or check your settings.";
+      userMsg = "Heros encountered a server processing error. Please try again or check your settings.";
     }
     renderMessage({ role: 'assistant', content: `Error: ${userMsg}` });
   }
@@ -871,10 +909,10 @@ async function sendMessage() {
 }
 
 /* ── Voice → Chat thread ── */
-function pushVoiceToChat(userText, aiText) {
+function pushVoiceToChat(userText, aiText, data, filesPayload = []) {
   if (!userText) return;
   activateChatBg();
-  const userMsg = { role: 'user', content: userText, files: [], mode: 'voice' };
+  const userMsg = { role: 'user', content: userText, files: filesPayload ? [...filesPayload] : [], mode: 'voice' };
   messages.push(userMsg); renderMessage(userMsg);
   if (aiText) {
     const aiMsg = { role: 'assistant', content: aiText, mode: 'voice' };
@@ -889,15 +927,15 @@ function pushVoiceToChat(userText, aiText) {
 /* ════════ RENDER MESSAGE ════════ */
 function renderMessage(msg) {
   const container = $('messages'); if (!container) return;
+  const isUser     = msg.role === 'user';
   const row = document.createElement('div');
-  row.className = 'msg-row';
+  row.className = 'msg-row' + (isUser ? ' user-row' : '');
   if (userSettings.compactLayout) row.style.padding = '8px 0';
 
-  const isUser     = msg.role === 'user';
   const initials   = (currentUser && isUser) ? currentUser.initials : (isUser ? 'U' : '');
   const avatarHTML = isUser
     ? initials
-    : '<img src="/static/images/ai.png" width="34" height="34" style="border-radius:10px;object-fit:cover;display:block;" alt="AI">';
+    : '<img src="/static/images/Hero_ai.png" width="30" height="30" style="object-fit:contain;display:block;" alt="Heros">';
 
   let filesHTML = '';
   if (msg.files?.length > 0) {
@@ -920,12 +958,14 @@ function renderMessage(msg) {
     }
   }
 
-  const displayName = isUser ? (currentUser ? currentUser.name.split(' ')[0] : 'You') : (msg.is_developer ? 'Developer AI' : "Hero's AI");
+  const displayName = isUser ? (currentUser ? currentUser.name.split(' ')[0] : 'You') : (msg.is_developer ? 'Developer AI' : "Heros");
 
   let devFooter = '';
   if (msg.is_developer) {
     devFooter = `<div style="margin-top: 10px; padding: 10px; background: rgba(0,0,0,0.2); border-left: 3px solid var(--accent); font-family: monospace; font-size: 0.85em; border-radius: 4px;">
+      <strong style="color: var(--accent);">Model:</strong> <span style="color: #ccc;">${msg.dev_model || 'Unknown'}</span><br>
       <strong style="color: ${msg.status_code === 200 ? '#4ade80' : '#f87171'};">Status Code: ${msg.status_code || 'Unknown'}</strong><br>
+      <strong style="color: var(--accent);">Time Taken:</strong> <span style="color: #ccc;">${msg.time_taken ? msg.time_taken + 's' : 'Unknown'}</span><br>
       <strong style="color: var(--accent);">Error:</strong> <span style="color: #999;">${msg.error ? escHtml(msg.error) : 'None'}</span>
     </div>`;
   }
@@ -987,11 +1027,11 @@ function showTyping(mode) {
   row.className = 'msg-row';
   row.innerHTML = `
     <div class="msg-avatar ai">
-      <img src="/static/images/ai.png" width="34" height="34"
-           style="border-radius:10px;object-fit:cover;display:block;" alt="AI">
+      <img src="/static/images/Hero_ai.png" width="30" height="30"
+           style="object-fit:contain;display:block;" alt="Heros">
     </div>
     <div class="msg-content ai">
-      <div class="sender-row"><span class="sender">Hero's AI</span></div>
+      <div class="sender-row"><span class="sender">Heros</span></div>
       <div class="typing-inline">
         ${label ? `<span class="typing-mode-label">${label}</span>` : ''}
         <div class="typing-balls">
@@ -1256,39 +1296,58 @@ document.addEventListener('click', (e) => {
 
 function triggerAttach() {
   closePlusMenu();
-  if (activeMode) {
-    showNotification(`Attach file is not available in ${activeMode === 'coding' ? 'Coding' : 'Web search'} mode. Remove the mode first.`, 'warning');
-    return;
-  }
   $('fileInput')?.click();
+}
+
+function toggleCodingMode() {
+  isCodeMode = !isCodeMode;
+  const btn = $('codeToggleBtn');
+  if (btn) {
+    btn.classList.toggle('active', isCodeMode);
+  }
 }
 
 function setMode(mode) {
   closePlusMenu();
-  if (attachedFiles.length > 0) {
-    showNotification(`Cannot enable ${mode === 'coding' ? 'Coding' : 'Web search'} mode while a file is attached`, 'warning');
-    return;
-  }
-  activeMode = mode;
-  const badge = $('modeBadge'), badgeTxt = $('modeBadgeText');
-  if (badge && badgeTxt) {
-    badge.className = 'mode-badge visible ' + mode;
-    badgeTxt.textContent = mode === 'coding' ? 'Coding' : 'Web search';
+  if (mode === 'websearch') {
+    isSearchMode = true;
+    $('searchToggleBtn')?.classList.add('active');
+  } else if (mode === 'coding') {
+    isCodeMode = true;
+    $('codeToggleBtn')?.classList.add('active');
+  } else {
+    activeMode = mode;
   }
   $('chatInput')?.focus();
 }
 
 function clearMode() {
   activeMode = null;
+  isSearchMode = false;
+  isCodeMode = false;
   const badge = $('modeBadge');
   if (badge) { badge.classList.remove('visible'); badge.className = 'mode-badge'; }
+  const searchBtn = $('searchToggleBtn');
+  if (searchBtn) {
+    searchBtn.classList.remove('active');
+  }
+  const codeBtn = $('codeToggleBtn');
+  if (codeBtn) {
+    codeBtn.classList.remove('active');
+  }
 }
 
+function switchSettingsNav(name) {
+  document.querySelectorAll('.settings-nav-item').forEach(i => i.classList.remove('active'));
+  document.querySelectorAll('.settings-panel').forEach(p => p.classList.remove('active'));
+  $('snav-' + name)?.classList.add('active');
+  $('spanel-' + name)?.classList.add('active');
+}
+
+/* Legacy tab switcher kept for any old references */
 function switchPTab(name, btn) {
-  $$('.p-tab').forEach(t => t.classList.remove('active'));
-  $$('.p-panel').forEach(p => p.classList.remove('active'));
-  btn?.classList.add('active');
-  $('p-panel-' + name)?.classList.add('active');
+  const map = { interface: 'general', about: 'personalization', instructions: 'instructions' };
+  switchSettingsNav(map[name] || name);
 }
 
 function toggleUserMenu() {
@@ -1303,14 +1362,18 @@ function closeUserMenu() {
   $('userChevron')?.classList.remove('open');
 }
 
-async function openPersonalization() {
+async function openPersonalization() { openSettings('personalization'); }
+
+async function openSettings(panel) {
   closeUserMenu();
   loadUserSettings();
+  switchSettingsNav(panel || 'general');
   $('personalizationModal')?.classList.add('active');
 }
 
-function openHelp()       { closeUserMenu(); $('helpModal')?.classList.add('active'); }
-function openAboutHeros() { closeUserMenu(); $('aboutHerosModal')?.classList.add('active'); }
+
+function openHelp()       { openSettings('help'); }
+function openAboutHeros() { openSettings('about'); }
 function closeModal(id)   { $(id)?.classList.remove('active'); }
 
 document.querySelectorAll('.modal-overlay').forEach(overlay => {
@@ -1353,8 +1416,9 @@ function fillSuggestion(text) {
 function handleKey(e) {
   if (e.key === 'Enter' && !e.shiftKey) {
     e.preventDefault();
-    const sendBtn = $('sendBtn');
-    if (sendBtn && !sendBtn.disabled) sendMessage();
+    const inp = $('chatInput');
+    const hasContent = (inp && (inp.value.trim().length > 0 || attachedFiles.length > 0));
+    if (hasContent && !isLoading) sendMessage();
   }
 }
 
@@ -1364,26 +1428,36 @@ function autoResize(el) {
   el.style.height = Math.min(el.scrollHeight, 200) + 'px';
 }
 
+function handleSendMicClick() {
+  const inp = $('chatInput');
+  const hasContent = (inp && (inp.value.trim().length > 0 || attachedFiles.length > 0));
+  if (hasContent || isLoading) {
+    sendMessage();
+  } else {
+    toggleInlineMic();
+  }
+}
+
 function toggleSendBtn() {
-  const inp = $('chatInput'), sendBtn = $('sendBtn'), micBtn = $('micBtn');
-  if (!inp || !sendBtn || !micBtn) return;
+  const inp = $('chatInput'), btn = $('sendMicBtn'), icon = $('sendMicIcon');
+  if (!inp || !btn || !icon) return;
   
   const hasContent = (inp.value.trim().length > 0 || attachedFiles.length > 0);
-  sendBtn.disabled = !hasContent || isLoading;
   
-  // Mobile toggle logic: show mic by default, switch to send if has content or is loading
-  if (window.innerWidth <= 768) {
-    if (hasContent || isLoading) {
-      micBtn.style.display = 'none';
-      sendBtn.style.display = 'flex';
-    } else {
-      micBtn.style.display = 'flex';
-      sendBtn.style.display = 'none';
-    }
+  if (hasContent || isLoading) {
+    btn.className = 'send-btn';
+    btn.style.background = 'var(--accent)';
+    btn.style.color = '#000';
+    btn.title = 'Send message';
+    icon.className = 'fa-solid fa-paper-plane';
+    btn.disabled = isLoading;
   } else {
-    // Desktop: always show both (default flex state)
-    micBtn.style.display = 'flex';
-    sendBtn.style.display = 'flex';
+    btn.className = inlineMicOn ? 'mic-btn listening' : 'mic-btn';
+    btn.style.background = inlineMicOn ? 'rgba(25,195,125,0.15)' : 'transparent';
+    btn.style.color = inlineMicOn ? 'var(--accent)' : 'var(--text-muted)';
+    btn.title = inlineMicOn ? 'Listening...' : 'Talk to AI';
+    icon.className = 'fa-solid fa-microphone';
+    btn.disabled = false;
   }
 }
 
@@ -1427,7 +1501,7 @@ function toggleInlineMic() {
   if (!SR) { showNotification('Speech recognition not supported. Try Chrome', 'error'); return; }
   if (inlineMicOn) {
     inlineRecog?.stop(); inlineMicOn = false;
-    $('micBtn')?.classList.remove('listening'); return;
+    toggleSendBtn(); return;
   }
   inlineRecog = new SR();
   inlineRecog.lang = 'en-US'; inlineRecog.continuous = false; inlineRecog.interimResults = true;
@@ -1441,9 +1515,10 @@ function toggleInlineMic() {
       if (!activeMode) activeMode = 'voice_message'; 
     }
   };
-  inlineRecog.onend = () => { inlineMicOn = false; $('micBtn')?.classList.remove('listening'); };
+  inlineRecog.onend = () => { inlineMicOn = false; toggleSendBtn(); };
   inlineRecog.start();
-  inlineMicOn = true; $('micBtn')?.classList.add('listening');
+  inlineMicOn = true;
+  toggleSendBtn();
 }
 
 /* ══════════════════════════════════════════════════════
@@ -1507,17 +1582,7 @@ function _setVoiceState(state) {
 }
 
 function setModeCodingAndPrompt() {
-  closePlusMenu();
-  if (attachedFiles.length > 0) {
-    showNotification('Cannot enable Coding mode while a file is attached', 'warning');
-    return;
-  }
-  activeMode = 'coding';
-  const badge = $('modeBadge'), badgeTxt = $('modeBadgeText');
-  if (badge && badgeTxt) {
-    badge.className = 'mode-badge visible coding';
-    badgeTxt.textContent = 'Coding';
-  }
+  setMode('coding');
   const inp = $('chatInput');
   if (inp) {
     inp.value = 'Generate code: ';
@@ -1529,22 +1594,41 @@ function setModeCodingAndPrompt() {
 function _showTranscript(userText, aiText) {
   const el = $('voiceTranscript'); if (!el) return;
   if (!userText && !aiText) { el.textContent = 'Speak now…'; return; }
+  
+  const isInline = el.classList.contains('inline-mode');
   let html = '';
-  if (userText) html += `<div style="margin-bottom:0.65rem;padding:0.6rem 0.85rem;background:rgba(255,255,255,0.05);border-radius:8px;">
-    <div style="font-size:0.72rem;color:var(--accent);font-weight:600;margin-bottom:3px;">YOU</div>
-    <div style="font-size:0.9rem;">${escHtml(userText)}</div></div>`;
-  if (aiText)   html += `<div style="padding:0.6rem 0.85rem;background:rgba(25,195,125,0.07);border-radius:8px;">
-    <div style="font-size:0.72rem;color:var(--accent);font-weight:600;margin-bottom:3px;">HERO AI</div>
-    <div style="font-size:0.9rem;">${formatContent(aiText)}</div></div>`;
+  
+  if (userText) {
+    if (isInline) {
+      html += `<div style="font-size:0.95rem;color:var(--text);">${escHtml(userText)}</div>`;
+    } else {
+      html += `<div style="margin-bottom:0.65rem;padding:0.6rem 0.85rem;background:rgba(255,255,255,0.05);border-radius:8px;">
+        <div style="font-size:0.72rem;color:var(--accent);font-weight:600;margin-bottom:3px;">YOU</div>
+        <div style="font-size:0.9rem;">${escHtml(userText)}</div></div>`;
+    }
+  }
+  
+  if (aiText && !isInline) {
+    html += `<div style="padding:0.6rem 0.85rem;background:rgba(25,195,125,0.07);border-radius:8px;">
+      <div style="font-size:0.72rem;color:var(--accent);font-weight:600;margin-bottom:3px;">HERO AI</div>
+      <div style="font-size:0.9rem;">${formatContent(aiText)}</div></div>`;
+  }
+  
   el.innerHTML = html;
   requestAnimationFrame(() => { el.scrollTop = el.scrollHeight; });
 }
 
 function _showInterim(text) {
   const el = $('voiceTranscript'); if (!el || !text) return;
-  el.innerHTML = `<div style="padding:0.6rem 0.85rem;border-radius:8px;border:0.5px dashed rgba(25,195,125,0.3);">
-    <div style="font-size:0.72rem;color:var(--accent);font-weight:600;margin-bottom:3px;">YOU</div>
-    <div style="font-size:0.9rem;color:var(--text-dim);">${escHtml(text)}</div></div>`;
+  const isInline = el.classList.contains('inline-mode');
+  
+  if (isInline) {
+    el.innerHTML = `<div style="font-size:0.95rem;color:var(--text-dim);">${escHtml(text)}</div>`;
+  } else {
+    el.innerHTML = `<div style="padding:0.6rem 0.85rem;border-radius:8px;border:0.5px dashed rgba(25,195,125,0.3);">
+      <div style="font-size:0.72rem;color:var(--accent);font-weight:600;margin-bottom:3px;">YOU</div>
+      <div style="font-size:0.9rem;color:var(--text-dim);">${escHtml(text)}</div></div>`;
+  }
   el.scrollTop = el.scrollHeight;
 }
 
@@ -1624,10 +1708,39 @@ async function _sendToAI(userText) {
   if (voiceState !== VOICE_STATE.THINKING) _setVoiceState(VOICE_STATE.THINKING);
   _showTranscript(userText, '');
   voiceFinalText = ''; voiceInterimText = '';
+  
+  let mode = 'Voice Chat';
+  let filesPayload = [];
+  if (attachedFiles.length > 0) {
+    mode = 'voice_file';
+    filesPayload = [...attachedFiles];
+    
+    // Clear files from UI
+    attachedFiles = [];
+    const ap = $('attachPreviewRow'); if (ap) ap.innerHTML = '';
+    toggleSendBtn();
+  }
+  
+  let sessionHistory = [];
+  if (typeof userSettings !== 'undefined' && userSettings.rememberHistory && messages.length > 0) {
+    sessionHistory = messages.slice();
+  } else if (messages.length > 0) {
+    sessionHistory = messages.slice(); // Safe fallback if userSettings isn't available
+  }
+  
   try {
     const res  = await fetch('/api/chat', {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
-      body: JSON.stringify({ message: userText, model: currentModel, mode: 'Voice Chat', session_id: currentSessionId })
+      body: JSON.stringify({ 
+        message: userText, 
+        model: currentModel, 
+        mode: mode, 
+        session_id: currentSessionId,
+        has_files: filesPayload.length > 0,
+        file_count: filesPayload.length,
+        files: filesPayload,
+        send_history: sessionHistory
+      })
     });
     const data = await getJsonResponse(res);
     if (data.status === 'success') {
@@ -1635,7 +1748,7 @@ async function _sendToAI(userText) {
       const reply = (data.reply || '').trim();
       _showTranscript(userText, reply);
       _setVoiceState(VOICE_STATE.SPEAKING);
-      pushVoiceToChat(userText, reply);
+      pushVoiceToChat(userText, reply, data, filesPayload);
       _speakReply(reply, () => {
         if (voiceActive && voiceState === VOICE_STATE.SPEAKING) {
           _setVoiceState(VOICE_STATE.LISTENING);
@@ -1771,19 +1884,9 @@ async function loadChatMessages(sessionId) {
       if (activeItem) activeItem.classList.add('active');
       currentSessionId = sessionId;
       if (data.chat_info && data.chat_info.is_developer_session) {
-        const select = $('modelSelect');
-        if (select) select.value = 'Developer';
-        openDeveloperModal();
+        // Do nothing with the model, preserve the user's current selection
       } else {
-        isDeveloperMode = false;
-        const devSidebar = $('developerSidebar');
-        if (devSidebar) devSidebar.style.display = 'none';
-        const toggleBtn = $('devSidebarToggleBtn');
-        if (toggleBtn) toggleBtn.style.display = 'none';
-        const fastBtn = $('fastModeBtn');
-        if (fastBtn) fastBtn.style.display = '';
-        const select = $('modelSelect');
-        if (select) select.value = (data.chat_info ? data.chat_info.model_used : 'Baymax') || 'Baymax';
+        // Do nothing with the model, preserve the user's current selection
       }
       (data.messages || []).forEach(msg => { messages.push(msg); renderMessage(msg); });
     }
@@ -1821,7 +1924,7 @@ function initBallCanvas() {
 function animateBall(listening) { isListening = listening; cancelAnimationFrame(animFrame); drawBall(); }
 
 function drawBall() {
-  const canvas = $('voiceCanvas'); if (!canvas) return;
+  const canvas = $(typeof activeVoiceCanvasId !== "undefined" ? activeVoiceCanvasId : "voiceCanvas"); if (!canvas) return;
   const ctx = canvas.getContext('2d');
   const W = canvas.width, H = canvas.height, cx = W/2, cy = H/2;
   ctx.clearRect(0,0,W,H); ballPhase += 0.018;
@@ -1927,7 +2030,7 @@ function drawBall() {
 if (window.speechSynthesis) window.speechSynthesis.getVoices();
 setTimeout(() => { initBallCanvas(); _syncMuteBtn(); toggleSendBtn(); }, 100);
 document.addEventListener('DOMContentLoaded', checkSession);
-console.log('✅ Hero AI loaded.');
+console.log('✅ Heros loaded.');
 
 /* ════════ DEVELOPER MODE ════════ */
 let isDeveloperMode = false;

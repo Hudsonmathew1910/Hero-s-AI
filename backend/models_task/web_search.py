@@ -164,7 +164,68 @@ def _summarise_with_gemini(
     except Exception as e:
         logger.error(f"[web_search] Gemini summarization error: {e}")
 
+    return _summarise_with_hf(query, ddg_results, wiki_summary)
+
+def _summarise_with_hf(query: str, ddg_results: list[dict], wiki_summary: str) -> str:
+    """Fallback summarizer using HuggingFace when Gemini is unavailable."""
+    context_parts = []
+    if wiki_summary:
+        context_parts.append(f"=== Wikipedia ===\n{wiki_summary}")
+    if ddg_results:
+        lines = []
+        for i, r in enumerate(ddg_results, 1):
+            lines.append(f"{i}. {r['title']}\n   {r['snippet']}\n   Source: {r['url']}")
+        context_parts.append("=== Web Results ===\n" + "\n\n".join(lines))
+    if not context_parts:
+        return "No search results were found for your query."
+
+    context = "\n\n".join(context_parts)
+    prompt = (
+        f"You are an expert research assistant.\n\n"
+        f"User Query: \"{query}\"\n\n"
+        f"SEARCH RESULTS:\n{context}\n\n"
+        f"INSTRUCTIONS:\n"
+        f"1. Analyze the search results to find the precise answer to the user's query.\n"
+        f"2. Ignore irrelevant results or hallucinations.\n"
+        f"3. Provide a clear, concise, and factual answer.\n"
+    )
+
+    import os
+    hf_token = (
+        os.environ.get("HUGGINGFACE_TOKEN_1") or 
+        os.environ.get("HUGGINGFACE_TOKEN_2") or 
+        os.environ.get("HUGGINGFACE_TOKEN_3") or
+        os.environ.get("HF_TOKEN_1") or
+        os.environ.get("HF_TOKEN_2") or
+        os.environ.get("HF_TOKEN_3")
+    )
+    if hf_token:
+        try:
+            r = requests.post(
+                "https://router.huggingface.co/v1/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {hf_token}",
+                    "Content-Type": "application/json"
+                },
+                json={
+                    "model": "meta-llama/Llama-3.3-70B-Instruct",
+                    "messages": [{"role": "user", "content": prompt}],
+                    "max_tokens": 1024,
+                    "temperature": 0.1
+                },
+                timeout=15,
+            )
+            if r.status_code == 200:
+                text = r.json().get("choices", [{}])[0].get("message", {}).get("content", "").strip()
+                if text:
+                    return text
+            else:
+                logger.error(f"[web_search] HF summarization failed with status {r.status_code}")
+        except Exception as e:
+            logger.error(f"[web_search] HF summarization error: {e}")
+
     return _plain_summary(query, ddg_results, wiki_summary)
+
 
 
 def _plain_summary(query: str, ddg_results: list[dict], wiki_summary: str) -> str:
@@ -191,7 +252,7 @@ def perform_web_search(
     rewritten_query = query
     
     # Attempt query rewriting if context exists
-    if chat_history and gemini_key:
+    if chat_history:
         try:
             logger.info(f"[web_search] Attempting query rewrite: {query!r}")
             rewritten_query = rewrite_query_for_search(
@@ -206,9 +267,21 @@ def perform_web_search(
     
     logger.info(f"[web_search] Final Search Query: {rewritten_query}")
 
-    ddg_results  = _search_duckduckgo(rewritten_query, max_results=5)
-    time.sleep(1)  # Wait 1 second between searches to avoid rate limits
-    wiki_summary = _search_wikipedia(rewritten_query, sentences=5)
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+        future_ddg = executor.submit(_search_duckduckgo, rewritten_query, 5)
+        future_wiki = executor.submit(_search_wikipedia, rewritten_query, 5)
+        
+        try:
+            ddg_results = future_ddg.result()
+        except Exception as e:
+            logger.error("[web_search] Concurrent DDG search failed: %s", e)
+            ddg_results = []
+            
+        try:
+            wiki_summary = future_wiki.result()
+        except Exception as e:
+            logger.error("[web_search] Concurrent Wiki search failed: %s", e)
+            wiki_summary = ""
 
     if gemini_key:
         answer = _summarise_with_gemini(rewritten_query, ddg_results, wiki_summary, gemini_key)

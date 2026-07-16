@@ -357,7 +357,7 @@ def resolve_mode(preprocessed: PreprocessedInput, current_mode: str) -> str:
     clean_text = preprocessed["clean_text"].lower()
     
     # 1. Explicit user command (Persistent modes beat NLP)
-    persistent_modes = ("coding", "websearch", "Voice Chat", "file_handle", "live_display", "zeno_eco")
+    persistent_modes = ("coding", "websearch", "Voice Chat", "voice_file", "voice_message", "file_handle", "live_display", "zeno_eco", "search_code", "search_file", "code_file", "search_code_file")
     if current_mode in persistent_modes:
         return current_mode
 

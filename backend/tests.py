@@ -21,7 +21,9 @@ class NlpTests(TestCase):
 class HeroModelTests(TestCase):
     @patch('backend.hero_model.requests.post')
     @patch('google.genai.Client')
-    def test_baymax_fallback(self, mock_client_class, mock_requests):
+    @patch('backend.hero_model.Baymax._enrich_with_web_search')
+    def test_baymax_fallback(self, mock_enrich, mock_client_class, mock_requests):
+        mock_enrich.side_effect = lambda text, task: text
         # Mock Gemini Client to raise an exception
         mock_client = MagicMock()
         mock_client.models.generate_content.side_effect = Exception("Gemini quota exceeded")
@@ -61,7 +63,7 @@ class HaloModelTests(TestCase):
         """Test that Halo initializes successfully when HF_TOKEN is present."""
         with patch.dict(os.environ, {"HF_TOKEN": "hf_test_token"}):
             halo = Halo()
-            self.assertEqual(halo.hf_token, "hf_test_token")
+            self.assertTrue(len(halo.clients) > 0)
             self.assertTrue(mock_client.called)
 
     def test_parse_smart_output(self):
@@ -89,8 +91,10 @@ class HaloModelTests(TestCase):
                 self.assertEqual(halo.parse_smart_output("{not valid json}"), "{not valid json}")
 
     @patch('backend.halo.InferenceClient')
-    def test_halo_fallback_routing(self, mock_client_class):
+    @patch('backend.halo.Halo._enrich_with_web_search')
+    def test_halo_fallback_routing(self, mock_enrich, mock_client_class):
         """Test that Halo successfully falls back to Llama 3.3 when the primary model fails."""
+        mock_enrich.side_effect = lambda text: text
         mock_client = MagicMock()
         mock_client_class.return_value = mock_client
         
@@ -100,7 +104,7 @@ class HaloModelTests(TestCase):
             MagicMock(choices=[MagicMock(message=MagicMock(content="Hello from Llama 3.3 fallback!"))])
         ]
         
-        with patch.dict(os.environ, {"HF_TOKEN": "hf_test_token"}):
+        with patch.dict(os.environ, {"HF_TOKEN": "hf_test_token"}, clear=True):
             halo = Halo()
             response = halo.handle_text("Hello")
             
@@ -110,7 +114,7 @@ class HaloModelTests(TestCase):
             mock_client.chat_completion.assert_any_call(
                 model=Halo.PRIMARY_MODEL,
                 messages=[
-                    {"role": "system", "content": Halo.SYSTEM_PROMPT},
+                    {"role": "system", "content": Halo.TEXT_PROMPT},
                     {"role": "user", "content": "Hello"}
                 ],
                 max_tokens=Halo.DEFAULT_MAX_TOKENS,
@@ -120,9 +124,61 @@ class HaloModelTests(TestCase):
             mock_client.chat_completion.assert_called_with(
                 model=Halo.FALLBACK_MODEL,
                 messages=[
-                    {"role": "system", "content": Halo.SYSTEM_PROMPT},
+                    {"role": "system", "content": Halo.TEXT_PROMPT},
                     {"role": "user", "content": "Hello"}
                 ],
                 max_tokens=Halo.DEFAULT_MAX_TOKENS,
                 temperature=Halo.DEFAULT_TEMPERATURE
             )
+
+
+class HeroModelFastRoutingTests(TestCase):
+    @patch('backend.hero_model.Baymax._call_groq')
+    @patch('backend.hero_model.Baymax._with_fallback')
+    def test_fast_route_provider_error(self, mock_fallback, mock_call_groq):
+        """Test that a GroqProviderError on the first model immediately falls back to normal fallbacks."""
+        from backend.hero_model import GroqProviderError
+        from backend.fast import run_fast_route
+        
+        mock_call_groq.side_effect = GroqProviderError("Rate limit / traffic exceeded")
+        mock_fallback.return_value = "Fallback Response"
+        
+        baymax = Baymax(
+            gemini_key="gemini-key",
+            openrouter_key="or-key",
+            groq_key="groq-key",
+            chat_history=[]
+        )
+        baymax.is_fast = True
+        
+        response = run_fast_route(baymax, "Hello", max_tokens=100, task="text_chat")
+        
+        self.assertEqual(response, "Fallback Response")
+        self.assertEqual(mock_call_groq.call_count, 1)  # Only the first model was tried
+        mock_fallback.assert_called_once_with('gemini-3.1-flash-lite', "Hello", 100, "fallback", "text_chat")
+
+    @patch('backend.hero_model.Baymax._call_groq')
+    @patch('backend.hero_model.Baymax._with_fallback')
+    def test_fast_route_model_error(self, mock_fallback, mock_call_groq):
+        """Test that a GroqModelError on the first model allows sequential try of the remaining Groq models."""
+        from backend.hero_model import GroqModelError
+        from backend.fast import run_fast_route
+        
+        mock_call_groq.side_effect = [
+            GroqModelError("Model not found"),
+            "Hello from second Groq model!"
+        ]
+        
+        baymax = Baymax(
+            gemini_key="gemini-key",
+            openrouter_key="or-key",
+            groq_key="groq-key",
+            chat_history=[]
+        )
+        baymax.is_fast = True
+        
+        response = run_fast_route(baymax, "Hello", max_tokens=100, task="text_chat")
+        
+        self.assertEqual(response, "Hello from second Groq model!")
+        self.assertEqual(mock_call_groq.call_count, 2)  # First failed, second succeeded
+        self.assertFalse(mock_fallback.called)  # No need for fallback

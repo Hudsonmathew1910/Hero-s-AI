@@ -733,7 +733,7 @@ async function sendMessage() {
     typingRow.remove();
     let userMsg = err.message;
     if (userMsg.includes('is not valid JSON') || userMsg.includes('unexpected response format')) {
-      userMsg = "Hero's AI encountered a server processing error. Please try again or check your settings.";
+      userMsg = "Heros encountered a server processing error. Please try again or check your settings.";
     }
     renderMessage({ role: 'assistant', content: `Error: ${userMsg}` });
   }
@@ -791,7 +791,7 @@ function renderMessage(msg) {
     }
   }
 
-  const displayName = isUser ? (currentUser ? currentUser.name.split(' ')[0] : 'You') : "Hero's AI";
+  const displayName = isUser ? (currentUser ? currentUser.name.split(' ')[0] : 'You') : "Heros";
 
   row.innerHTML = `
     <div class="msg-avatar ${isUser ? 'user' : 'ai'}">${avatarHTML}</div>
@@ -828,7 +828,7 @@ function showTyping(mode) {
            style="border-radius:10px;object-fit:cover;display:block;" alt="AI">
     </div>
     <div class="msg-content ai">
-      <div class="sender-row"><span class="sender">Hero's AI</span></div>
+      <div class="sender-row"><span class="sender">Heros</span></div>
       <div class="typing-inline">
         ${label ? `<span class="typing-mode-label">${label}</span>` : ''}
         <div class="typing-balls">
@@ -1744,4 +1744,4 @@ function drawBall() {
 if (window.speechSynthesis) window.speechSynthesis.getVoices();
 setTimeout(() => { initBallCanvas(); _syncMuteBtn(); toggleSendBtn(); }, 100);
 document.addEventListener('DOMContentLoaded', checkSession);
-console.log('✅ Hero AI loaded.');
+console.log('✅ Heros loaded.');

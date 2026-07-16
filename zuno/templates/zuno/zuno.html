@@ -561,10 +561,10 @@
             </div>
             <div class="error-card-body" id="errorCardBody">
                 {% if groq_missing %}
-                To use Zuno, please configure your Groq API key in your Hero AI profile settings:
+                To use Zuno, please configure your Groq API key in your Heros profile:
                 <ol>
-                    <li>Log in to your <strong>Hero AI</strong> account.</li>
-                    <li>Navigate to <strong>Settings / API Keys</strong>.</li>
+                    <li>Log in to your <strong>Heros</strong> account.</li>
+                    <li>Navigate to <strong>Account / API Keys</strong>.</li>
                     <li>Add your <strong>Groq API Key</strong> and save.</li>
                 </ol>
                 {% endif %}
@@ -857,14 +857,14 @@
                 const isLoginError = message.includes('log in') || message.includes('Login');
                 if (isLoginError) {
                     errorCardTitle.innerHTML = '⚠️ Login Required';
-                    errorCardBody.innerHTML = 'Please log in to your Hero AI account and configure your API keys to use this feature.';
+                    errorCardBody.innerHTML = 'Please log in to your Heros account and configure your API keys to use this feature.';
                 } else {
                     errorCardTitle.innerHTML = '🔑 Groq API Key Missing';
                     errorCardBody.innerHTML =
-                        'To use Zuno, please configure your Groq API key in your Hero AI profile settings:' +
+                        'To use Zuno, please configure your Groq API key in your Heros profile:' +
                         '<ol>' +
-                        '<li>Log in to your <strong>Hero AI</strong> account.</li>' +
-                        '<li>Navigate to <strong>Settings / API Keys</strong>.</li>' +
+                        '<li>Log in to your <strong>Heros</strong> account.</li>' +
+                        '<li>Navigate to <strong>Account / API Keys</strong>.</li>' +
                         '<li>Add your <strong>Groq API Key</strong> and save.</li>' +
                         '</ol>';
                 }

@@ -202,13 +202,17 @@ def login_required_json(f):
     def wrapper(request, *args, **kwargs):
         uid = request.session.get('user_id')
         if not uid:
-            session_key = request.headers.get('X-Session-Id')
-            if session_key:
+            session_key_raw = request.headers.get('X-Session-Id')
+            if session_key_raw:
                 from django.contrib.sessions.backends.db import SessionStore
-                s = SessionStore(session_key=session_key)
-                uid = s.get('user_id')
-                if uid:
-                    request.session = s
+                for sk in session_key_raw.split(','):
+                    sk = sk.strip()
+                    if not sk: continue
+                    s = SessionStore(session_key=sk)
+                    uid = s.get('user_id')
+                    if uid:
+                        request.session = s
+                        break
         if not uid:
             return JsonResponse({"status": "fail", "message": "Authentication required"}, status=401)
         try:
@@ -703,7 +707,9 @@ def chat_api(request):
             messages_payload = [{"role": "system", "content": system_prompt}] + clean_history
             messages_payload.append({"role": "user", "content": raw_message})
             
+            t0 = time.time()
             result = dev_client.generate(messages_payload)
+            time_taken = round(time.time() - t0, 2)
             
             reply = result.get('reply') or ""
             status_code = result.get('status_code', 500)
@@ -730,13 +736,15 @@ def chat_api(request):
                 "reply": reply,
                 "status_code": status_code,
                 "error": error_msg,
+                "dev_model": dev_model_name,
+                "time_taken": time_taken,
                 "session_id": str(chat_session.session_id) if not temporary_chat and 'chat_session' in locals() else session_id_str,
                 "is_new_chat": is_new_session,
                 "temporary": temporary_chat,
             })
 
         # ── NLP pre-processing ────────────────────────────────────────────────
-        if mode in ['coding', 'websearch', 'Voice Chat', 'voice_message', 'zeno_shadow']:
+        if mode in ['coding', 'websearch', 'Voice Chat', 'voice_message', 'zeno_shadow', 'search_code', 'search_file', 'code_file', 'search_code_file']:
             nlp_result = {"clean_text": raw_message, "intent": "direct", "metadata": {}}
         else:
             nlp_result = preprocess(raw_message, source=mode)
@@ -833,7 +841,8 @@ def chat_api(request):
                 else get_session_history(session_id_str, request.user_obj, turn_limit)
             )
 
-        logger.debug("DB lookup: %.2fs", time.time() - t0)
+        db_lookup_time = time.time() - t0
+        logger.debug("DB lookup: %.2fs", db_lookup_time)
 
         try:
             if model == 'Halo':
@@ -843,6 +852,7 @@ def chat_api(request):
                     temporary=temporary_chat,
                     is_superuser=is_superuser,
                     is_fast=is_fast,
+                    db_lookup_time=db_lookup_time,
                 )
             else:
                 baymax = Baymax(
@@ -858,6 +868,7 @@ def chat_api(request):
                     temporary=temporary_chat,
                     is_superuser=is_superuser,
                     is_fast=is_fast,
+                    db_lookup_time=db_lookup_time,
                 )
         except ImportError as e:
             missing = str(e).replace("No module named ", "").strip("'")
@@ -881,6 +892,8 @@ def chat_api(request):
 
         # ── Handler dispatch ──────────────────────────────────────────────────
         try:
+            from backend.multiple_task import MultipleTask
+            mt = MultipleTask(baymax)
             handlers = {
                 'coding':        lambda: baymax.handle_coding(message),
                 'websearch':     lambda: baymax.handle_websearch(message),
@@ -892,6 +905,11 @@ def chat_api(request):
                 'zeno_plus':     lambda: baymax.handle_zeno_plus(message),
                 'zeno_voice':    lambda: baymax.handle_zeno_voice(message),
                 'zeno_shadow':   lambda: baymax.handle_zeno_shadow(message),
+                'search_code':   lambda: mt.handle_search_code(message),
+                'search_file':   lambda: mt.handle_search_file(message, d.get('files', [])),
+                'code_file':     lambda: mt.handle_code_file(message, d.get('files', [])),
+                'search_code_file': lambda: mt.handle_search_code_file(message, d.get('files', [])),
+                'voice_file':    lambda: mt.handle_voice_file(message, d.get('files', [])),
             }
             reply = handlers.get(mode, lambda: baymax.handle_text(message))()
         except ImportError as e:

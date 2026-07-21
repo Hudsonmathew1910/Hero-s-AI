@@ -1514,7 +1514,13 @@ document.querySelectorAll('.modal-overlay').forEach(overlay => {
   overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModal(overlay.id); });
 });
 
-function toggleSidebar() { $('sidebar')?.classList.toggle('open'); }
+function toggleSidebar() {
+  const sb = $('sidebar');
+  const bd = $('sidebarBackdrop');
+  sb?.classList.toggle('open');
+  bd?.classList.toggle('visible', sb?.classList.contains('open'));
+}
+
 
 function newChat() {
   messages = []; attachedFiles = []; clearMode();

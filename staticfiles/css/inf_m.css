@@ -1,0 +1,807 @@
+/* ════════════════════════════════════════════════════════════════════════════
+   INF_M.CSS — Mobile-Responsive Overrides for Infinsight Page
+   Load AFTER inf.css:  <link rel="stylesheet" href="inf_m.css">
+   Matches the 4-tier breakpoint system from style_m.css
+   ════════════════════════════════════════════════════════════════════════════ */
+
+/* ═══════ CSS CUSTOM PROPERTIES — Infinsight scale tokens ═══════ */
+:root {
+  --ins-content-padding: 24px;
+  --ins-font-body:       0.9rem;
+  --ins-msg-max-w:       860px;
+  --ins-modal-gap:       24px;
+  --ins-input-icon:      36px;
+}
+
+/* ═══════ SIDEBAR BACKDROP OVERLAY ═══════ */
+.ins-sidebar-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 199;
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
+  transition: opacity 0.3s ease;
+  opacity: 0;
+}
+.ins-sidebar-backdrop.visible {
+  display: block;
+  opacity: 1;
+}
+
+/* ═══════ SAFE AREA INSETS ═══════ */
+@supports (padding-top: env(safe-area-inset-top)) {
+  .ins-topbar {
+    padding-top: env(safe-area-inset-top);
+    padding-left: max(20px, env(safe-area-inset-left));
+    padding-right: max(20px, env(safe-area-inset-right));
+  }
+  .ins-input-wrap {
+    padding-bottom: max(18px, env(safe-area-inset-bottom));
+    padding-left: max(20px, env(safe-area-inset-left));
+    padding-right: max(20px, env(safe-area-inset-right));
+  }
+  .ins-upload-modal,
+  .modal-overlay {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .ins-sidebar {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════════
+   TIER 1 — TABLET (768px – 1023px)
+   ══════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 1023px) {
+  :root {
+    --ins-content-padding: 18px;
+    --ins-font-body:       0.88rem;
+  }
+
+  /* Sidebar overlay mode */
+  .ins-sidebar {
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    z-index: 200;
+    transform: translateX(-100%);
+    will-change: transform;
+    margin-top: 0;
+  }
+  .ins-sidebar.open {
+    transform: translateX(0);
+    box-shadow: 6px 0 30px rgba(0, 0, 0, 0.5);
+  }
+  .ins-menu-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Main area takes full width */
+  .ins-main {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  /* Theme btn — 40px touch target */
+  .ins-theme-btn {
+    min-width: 40px;
+    min-height: 40px;
+  }
+
+  /* Topbar session title */
+  .ins-session-title-display {
+    font-size: 1.1rem;
+    max-width: 220px;
+  }
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════════
+   TIER 2 — PHONE (≤767px)
+   ══════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 767px) {
+  :root {
+    --ins-content-padding: 12px;
+    --ins-font-body:       0.85rem;
+    --ins-msg-max-w:       100%;
+    --ins-modal-gap:       16px;
+    --ins-input-icon:      34px;
+  }
+
+  /* ─── Topbar ─── */
+  .ins-topbar {
+    padding: 0 var(--ins-content-padding);
+    height: auto;
+    min-height: 52px;
+    gap: 6px;
+  }
+  .ins-topbar-left {
+    flex: 1;
+    min-width: 0;
+  }
+  .ins-topbar-right {
+    flex-shrink: 0;
+    gap: 6px;
+  }
+  .ins-session-title-display {
+    font-size: 0.95rem;
+    max-width: 130px;
+  }
+  .ins-session-badge {
+    font-size: 0.6rem;
+    padding: 2px 8px;
+  }
+  .ins-theme-btn {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    min-height: 40px;
+  }
+  .ins-menu-toggle {
+    min-width: 40px;
+    min-height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* ─── Sidebar ─── */
+  .ins-sidebar {
+    width: 280px;
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    z-index: 200;
+    transform: translateX(-100%);
+    margin-top: 0;
+  }
+  .ins-sidebar.open {
+    transform: translateX(0);
+    box-shadow: 6px 0 30px rgba(0, 0, 0, 0.5);
+    margin-top: 0;
+  }
+  .ins-main {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  /* Sidebar internals */
+  .ins-sidebar-header {
+    padding: 14px 12px 10px;
+  }
+  .ins-brand-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 0.88rem;
+  }
+  .ins-brand-name {
+    font-size: 1rem;
+  }
+  .ins-upload-btn {
+    padding: 8px 12px;
+    font-size: 0.78rem;
+    margin: 10px 12px 4px;
+  }
+  .ins-sessions-label {
+    padding: 10px 14px 4px;
+  }
+  .ins-session-item {
+    padding: 8px;
+    gap: 8px;
+  }
+  .ins-session-icon {
+    width: 28px;
+    height: 28px;
+    font-size: 0.78rem;
+  }
+  .ins-session-name {
+    font-size: 0.78rem;
+  }
+  .ins-session-del {
+    opacity: 0.6;      /* always visible on touch */
+  }
+  .ins-sidebar-hero-btn {
+    margin: auto 12px 12px;
+    padding: 8px 12px;
+    font-size: 0.78rem;
+  }
+  .ins-apikey-section {
+    margin: 0 0 0.5rem;
+    padding: 0.7rem 0.8rem;
+  }
+  .ins-apikey-input {
+    font-size: 0.76rem;
+  }
+
+  /* User chip — icon only */
+  .ins-user-name {
+    display: none;
+  }
+  .ins-user-chip {
+    padding: 4px;
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+  }
+
+  /* ─── Welcome screen ─── */
+  .ins-welcome {
+    padding: 28px var(--ins-content-padding);
+  }
+  .ins-welcome h1 {
+    font-size: 1.35rem;
+    margin-bottom: 6px;
+  }
+  .ins-welcome p {
+    font-size: 0.88rem;
+    margin-bottom: 24px;
+    max-width: 360px;
+  }
+  .ins-drop-zone {
+    padding: 20px 16px;
+    max-width: 100%;
+    border-radius: 10px;
+    margin-bottom: 24px;
+  }
+  .ins-drop-icon {
+    font-size: 1.3rem;
+  }
+  .ins-drop-text {
+    font-size: 0.84rem;
+  }
+  .ins-drop-hint {
+    font-size: 0.74rem;
+  }
+
+  /* Capabilities — 2 cols at phone, will go 1 col at 480px */
+  .ins-capabilities {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    max-width: 100%;
+  }
+  .ins-cap-card {
+    padding: 12px 10px;
+    border-radius: 10px;
+  }
+  .cap-title {
+    font-size: 0.84rem;
+    gap: 6px;
+  }
+  .cap-title i {
+    font-size: 0.88rem;
+  }
+  .cap-desc {
+    font-size: 0.76rem;
+  }
+
+  /* ─── Messages ─── */
+  .ins-msg-row {
+    max-width: var(--ins-msg-max-w);
+    padding: 5px var(--ins-content-padding);
+    gap: 10px;
+  }
+  .ins-avatar {
+    width: 30px;
+    height: 30px;
+    font-size: 0.72rem;
+  }
+  .ins-msg-content {
+    font-size: var(--ins-font-body);
+  }
+  .ins-bubble {
+    padding: 10px 14px;
+    border-radius: 12px;
+  }
+  /* Code blocks — horizontal scroll, no overflow */
+  .ins-bubble pre,
+  .ins-code-block pre {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    max-width: calc(100vw - 2 * var(--ins-content-padding) - 60px);
+    font-size: 0.76rem;
+    padding: 10px 12px;
+  }
+  .ins-code-block {
+    max-width: calc(100vw - 2 * var(--ins-content-padding) - 60px);
+  }
+  /* Tables — ensure horizontal scroll */
+  .ins-table-wrap {
+    max-width: calc(100vw - 2 * var(--ins-content-padding) - 60px);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .ins-bubble table {
+    font-size: 0.78rem;
+    min-width: 300px;
+  }
+  .ins-bubble th,
+  .ins-bubble td {
+    padding: 6px 10px;
+  }
+  .ins-sender {
+    font-size: 0.68rem;
+  }
+  .ins-copy-msg-btn {
+    font-size: 0.72rem;
+    min-width: 28px;
+    min-height: 28px;
+  }
+
+  /* ─── Chart container ─── */
+  .ins-chart-container {
+    height: 230px;
+    max-width: 100%;
+    padding: 0.75rem;
+    border-radius: 10px;
+  }
+
+  /* ─── Input bar ─── */
+  .ins-input-wrap {
+    padding: 8px var(--ins-content-padding) 12px;
+  }
+  .ins-input-box {
+    gap: 8px;
+    padding: 8px 10px;
+    border-radius: 12px;
+  }
+  .ins-textarea {
+    font-size: var(--ins-font-body);
+  }
+  .ins-send-btn,
+  .ins-home-btn {
+    width: var(--ins-input-icon);
+    height: var(--ins-input-icon);
+    min-width: 34px;
+    min-height: 34px;
+    font-size: 0.8rem;
+    border-radius: 8px;
+  }
+  .ins-hint {
+    font-size: 0.62rem;
+    margin-top: 6px;
+  }
+
+  /* Focus scroll-into-view for keyboard */
+  .ins-input-wrap:focus-within {
+    scroll-margin-bottom: 20px;
+  }
+
+  /* ─── Auth modal ─── */
+  .modal-overlay {
+    padding: var(--ins-modal-gap) var(--ins-modal-gap);
+    align-items: center;
+  }
+  .modal-card {
+    max-width: calc(100% - 2 * var(--ins-modal-gap));
+    width: 100%;
+    padding: 1.5rem 1.25rem;
+    border-radius: 16px;
+  }
+  .modal-brand {
+    margin-bottom: 1.25rem;
+    gap: 10px;
+  }
+  .modal-brand-icon {
+    width: 36px;
+    height: 36px;
+    font-size: 0.95rem;
+  }
+  .modal-brand-name {
+    font-size: 1.1rem;
+  }
+  .modal-title {
+    font-size: 1.2rem;
+  }
+  .modal-subtitle {
+    font-size: 0.82rem;
+    margin-bottom: 1.25rem;
+  }
+  .modal-tabs {
+    margin-bottom: 1.25rem;
+  }
+  .modal-tab {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.82rem;
+  }
+  .modal-input {
+    padding: 0.65rem 0.85rem;
+    font-size: 0.88rem;
+  }
+  .modal-btn {
+    padding: 0.75rem 1.25rem;
+    font-size: 0.9rem;
+  }
+  .modal-google-btn {
+    padding: 0.65rem 1rem;
+    font-size: 0.85rem;
+  }
+  .modal-google-btn svg {
+    flex-shrink: 0;
+  }
+  .modal-footer-link {
+    font-size: 0.78rem;
+  }
+
+  /* ─── Upload modal ─── */
+  .ins-upload-modal {
+    padding: var(--ins-modal-gap);
+  }
+  .ins-upload-card {
+    max-width: calc(100% - 2 * var(--ins-modal-gap));
+    width: 100%;
+    padding: 24px 18px;
+    border-radius: 16px;
+  }
+  .ins-upload-card h2 {
+    font-size: 1.05rem;
+    gap: 7px;
+  }
+  .ins-upload-card p {
+    font-size: 0.78rem;
+    margin-bottom: 16px;
+  }
+  .ins-file-drop {
+    padding: 22px 16px;
+    border-radius: 12px;
+    margin-bottom: 14px;
+  }
+  .ins-file-drop i {
+    font-size: 1.6rem;
+    margin-bottom: 8px;
+  }
+  .ins-file-drop .drop-text {
+    font-size: 0.82rem;
+  }
+  .ins-file-drop .drop-sub {
+    font-size: 0.68rem;
+  }
+  .ins-info-box {
+    padding: 10px 12px;
+    margin-bottom: 14px;
+    gap: 8px;
+  }
+  .ins-info-box span {
+    font-size: 0.74rem;
+  }
+  .ins-selected-file {
+    padding: 8px 12px;
+    margin-bottom: 14px;
+  }
+  .ins-upload-actions {
+    gap: 8px;
+  }
+  .ins-upload-cancel {
+    padding: 9px 14px;
+    font-size: 0.8rem;
+  }
+  .ins-upload-submit {
+    padding: 9px;
+    font-size: 0.84rem;
+  }
+
+  /* ─── Notification — centered ─── */
+  .ins-notif {
+    right: auto;
+    left: 50%;
+    transform: translateX(-50%) translateY(-120%);
+    max-width: calc(100vw - 32px);
+    width: calc(100vw - 32px);
+    top: 12px;
+    border-radius: 10px;
+    font-size: 0.8rem;
+    padding: 10px 16px;
+  }
+  .ins-notif.show {
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* Processing banner */
+  .ins-processing-banner {
+    font-size: 0.74rem;
+    padding: 7px var(--ins-content-padding);
+  }
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════════
+   CAPABILITIES — 1 COLUMN at ≤480px
+   ══════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 480px) {
+  .ins-capabilities {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════════
+   TIER 3 — SMALL PHONES (≤380px)
+   ══════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 380px) {
+  :root {
+    --ins-content-padding: 8px;
+    --ins-font-body:       0.82rem;
+    --ins-modal-gap:       10px;
+    --ins-input-icon:      32px;
+  }
+
+  /* Topbar */
+  .ins-topbar {
+    padding: 0 8px;
+    min-height: 48px;
+  }
+  .ins-session-title-display {
+    font-size: 0.88rem;
+    max-width: 100px;
+  }
+  .ins-session-badge {
+    font-size: 0.55rem;
+    padding: 2px 6px;
+  }
+  .ins-theme-btn,
+  .ins-menu-toggle {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    min-height: 36px;
+  }
+
+  /* Welcome */
+  .ins-welcome {
+    padding: 20px var(--ins-content-padding);
+  }
+  .ins-welcome h1 {
+    font-size: 1.15rem;
+  }
+  .ins-welcome p {
+    font-size: 0.82rem;
+    max-width: 280px;
+    margin-bottom: 18px;
+  }
+  .ins-drop-zone {
+    padding: 16px 12px;
+  }
+  .ins-drop-icon {
+    font-size: 1.1rem;
+  }
+  .ins-drop-text {
+    font-size: 0.78rem;
+  }
+  .ins-drop-hint {
+    font-size: 0.68rem;
+  }
+  .ins-cap-card {
+    padding: 10px 8px;
+  }
+  .cap-title {
+    font-size: 0.78rem;
+  }
+  .cap-desc {
+    font-size: 0.72rem;
+  }
+
+  /* Messages */
+  .ins-msg-row {
+    padding: 4px var(--ins-content-padding);
+    gap: 8px;
+  }
+  .ins-avatar {
+    width: 26px;
+    height: 26px;
+    font-size: 0.68rem;
+  }
+  .ins-bubble {
+    padding: 8px 12px;
+    font-size: var(--ins-font-body);
+  }
+
+  /* Chart */
+  .ins-chart-container {
+    height: 200px;
+    padding: 0.5rem;
+  }
+
+  /* Input */
+  .ins-input-box {
+    gap: 6px;
+    padding: 6px 8px;
+    border-radius: 10px;
+  }
+  .ins-textarea {
+    font-size: 0.82rem;
+  }
+  .ins-send-btn,
+  .ins-home-btn {
+    width: var(--ins-input-icon);
+    height: var(--ins-input-icon);
+    min-width: 32px;
+    min-height: 32px;
+  }
+  .ins-hint {
+    font-size: 0.58rem;
+  }
+
+  /* Auth modal — extra compact */
+  .modal-card {
+    padding: 1.25rem 1rem;
+    border-radius: 14px;
+  }
+  .modal-brand-icon {
+    width: 32px;
+    height: 32px;
+  }
+  .modal-brand-name {
+    font-size: 1rem;
+  }
+  .modal-title {
+    font-size: 1.05rem;
+  }
+  .modal-tab {
+    padding: 0.4rem 0.6rem;
+    font-size: 0.78rem;
+  }
+  .modal-input {
+    padding: 0.55rem 0.75rem;
+    font-size: 0.84rem;
+  }
+  .modal-btn {
+    padding: 0.65rem 1rem;
+    font-size: 0.85rem;
+  }
+
+  /* Upload modal — extra compact */
+  .ins-upload-card {
+    padding: 18px 14px;
+    border-radius: 14px;
+  }
+  .ins-upload-card h2 {
+    font-size: 0.95rem;
+  }
+  .ins-upload-card p {
+    font-size: 0.74rem;
+  }
+  .ins-file-drop {
+    padding: 16px 12px;
+  }
+  .ins-file-drop i {
+    font-size: 1.3rem;
+    margin-bottom: 6px;
+  }
+  .ins-file-drop .drop-text {
+    font-size: 0.76rem;
+  }
+  .ins-file-drop .drop-sub {
+    font-size: 0.65rem;
+  }
+
+  /* Notification */
+  .ins-notif {
+    top: 8px;
+    max-width: calc(100vw - 16px);
+    width: calc(100vw - 16px);
+    font-size: 0.76rem;
+    padding: 8px 12px;
+  }
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════════
+   TOUCH INTERACTION FALLBACKS
+   ══════════════════════════════════════════════════════════════════════════ */
+@media (hover: none) and (pointer: coarse) {
+  .ins-theme-btn:active {
+    background: var(--surface3);
+    color: var(--text);
+    transform: scale(0.95);
+  }
+  .ins-menu-toggle:active {
+    background: var(--surface2);
+  }
+  .ins-upload-btn:active {
+    opacity: 0.85;
+    transform: scale(0.97);
+  }
+  .ins-session-item:active {
+    background: var(--surface2);
+  }
+  .ins-session-del {
+    opacity: 0.6;
+  }
+  .ins-send-btn:active:not(:disabled) {
+    opacity: 0.8;
+    transform: scale(0.95);
+  }
+  .ins-home-btn:active {
+    background: var(--surface3);
+  }
+  .ins-drop-zone:active {
+    border-color: var(--text-muted);
+    background: var(--surface2);
+  }
+  .ins-cap-card:active {
+    background: var(--surface2);
+  }
+  .ins-copy-msg-btn:active {
+    color: var(--ins-accent);
+    background: var(--surface2);
+  }
+  .ins-sidebar-hero-btn:active {
+    background: rgba(59, 130, 246, 0.12);
+    transform: scale(0.98);
+  }
+  .modal-btn:active:not(:disabled) {
+    opacity: 0.85;
+    transform: scale(0.98);
+  }
+  .modal-google-btn:active {
+    background: rgba(255, 255, 255, 0.08);
+  }
+  .modal-tab:active {
+    opacity: 0.85;
+  }
+  .ins-upload-submit:active:not(:disabled) {
+    opacity: 0.85;
+  }
+  .ins-upload-cancel:active {
+    background: var(--surface3);
+  }
+  .ins-file-drop:active {
+    border-color: var(--ins-accent);
+    background: rgba(59, 130, 246, 0.08);
+  }
+  .ins-new-chat-btn:active {
+    background: var(--surface2);
+  }
+  .ins-dd-item:active {
+    background: rgba(255, 255, 255, 0.06);
+  }
+  .ins-apikey-save:active {
+    opacity: 0.8;
+  }
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════════
+   LANDSCAPE PHONE — prevent header/input squeeze
+   ══════════════════════════════════════════════════════════════════════════ */
+@media (max-height: 500px) and (orientation: landscape) {
+  .ins-topbar {
+    height: 42px;
+    min-height: 42px;
+  }
+  .ins-welcome {
+    padding: 12px var(--ins-content-padding);
+  }
+  .ins-welcome h1 {
+    font-size: 1.1rem;
+    margin-bottom: 4px;
+  }
+  .ins-welcome p {
+    margin-bottom: 14px;
+  }
+  .ins-drop-zone {
+    padding: 14px 12px;
+    margin-bottom: 16px;
+  }
+  .ins-input-wrap {
+    padding: 4px var(--ins-content-padding) 6px;
+  }
+  .ins-chart-container {
+    height: 180px;
+  }
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════════
+   ACCESSIBILITY — keyboard focus visible
+   ══════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 767px) {
+  .ins-layout *:focus-visible {
+    outline: 2px solid var(--ins-accent2);
+    outline-offset: 2px;
+  }
+}

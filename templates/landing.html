@@ -18,7 +18,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Syne:wght@500;600;700;800&family=Manrope:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300..800;1,14..32,300..800&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap"
       rel="stylesheet"
     />
     <link
@@ -34,31 +34,31 @@
    TOKENS
    ============================================================ */
       :root {
-        --bg: #0d0d0f;
-        --bg-soft: #141416;
-        --surface: #161618;
-        --surface-2: #1e1e22;
-        --border: rgba(255, 255, 255, 0.08);
+        --bg: #09090b;
+        --bg-soft: #111113;
+        --surface: #18181b;
+        --surface-2: #1f1f23;
+        --border: rgba(255, 255, 255, 0.07);
         --border-soft: rgba(255, 255, 255, 0.04);
 
-        --text: #ffffff;
-        --text-dim: #9ca3af;
-        --text-faint: #6b7280;
+        --text: #fafafa;
+        --text-dim: #a1a1aa;
+        --text-faint: #71717a;
 
-        --cyan: #19c37d;
-        --cyan-dim: #0f8a55;
-        --violet: #1a7cff;
-        --violet-dim: #0a58c0;
-        --amber: #f5a623;
-        --red: #ff6b6b;
+        --cyan: #10b981;
+        --cyan-dim: #059669;
+        --violet: #3b82f6;
+        --violet-dim: #2563eb;
+        --amber: #f59e0b;
+        --red: #ef4444;
 
-        --font-display: "Syne", sans-serif;
-        --font-body: "Manrope", sans-serif;
-        --font-mono: "Space Mono", monospace;
+        --font-display: "Plus Jakarta Sans", "Inter", sans-serif;
+        --font-body: "Inter", system-ui, -apple-system, sans-serif;
+        --font-mono: "JetBrains Mono", "SF Mono", "Cascadia Code", monospace;
 
         --radius-sm: 8px;
-        --radius-md: 14px;
-        --radius-lg: 22px;
+        --radius-md: 12px;
+        --radius-lg: 20px;
 
         --ease: cubic-bezier(0.22, 1, 0.36, 1);
       }
@@ -89,7 +89,12 @@
         background: var(--bg);
         color: var(--text);
         font-family: var(--font-body);
-        line-height: 1.5;
+        line-height: 1.6;
+        font-size: 15px;
+        letter-spacing: -0.011em;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        font-feature-settings: "cv02", "cv03", "cv04", "cv11";
         overflow-x: hidden;
         position: relative;
       }
@@ -103,18 +108,18 @@
         pointer-events: none;
         background:
           radial-gradient(
-            680px 520px at 14% -6%,
-            rgba(25, 195, 125, 0.1),
+            700px 520px at 12% -8%,
+            rgba(16, 185, 129, 0.08),
             transparent 60%
           ),
           radial-gradient(
-            620px 480px at 88% 14%,
-            rgba(26, 124, 255, 0.09),
+            640px 500px at 90% 12%,
+            rgba(59, 130, 246, 0.06),
             transparent 60%
           ),
           radial-gradient(
-            900px 700px at 50% 110%,
-            rgba(25, 195, 125, 0.05),
+            900px 700px at 50% 108%,
+            rgba(16, 185, 129, 0.04),
             transparent 60%
           );
       }
@@ -178,16 +183,16 @@
         position: sticky;
         top: 0;
         z-index: 100;
-        backdrop-filter: blur(14px) saturate(140%);
-        -webkit-backdrop-filter: blur(14px) saturate(140%);
-        background: rgba(13, 13, 15, 0.72);
+        backdrop-filter: blur(16px) saturate(180%);
+        -webkit-backdrop-filter: blur(16px) saturate(180%);
+        background: rgba(9, 9, 11, 0.78);
         border-bottom: 1px solid var(--border-soft);
       }
       .nav-inner {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 16px 32px;
+        padding: 14px 32px;
         max-width: 1180px;
         margin: 0 auto;
       }
@@ -197,8 +202,8 @@
         gap: 10px;
         font-family: var(--font-display);
         font-weight: 700;
-        font-size: 1.15rem;
-        letter-spacing: 0.01em;
+        font-size: 1.1rem;
+        letter-spacing: -0.02em;
       }
       .brand-mark {
         width: 32px;
@@ -212,8 +217,9 @@
       .nav-links {
         display: flex;
         align-items: center;
-        gap: 30px;
-        font-size: 0.92rem;
+        gap: 32px;
+        font-size: 0.875rem;
+        font-weight: 500;
         color: var(--text-dim);
       }
       .nav-links a {
@@ -234,11 +240,12 @@
         display: inline-flex;
         align-items: center;
         gap: 8px;
-        padding: 10px 18px;
+        padding: 9px 18px;
         border-radius: 999px;
-        font-size: 0.88rem;
+        font-size: 0.8125rem;
         font-weight: 600;
         font-family: var(--font-body);
+        letter-spacing: -0.01em;
         transition:
           transform 0.2s var(--ease),
           box-shadow 0.2s var(--ease),
@@ -270,16 +277,16 @@
 
       .btn-primary {
         color: #ffffff;
-        background: linear-gradient(120deg, var(--cyan), #7fe9df);
+        background: linear-gradient(135deg, var(--cyan), #34d399);
         box-shadow:
-          0 0 0 1px rgba(25, 195, 125, 0.4),
-          0 8px 24px -8px rgba(25, 195, 125, 0.55);
+          0 0 0 1px rgba(16, 185, 129, 0.4),
+          0 6px 20px -6px rgba(16, 185, 129, 0.5);
       }
       .btn-primary:hover {
         transform: translateY(-2px);
         box-shadow:
-          0 0 0 1px rgba(25, 195, 125, 0.6),
-          0 14px 32px -10px rgba(25, 195, 125, 0.7);
+          0 0 0 1px rgba(16, 185, 129, 0.6),
+          0 12px 28px -8px rgba(16, 185, 129, 0.65);
       }
 
       .btn-slice {
@@ -345,118 +352,183 @@
       }
 
       /* ============================================================
-   HERO TABS
+   HERO INTRO (ChatGPT-style centered hero)
    ============================================================ */
-      .hero-tabs-wrapper {
-        grid-area: tabs;
-        display: flex;
+      .hero-intro {
+        text-align: center;
+        padding: 140px 32px 48px;
+        max-width: 860px;
+        margin: 0 auto;
+        position: relative;
+      }
+      .hero-intro .eyebrow {
+        margin-bottom: 28px;
+      }
+      .hero-intro h1 {
+        font-family: var(--font-display);
+        font-weight: 800;
+        font-size: clamp(2.6rem, 6.5vw, 4rem);
+        line-height: 1.06;
+        letter-spacing: -0.035em;
+        margin-bottom: 24px;
+        background: linear-gradient(135deg, #fafafa 0%, rgba(250,250,250,0.65) 50%, #fafafa 100%);
+        background-size: 200% auto;
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        animation: shimmerText 4s ease-in-out infinite;
+      }
+      @keyframes shimmerText {
+        0%, 100% { background-position: 0% center; }
+        50% { background-position: 200% center; }
+      }
+      .hero-intro p.lede {
+        font-size: 1.1rem;
+        color: var(--text-dim);
+        margin-bottom: 38px;
+        max-width: 54ch;
+        margin-left: auto;
+        margin-right: auto;
+        line-height: 1.7;
+        font-weight: 400;
+        letter-spacing: -0.01em;
+      }
+      .hero-intro .hero-actions {
         justify-content: center;
-        margin-bottom: 20px;
-        margin-top: -60px; /* Bring near to top nav */
       }
 
+      /* ============================================================
+   STICKY TABS (Gemini-inspired frosted bar)
+   ============================================================ */
+      .hero-tabs-wrapper {
+        position: sticky;
+        top: 53px;
+        z-index: 90;
+        display: flex;
+        justify-content: center;
+        padding: 12px 0;
+        backdrop-filter: blur(20px) saturate(180%);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
+        background: rgba(9, 9, 11, 0.82);
+        border-bottom: 1px solid var(--border-soft);
+        margin-bottom: 0;
+      }
       .tabs {
         display: flex;
         position: relative;
-        background-color: var(--surface-1);
-        box-shadow:
-          0 0 1px 0 rgba(24, 94, 224, 0.15),
-          0 6px 12px 0 rgba(24, 94, 224, 0.15);
-        padding: 0.5rem;
+        background-color: var(--surface);
+        padding: 0.35rem;
         border-radius: 99px;
         border: 1px solid var(--border);
+        box-shadow: 0 4px 24px -4px rgba(0,0,0,0.4);
       }
-
-      .tabs * {
-        z-index: 2;
-      }
-
-      .tabs input[type="radio"] {
-        display: none;
-      }
-
-      .tab {
+      .tabs .tab {
         display: flex;
         align-items: center;
         justify-content: center;
         height: 36px;
-        width: 120px;
-        font-size: 0.85rem;
+        width: 110px;
+        font-size: 0.82rem;
         color: var(--text-dim);
         font-weight: 600;
         border-radius: 99px;
         cursor: pointer;
-        transition: color 0.15s ease-in;
+        transition: color 0.2s var(--ease);
+        z-index: 2;
+        text-decoration: none;
+        position: relative;
       }
-
-      .tabs input[type="radio"]:checked + label {
-        color: var(--bg);
+      .tabs .tab.active {
+        color: var(--bg) !important;
       }
-
-      .tabs input[id="tab-baymax"]:checked ~ .glider {
-        transform: translateX(0);
+      .tabs .tab:hover:not(.active) {
+        color: var(--text);
       }
-      .tabs input[id="tab-infinsight"]:checked ~ .glider {
-        transform: translateX(100%);
-      }
-      .tabs input[id="tab-zeno"]:checked ~ .glider {
-        transform: translateX(200%);
-      }
-      .tabs input[id="tab-zuno"]:checked ~ .glider {
-        transform: translateX(300%);
-      }
-
       .glider {
         position: absolute;
         display: flex;
         height: 36px;
-        width: 120px;
-        background-color: var(--text);
+        width: 110px;
+        background: linear-gradient(135deg, #fff 0%, #e8e8e8 100%);
         z-index: 1;
         border-radius: 99px;
-        transition: 0.25s ease-out;
-      }
-
-      /* Hero Content Switching */
-      .hero-left,
-      .hero-right {
-        opacity: 0;
-        pointer-events: none;
-        transition:
-          opacity 0.4s ease,
-          transform 0.4s ease;
-        transform: translateY(15px);
-        z-index: 0;
-      }
-      .hero-left {
-        grid-area: left;
-      }
-      .hero-right {
-        grid-area: right;
-      }
-
-      .hero-left.active,
-      .hero-right.active {
-        opacity: 1;
-        pointer-events: auto;
-        transform: translateY(0);
-        z-index: 1;
+        transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
       }
 
       /* ============================================================
-   HERO
+   HERO ROWS (Anthropic-style alternating sections)
    ============================================================ */
-      .hero {
-        padding: 108px 32px 90px;
+      .hero-row {
+        padding: 100px 32px;
         max-width: 1180px;
         margin: 0 auto;
         display: grid;
-        grid-template-columns: 1.05fr 0.95fr;
-        grid-template-areas:
-          "tabs tabs"
-          "left right";
-        gap: 56px;
+        grid-template-columns: 1fr 1fr;
+        gap: 80px;
         align-items: center;
+        scroll-margin-top: 140px;
+      }
+      .hero-row.alt {
+        direction: rtl;
+      }
+      .hero-row.alt > * {
+        direction: ltr;
+      }
+      .hero-row .hero-left,
+      .hero-row .hero-right {
+        opacity: 1;
+        pointer-events: auto;
+        transform: none;
+        position: relative;
+        z-index: 1;
+      }
+      .hero-row .hero-copy {
+        padding: 0;
+      }
+      .hero-row h1 {
+        font-family: var(--font-display);
+        font-weight: 800;
+        font-size: clamp(1.85rem, 3.5vw, 2.75rem);
+        line-height: 1.1;
+        letter-spacing: -0.025em;
+        margin-bottom: 20px;
+      }
+      .hero-row h1 .grad {
+        background: linear-gradient(100deg, var(--cyan) 10%, var(--violet) 85%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
+      .hero-row .lede {
+        font-size: 1.02rem;
+        color: var(--text-dim);
+        max-width: 46ch;
+        margin-bottom: 28px;
+        line-height: 1.7;
+        font-weight: 400;
+      }
+      .hero-row .lede b {
+        color: var(--text);
+        font-weight: 700;
+      }
+      .hero-row .hero-meta {
+        padding-left: 16px;
+        border-left: 2px solid var(--cyan-dim);
+      }
+      .hero-row .hero-actions {
+        margin-bottom: 32px;
+      }
+
+      /* Visual panel hover lift */
+      .hero-row .chain-card,
+      .hero-row .data-panel {
+        transition: transform 0.4s var(--ease), box-shadow 0.4s var(--ease);
+      }
+      .hero-row .chain-card:hover,
+      .hero-row .data-panel:hover {
+        transform: translateY(-6px);
+        box-shadow: 0 40px 80px -30px rgba(0, 0, 0, 0.7);
       }
 
       .eyebrow {
@@ -468,10 +540,11 @@
         border: 1px solid var(--border);
         background: var(--surface);
         font-family: var(--font-mono);
-        font-size: 0.72rem;
+        font-size: 0.69rem;
         letter-spacing: 0.04em;
         color: var(--text-dim);
         margin-bottom: 26px;
+        font-weight: 500;
       }
       .eyebrow .dot {
         width: 7px;
@@ -491,12 +564,13 @@
         }
       }
 
+      /* Legacy .hero h1 — now unused, kept as minimal fallback */
       .hero h1 {
         font-family: var(--font-display);
         font-weight: 800;
-        font-size: clamp(1rem, 2.8vw, 2rem);
-        line-height: 1.06;
-        letter-spacing: -0.01em;
+        font-size: clamp(1.85rem, 3.5vw, 2.75rem);
+        line-height: 1.1;
+        letter-spacing: -0.025em;
         margin-bottom: 22px;
       }
       .hero h1 .grad {
@@ -507,10 +581,12 @@
       }
 
       .hero p.lede {
-        font-size: 1.08rem;
+        font-size: 1.02rem;
         color: var(--text-dim);
         max-width: 46ch;
         margin-bottom: 34px;
+        line-height: 1.7;
+        font-weight: 400;
       }
       .hero p.lede b {
         color: var(--text);
@@ -557,7 +633,8 @@
         align-items: center;
         margin-bottom: 22px;
         font-family: var(--font-mono);
-        font-size: 0.7rem;
+        font-size: 0.68rem;
+        font-weight: 500;
         color: var(--text-faint);
         letter-spacing: 0.03em;
       }
@@ -635,22 +712,22 @@
       }
 
       .chain-node.active {
-        border-color: rgba(25, 195, 125, 0.5);
+        border-color: rgba(16, 185, 129, 0.45);
         background: linear-gradient(
           90deg,
-          rgba(25, 195, 125, 0.08),
-          rgba(25, 195, 125, 0.02)
+          rgba(16, 185, 129, 0.07),
+          rgba(16, 185, 129, 0.02)
         );
         box-shadow:
-          0 0 0 1px rgba(25, 195, 125, 0.15),
-          0 0 26px -6px rgba(25, 195, 125, 0.45);
+          0 0 0 1px rgba(16, 185, 129, 0.12),
+          0 0 22px -6px rgba(16, 185, 129, 0.4);
       }
       .chain-node.active .ic {
-        background: rgba(25, 195, 125, 0.15);
+        background: rgba(16, 185, 129, 0.12);
         color: var(--cyan);
       }
       .chain-node.active .tag {
-        border-color: rgba(25, 195, 125, 0.4);
+        border-color: rgba(16, 185, 129, 0.35);
         color: var(--cyan);
       }
 
@@ -698,7 +775,7 @@
    SECTION HEADERS
    ============================================================ */
       .section {
-        padding: 96px 0;
+        padding: 110px 0;
         position: relative;
       }
       .section-tight {
@@ -710,8 +787,9 @@
       }
       .section-eyebrow {
         font-family: var(--font-mono);
-        font-size: 0.72rem;
-        letter-spacing: 0.08em;
+        font-size: 0.7rem;
+        font-weight: 500;
+        letter-spacing: 0.06em;
         text-transform: uppercase;
         color: var(--cyan-dim);
         margin-bottom: 14px;
@@ -720,13 +798,14 @@
       .section-head h2 {
         font-family: var(--font-display);
         font-weight: 700;
-        font-size: clamp(1.7rem, 3vw, 2.35rem);
-        letter-spacing: -0.01em;
+        font-size: clamp(1.6rem, 2.8vw, 2.2rem);
+        letter-spacing: -0.02em;
         margin-bottom: 14px;
       }
       .section-head p {
         color: var(--text-dim);
-        font-size: 1.02rem;
+        font-size: 0.98rem;
+        line-height: 1.65;
       }
 
       .divider {
@@ -809,13 +888,15 @@
 
       .fcard h3 {
         font-family: var(--font-display);
-        font-size: 1.08rem;
+        font-size: 1.02rem;
         font-weight: 700;
+        letter-spacing: -0.015em;
         margin-bottom: 10px;
       }
       .fcard p {
         color: var(--text-dim);
-        font-size: 0.9rem;
+        font-size: 0.88rem;
+        line-height: 1.6;
         margin-bottom: 16px;
       }
       .fcard ul {
@@ -824,7 +905,7 @@
         gap: 8px;
       }
       .fcard li {
-        font-size: 0.82rem;
+        font-size: 0.8rem;
         color: var(--text-faint);
         display: flex;
         align-items: center;
@@ -832,7 +913,7 @@
       }
       .fcard li i {
         color: var(--cyan-dim);
-        font-size: 0.7rem;
+        font-size: 0.65rem;
       }
 
       /* ============================================================
@@ -1063,13 +1144,16 @@
       }
       .cta-band h2 {
         font-family: var(--font-display);
-        font-size: clamp(1.9rem, 3.6vw, 2.7rem);
+        font-size: clamp(1.8rem, 3.2vw, 2.5rem);
         margin-bottom: 18px;
         font-weight: 700;
+        letter-spacing: -0.025em;
       }
       .cta-band p {
         color: var(--text-dim);
         margin-bottom: 32px;
+        font-size: 1.02rem;
+        line-height: 1.65;
       }
       .cta-actions {
         display: flex;
@@ -1157,7 +1241,9 @@
       }
       .modal-head h3 {
         font-family: var(--font-display);
-        font-size: 1.25rem;
+        font-size: 1.2rem;
+        font-weight: 700;
+        letter-spacing: -0.015em;
         margin-bottom: 6px;
       }
       .modal-head p {
@@ -1523,16 +1609,88 @@
         }
       }
       /* ============================================================
+   PAGE LOAD KEYFRAME ANIMATIONS
+   ============================================================ */
+      @keyframes slideDownFade {
+        from { opacity: 0; transform: translateY(-20px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      @keyframes slideUpFade {
+        from { opacity: 0; transform: translateY(30px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      @keyframes scaleUpFade {
+        from { opacity: 0; transform: scale(0.97); }
+        to { opacity: 1; transform: scale(1); }
+      }
+
+      .nav {
+        animation: slideDownFade 0.7s var(--ease) both;
+      }
+      .hero-intro .eyebrow {
+        animation: slideUpFade 0.6s var(--ease) 0.1s both;
+      }
+      .hero-intro h1 {
+        animation: slideUpFade 0.7s var(--ease) 0.2s both;
+      }
+      .hero-intro p.lede {
+        animation: slideUpFade 0.7s var(--ease) 0.3s both;
+      }
+      .hero-actions {
+        animation: slideUpFade 0.7s var(--ease) 0.4s both;
+      }
+
+      /* ============================================================
    SCROLL REVEAL ANIMATION
    ============================================================ */
       .reveal {
         opacity: 0;
-        transform: translateY(40px);
-        transition: all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        transition: opacity 0.85s cubic-bezier(0.22, 1, 0.36, 1), transform 0.85s cubic-bezier(0.22, 1, 0.36, 1);
+        will-change: transform, opacity;
       }
-      .reveal.active {
+      
+      /* Slide Up (Default reveal fallback) */
+      .reveal.slide-up {
+        transform: translateY(40px);
+      }
+      .reveal.slide-up.active {
         opacity: 1;
         transform: translateY(0);
+      }
+      
+      /* Slide from Left */
+      .reveal.slide-left {
+        transform: translateX(-40px);
+      }
+      .reveal.slide-left.active {
+        opacity: 1;
+        transform: translateX(0);
+      }
+
+      /* Slide from Right */
+      .reveal.slide-right {
+        transform: translateX(40px);
+      }
+      .reveal.slide-right.active {
+        opacity: 1;
+        transform: translateX(0);
+      }
+
+      /* Springy Scale Zoom */
+      .reveal.scale {
+        transform: scale(0.95) translateY(20px);
+      }
+      .reveal.scale.active {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
+
+      /* Pure Fade */
+      .reveal.fade {
+        transform: none;
+      }
+      .reveal.fade.active {
+        opacity: 1;
       }
 
       /* Add some staggered delays for items inside grids */
@@ -1556,6 +1714,391 @@
       }
       .tier-strip .tier:nth-child(3) {
         transition-delay: 0.3s;
+      }
+
+      /* ============================================================
+      HERO SECTION DIVIDERS & RESPONSIVE OVERRIDES
+      ============================================================ */
+      .hero-row + .hero-row {
+        border-top: 1px solid var(--border-soft);
+      }
+
+      /* Responsive hero rows */
+      @media (max-width: 980px) {
+        .hero-intro {
+          padding: 100px 22px 36px;
+        }
+        .hero-intro h1 {
+          font-size: clamp(2rem, 8vw, 3rem);
+        }
+        .hero-row {
+          grid-template-columns: 1fr !important;
+          direction: ltr !important;
+          padding: 60px 22px;
+          gap: 40px;
+        }
+        .hero-row > * {
+          direction: ltr !important;
+        }
+        .hero-row .hero-left {
+          order: 1;
+        }
+        .hero-row .hero-right {
+          order: 2;
+        }
+      }
+
+      @media (max-width: 700px) {
+        .hero-tabs-wrapper {
+          overflow-x: auto;
+          -webkit-overflow-scrolling: touch;
+          padding: 12px 16px;
+        }
+        .tabs {
+          min-width: max-content;
+        }
+        .tabs .tab {
+          width: 90px;
+          font-size: 0.78rem;
+        }
+        .glider {
+          width: 90px;
+        }
+        .hero-row {
+          padding: 48px 18px;
+          gap: 32px;
+        }
+        .hero-row h1 {
+          font-size: clamp(1.6rem, 6vw, 2.2rem);
+        }
+        /* Keep Zeno popup from overflowing */
+        .hero-row .chain-card[style*="position: relative"] > div[style*="position: absolute"] {
+          width: 220px !important;
+          right: 10px !important;
+          top: 10px !important;
+        }
+      }
+
+      /* ============================================================
+      POLISHED FEATURES (STATS, SIMULATOR, FAQ, FOOTER)
+      ============================================================ */
+      /* --- Stats Banner --- */
+      .stats-banner {
+        padding: 46px 0;
+        background: rgba(255, 255, 255, 0.01);
+        border-top: 1px solid var(--border-soft);
+        border-bottom: 1px solid var(--border-soft);
+        margin-top: 10px;
+        margin-bottom: 36px;
+        position: relative;
+        z-index: 5;
+      }
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 32px;
+        text-align: center;
+      }
+      .stat-card {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .stat-num-wrapper {
+        font-family: var(--font-display);
+        font-size: clamp(2rem, 4vw, 2.7rem);
+        font-weight: 800;
+        color: var(--cyan);
+        line-height: 1;
+      }
+      .stat-lbl {
+        font-size: 0.78rem;
+        color: var(--text-dim);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-weight: 600;
+        margin-top: 4px;
+      }
+      @media (max-width: 800px) {
+        .stats-grid {
+          grid-template-columns: repeat(2, 1fr);
+          gap: 40px;
+        }
+      }
+
+      /* --- Outage Simulator --- */
+      .sim-header {
+        border-top: 1px solid var(--border-soft);
+        padding-top: 16px;
+        margin-top: 18px;
+        font-family: var(--font-display);
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--text-dim);
+        font-weight: 600;
+      }
+      .sim-console {
+        background: #07070a;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 12px;
+        font-family: var(--font-mono);
+        font-size: 0.72rem;
+        color: #10b981;
+        height: 100px;
+        overflow-y: auto;
+        margin-top: 12px;
+        text-align: left;
+        line-height: 1.5;
+        box-shadow: inset 0 2px 8px rgba(0,0,0,0.8);
+      }
+      .sim-console .log-line {
+        margin-bottom: 4px;
+        opacity: 0.9;
+      }
+      .sim-console .log-line.system {
+        color: var(--text-dim);
+      }
+      .sim-console .log-line.error {
+        color: var(--red);
+        font-weight: bold;
+      }
+      .sim-console .log-line.success {
+        color: #4ee1d6;
+      }
+      .sim-controls {
+        display: flex;
+        gap: 10px;
+        margin-top: 12px;
+        flex-wrap: wrap;
+      }
+      .sim-btn {
+        font-size: 0.72rem;
+        padding: 8px 12px;
+        border-radius: 6px;
+        border: 1px solid var(--border);
+        background: var(--surface-2);
+        color: var(--text-dim);
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s var(--ease);
+      }
+      .sim-btn:hover {
+        background: var(--border);
+        color: var(--text);
+      }
+      .sim-btn.danger {
+        border-color: rgba(255, 107, 107, 0.25);
+        color: var(--red);
+      }
+      .sim-btn.danger:hover {
+        background: rgba(255, 107, 107, 0.08);
+        border-color: var(--red);
+      }
+      .chain-node.outage {
+        border-color: rgba(255, 107, 107, 0.4) !important;
+        background: rgba(255, 107, 107, 0.03) !important;
+      }
+      .chain-node.outage .ic {
+        color: var(--red) !important;
+        background: rgba(255, 107, 107, 0.1) !important;
+      }
+
+      /* --- FAQ Section --- */
+      .faq-accordion {
+        max-width: 820px;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      .faq-item {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        overflow: hidden;
+        transition: border-color 0.3s ease, background 0.3s ease;
+      }
+      .faq-item.open {
+        border-color: rgba(25, 195, 125, 0.25);
+        background: rgba(255, 255, 255, 0.01);
+      }
+      .faq-trigger {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px 24px;
+        font-weight: 600;
+        font-size: 0.95rem;
+        letter-spacing: -0.01em;
+        text-align: left;
+        transition: background 0.2s ease;
+        border: none;
+        background: none;
+        color: var(--text);
+        cursor: pointer;
+      }
+      .faq-trigger:hover {
+        background: rgba(255, 255, 255, 0.01);
+      }
+      .faq-trigger i {
+        transition: transform 0.3s var(--ease);
+        color: var(--text-dim);
+      }
+      .faq-item.open .faq-trigger i {
+        transform: rotate(180deg);
+        color: var(--cyan);
+      }
+      .faq-content {
+        display: grid;
+        grid-template-rows: 0fr;
+        transition: grid-template-rows 0.35s var(--ease);
+      }
+      .faq-item.open .faq-content {
+        grid-template-rows: 1fr;
+      }
+      .faq-content-inner {
+        overflow: hidden;
+        padding: 0 24px 20px;
+        color: var(--text-dim);
+        font-size: 0.92rem;
+        line-height: 1.6;
+      }
+
+      /* --- Modal API Links --- */
+      .label-link {
+        color: var(--cyan);
+        text-decoration: none;
+        font-weight: 600;
+        margin-left: 6px;
+        transition: color 0.2s ease;
+      }
+      .label-link:hover {
+        color: #7fe9df;
+        text-decoration: underline;
+      }
+
+      /* --- Refined Grid Footer --- */
+      .footer-refined {
+        border-top: 1px solid var(--border-soft);
+        padding: 80px 32px 40px;
+        background: #09090b;
+        margin-top: 80px;
+        position: relative;
+        z-index: 5;
+      }
+      .footer-grid {
+        max-width: 1180px;
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: 2fr repeat(3, 1fr);
+        gap: 48px;
+        margin-bottom: 60px;
+      }
+      .footer-brand-col {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+      }
+      .brand-desc {
+        font-size: 0.86rem;
+        color: var(--text-dim);
+        max-width: 32ch;
+        line-height: 1.6;
+      }
+      .status-indicator {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.78rem;
+        color: var(--cyan);
+        font-weight: 600;
+        background: rgba(25, 195, 125, 0.05);
+        border: 1px solid rgba(25, 195, 125, 0.15);
+        padding: 6px 14px;
+        border-radius: 999px;
+      }
+      .status-dot.pulsing {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--cyan);
+        box-shadow: 0 0 8px var(--cyan);
+        animation: pulseGlow 2s infinite;
+      }
+      @keyframes pulseGlow {
+        0% { transform: scale(0.95); opacity: 0.6; }
+        50% { transform: scale(1.2); opacity: 1; box-shadow: 0 0 12px var(--cyan); }
+        100% { transform: scale(0.95); opacity: 0.6; }
+      }
+      .footer-nav-col h5 {
+        font-family: var(--font-display);
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--text);
+        margin-bottom: 20px;
+        font-weight: 700;
+      }
+      .footer-nav-col ul {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        list-style: none;
+        padding: 0;
+      }
+      .footer-nav-col a {
+        font-size: 0.88rem;
+        color: var(--text-dim);
+        transition: color 0.2s ease;
+      }
+      .footer-nav-col a:hover {
+        color: var(--text);
+      }
+      .footer-bottom {
+        max-width: 1180px;
+        margin: 0 auto;
+        border-top: 1px solid var(--border-soft);
+        padding-top: 30px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.82rem;
+        color: var(--text-faint);
+        flex-wrap: wrap;
+        gap: 20px;
+      }
+      .footer-socials {
+        display: flex;
+        gap: 20px;
+        font-size: 1.15rem;
+      }
+      .footer-socials a {
+        color: var(--text-faint);
+        transition: color 0.2s ease;
+      }
+      .footer-socials a:hover {
+        color: var(--text);
+      }
+      @media (max-width: 900px) {
+        .footer-grid {
+          grid-template-columns: 1.5fr 1fr;
+          gap: 40px;
+        }
+      }
+      @media (max-width: 600px) {
+        .footer-grid {
+          grid-template-columns: 1fr;
+          gap: 36px;
+        }
+        .footer-bottom {
+          flex-direction: column;
+          align-items: center;
+          text-align: center;
+        }
       }
     </style>
   </head>
@@ -1637,87 +2180,91 @@
       </nav>
 
       <!-- ============================================================
-       HERO
+       INTRO HERO
        ============================================================ -->
-      <header class="hero" id="top">
-        <!-- TABS -->
-        <div class="hero-tabs-wrapper">
-          <div class="tabs">
-            <input
-              type="radio"
-              id="tab-baymax"
-              name="hero-tabs"
-              value="baymax"
-              checked
-            />
-            <label class="tab" for="tab-baymax">Baymax</label>
+      <header class="hero-intro" id="top">
+        <span class="eyebrow"><span class="dot"></span> INTENT-AWARE NLP ROUTING</span>
+        <h1>The Unbroken AI Experience</h1>
+        <p class="lede">
+          Heros automatically coordinates multiple specialized engines to keep your productivity running at 100% uptime. Explore our systems below.
+        </p>
+        <div class="hero-actions" style="justify-content: center;">
+          {% if is_authenticated %}
+          <a href="{% url 'home' %}" class="btn-slice"><span class="text"><i class="fa-solid fa-comment-dots"></i> Open Chat</span></a>
+          {% else %}
+          <a href="#" class="btn-slice open-login"><span class="text"><i class="fa-solid fa-bolt"></i> Get Started</span></a>
+          {% endif %}
+          <a href="https://github.com/Hudsonmathew1910/Hero-s-AI" target="_blank" rel="noopener" class="btn btn-ghost btn-lg">
+            <i class="fa-brands fa-github"></i> View on GitHub
+          </a>
+        </div>
+      </header>
 
-            <input
-              type="radio"
-              id="tab-infinsight"
-              name="hero-tabs"
-              value="infinsight"
-            />
-            <label class="tab" for="tab-infinsight">Infinsight</label>
-
-            <input type="radio" id="tab-zeno" name="hero-tabs" value="zeno" />
-            <label class="tab" for="tab-zeno">Zeno</label>
-
-            <input type="radio" id="tab-zuno" name="hero-tabs" value="zuno" />
-            <label class="tab" for="tab-zuno">Zuno</label>
-
-            <span class="glider"></span>
+      <!-- STATS BANNER -->
+      <section class="stats-banner reveal fade">
+        <div class="container">
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-num-wrapper">
+                <span class="stat-num" data-val="3">0</span>
+              </div>
+              <span class="stat-lbl">Failover Tiers</span>
+            </div>
+            <div class="stat-card">
+              <div class="stat-num-wrapper">
+                <span class="stat-num" data-val="100">0</span><span class="stat-suffix">%</span>
+              </div>
+              <span class="stat-lbl">Uptime Target</span>
+            </div>
+            <div class="stat-card">
+              <div class="stat-num-wrapper">
+                <span class="stat-num" data-val="45">0</span><span class="stat-suffix">ms</span>
+              </div>
+              <span class="stat-lbl">Triage Latency</span>
+            </div>
+            <div class="stat-card">
+              <div class="stat-num-wrapper">
+                <span class="stat-num" data-val="24">0</span><span class="stat-suffix">/7</span>
+              </div>
+              <span class="stat-lbl">Active Monitoring</span>
+            </div>
           </div>
         </div>
+      </section>
 
-        <!-- ================= BAYMAX CONTENT ================= -->
-        <div class="hero-left active" id="copy-baymax">
+      <!-- STICKY TABS -->
+      <div class="hero-tabs-wrapper">
+        <div class="tabs" id="heroTabs">
+          <a class="tab active" href="#section-baymax" data-index="0">Baymax</a>
+          <a class="tab" href="#section-halo" data-index="1">Halo</a>
+          <a class="tab" href="#section-infinsight" data-index="2">Infinsight</a>
+          <a class="tab" href="#section-zeno" data-index="3">Zeno</a>
+          <a class="tab" href="#section-zuno" data-index="4">Zuno</a>
+          <span class="glider"></span>
+        </div>
+      </div>
+
+      <!-- ================= BAYMAX SECTION ================= -->
+      <section class="hero-row" id="section-baymax">
+        <div class="hero-left reveal slide-left">
           <div class="hero-copy" style="padding: 0">
-            <span class="eyebrow"
-              ><span class="dot"></span> 3-TIER FALLBACK ENGINE — LIVE</span
-            >
-            <h1>Experience <span class="grad">Baymax.</span></h1>
+            <span class="eyebrow"><span class="dot"></span> 3-TIER FALLBACK ENGINE — LIVE</span>
+            <h1>Meet <span class="grad">Baymax</span></h1>
             <p class="lede">
-              Heros routes every request through <b>Baymax</b>, an
-              intent-aware dispatcher that fails over across Gemini, OpenRouter,
-              and Groq in milliseconds — so one provider outage never means a
-              broken conversation.
+              Heros routes every request through <b>Baymax</b>, an intent-aware premium dispatcher that fails over across Gemini, OpenRouter, and Groq in milliseconds. One provider outage never means a broken conversation.
             </p>
-            <div class="hero-actions">
-              {% if is_authenticated %}
-              <a href="{% url 'home' %}" class="btn-slice"
-                ><span class="text"
-                  ><i class="fa-solid fa-comment-dots"></i> Open Chat</span
-                ></a
-              >
-              {% else %}
-              <a href="#" class="btn-slice open-login"
-                ><span class="text"
-                  ><i class="fa-solid fa-bolt"></i> Get Started</span
-                ></a
-              >
-              {% endif %}
-              <a
-                href="https://github.com/Hudsonmathew1910/Hero-s-AI"
-                target="_blank"
-                rel="noopener"
-                class="btn btn-ghost btn-lg"
-              >
-                <i class="fa-brands fa-github"></i> View on GitHub
-              </a>
-            </div>
             <div class="hero-meta">
-              <span
-                ><i class="fa-solid fa-shield-halved"></i> Fernet-encrypted
-                keys</span
-              >
+              <span><i class="fa-solid fa-shield-halved"></i> Encrypted keys</span>
               <span><i class="fa-solid fa-database"></i> pgvector RAG</span>
               <span><i class="fa-solid fa-django"></i> Django 5.2</span>
             </div>
+            <div class="hero-actions" style="margin-top: 32px; margin-bottom: 0">
+              <a href="{% url 'home' %}?model=Baymax" class="btn btn-primary"><i class="fa-solid fa-comment-dots"></i> Try Baymax</a>
+            </div>
           </div>
         </div>
 
-        <div class="hero-right active" id="visual-baymax">
+        <div class="hero-right reveal slide-right">
           <div class="chain-card" aria-hidden="false">
             <div class="chain-card-head">
               <span>BAYMAX ROUTING</span>
@@ -1751,664 +2298,224 @@
                 <div class="tag">tier 3</div>
               </div>
             </div>
+            <div class="sim-header">Outage Simulation Sandbox</div>
+            <div class="sim-console" id="simConsole">
+              <div class="log-line system">[SYSTEM] Baymax coordinator initialized... Status: ONLINE</div>
+            </div>
+            <div class="sim-controls">
+              <button type="button" class="sim-btn danger" id="btnSimGemini">Simulate Gemini Outage</button>
+              <button type="button" class="sim-btn danger" id="btnSimRouter">Simulate OpenRouter Outage</button>
+              <button type="button" class="sim-btn" id="btnSimReset">Reset Connection</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= HALO SECTION ================= -->
+      <section class="hero-row alt" id="section-halo">
+        <div class="hero-right reveal slide-left" style="display: flex; justify-content: center; align-items: center;">
+          <div class="chain-card" style="width: 100%;">
+            <div class="chain-card-head">
+              <span>HALO ROUTING ENGINE</span>
+              <span class="chain-status"><span class="dot" style="background: var(--violet); box-shadow: 0 0 8px var(--violet);"></span> ACTIVE</span>
+            </div>
+            <div class="chain" style="display: flex; flex-direction: column; gap: 20px; align-items: center; padding: 20px 0;">
+              <!-- User Input -->
+              <div style="background: var(--surface-2); border: 1px solid var(--border); padding: 12px 20px; border-radius: 12px; font-size: 0.85rem; width: 100%; text-align: center; font-family: var(--font-mono); color: var(--text-dim);">
+                User Request Received
+              </div>
+              <!-- Halo Router Node -->
+              <div class="chain-node active" style="border-color: rgba(26, 124, 255, 0.4); width: 100%; justify-content: center; background: rgba(26, 124, 255, 0.05);">
+                <div class="ic" style="color: var(--violet); background: rgba(26, 124, 255, 0.1);"><i class="fa-solid fa-network-wired"></i></div>
+                <div class="info" style="flex: none; text-align: center; margin-left: 12px;">
+                  <div class="name">Halo Coordinator</div>
+                  <div class="role">Intent Routing &amp; Fast Triage</div>
+                </div>
+              </div>
+              <!-- Decisions arrows split -->
+              <div style="display: flex; justify-content: space-around; width: 100%; padding: 0 10px;">
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
+                  <span style="font-size: 0.65rem; font-family: var(--font-mono); color: var(--cyan);">Casual / Fast Query</span>
+                  <i class="fa-solid fa-arrow-down-long" style="color: var(--cyan);"></i>
+                  <div style="background: rgba(25,195,125,0.1); border: 1px solid rgba(25,195,125,0.3); padding: 8px 12px; border-radius: 8px; font-size: 0.75rem; color: var(--cyan); font-weight: bold;">
+                    Execute Instantly
+                  </div>
+                </div>
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
+                  <span style="font-size: 0.65rem; font-family: var(--font-mono); color: var(--amber);">Heavy Reasoning</span>
+                  <i class="fa-solid fa-arrow-down-long" style="color: var(--amber);"></i>
+                  <div style="background: rgba(245,166,35,0.1); border: 1px solid rgba(245,166,35,0.3); padding: 8px 12px; border-radius: 8px; font-size: 0.75rem; color: var(--amber); font-weight: bold;">
+                    Route to Baymax
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
-        <!-- ================= INFISIGHT CONTENT ================= -->
-        <div class="hero-left" id="copy-infinsight">
+        <div class="hero-left reveal slide-right">
           <div class="hero-copy" style="padding: 0">
-            <span class="eyebrow"
-              ><i class="fa-solid fa-vector-square"></i>Your data, in a
-              conversation
+            <span class="eyebrow" style="border-color: rgba(26, 124, 255, 0.3); color: var(--violet);">
+              <i class="fa-solid fa-network-wired"></i> GATEWAY COORDINATOR
             </span>
-            <h1>Explore <span class="grad">Infinsight.</span></h1>
+            <h1>Meet <span class="grad" style="background: linear-gradient(100deg, var(--violet) 10%, #6366f1 85%); -webkit-background-clip: text; background-clip: text; color: transparent;">Halo</span></h1>
             <p class="lede">
-              Drop in a spreadsheet and ask questions the way you'd ask a
-              colleague. Infinsight embeds every row, retrieves the relevant
-              ones, and runs real Pandas computations behind the scenes.
+              <b>Halo</b> is the foundational coordinator of the ecosystem. Halo triages request types, responds to casual conversations instantly, and prompts Baymax for high-level operations.
             </p>
-            <ul
-              style="
-                list-style: none;
-                padding: 0;
-                margin-top: 1rem;
-                color: var(--text-dim);
-                display: flex;
-                flex-direction: column;
-                gap: 12px;
-                font-size: 1.05rem;
-              "
-            >
-              <li>
-                <i
-                  class="fa-solid fa-file-arrow-up"
-                  style="color: var(--cyan); margin-right: 10px"
-                ></i>
-                Upload a CSV, Excel, or PDF file
-              </li>
-              <li>
-                <i
-                  class="fa-solid fa-database"
-                  style="color: var(--cyan); margin-right: 10px"
-                ></i>
-                Rows are embedded and stored in pgvector
-              </li>
-              <li>
-                <i
-                  class="fa-solid fa-comment-dots"
-                  style="color: var(--cyan); margin-right: 10px"
-                ></i>
-                Ask in plain English — get computed answers back
-              </li>
+            <div class="hero-meta">
+              <span><i class="fa-solid fa-microchip" style="color: var(--violet);"></i> Intelligent routing</span>
+              <span><i class="fa-solid fa-bolt" style="color: var(--violet);"></i> Instant coordination</span>
+              <span><i class="fa-solid fa-shuffle" style="color: var(--violet);"></i> Automatic triage</span>
+            </div>
+            <div class="hero-actions" style="margin-top: 32px; margin-bottom: 0">
+              <a href="{% url 'home' %}?model=Halo" class="btn btn-primary" style="background: linear-gradient(120deg, var(--violet), #8b5cf6); box-shadow: 0 0 0 1px rgba(139, 92, 246, 0.4), 0 8px 24px -8px rgba(139, 92, 246, 0.55);"><i class="fa-solid fa-network-wired"></i> Try Halo</a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= INFISIGHT SECTION ================= -->
+      <section class="hero-row" id="section-infinsight">
+        <div class="hero-left reveal slide-left">
+          <div class="hero-copy" style="padding: 0">
+            <span class="eyebrow"><i class="fa-solid fa-vector-square"></i> Your data, in a conversation</span>
+            <h1>Explore <span class="grad">Infinsight</span></h1>
+            <p class="lede">
+              Drop in a spreadsheet and ask questions the way you'd ask a colleague. Infinsight embeds every row, retrieves the relevant ones, and runs real Pandas computations behind the scenes.
+            </p>
+            <ul style="list-style: none; padding: 0; margin-top: 1rem; color: var(--text-dim); display: flex; flex-direction: column; gap: 12px; font-size: 1.05rem;">
+              <li><i class="fa-solid fa-file-arrow-up" style="color: var(--cyan); margin-right: 10px"></i> Upload a CSV, Excel, or PDF file</li>
+              <li><i class="fa-solid fa-database" style="color: var(--cyan); margin-right: 10px"></i> Rows are embedded and stored in pgvector</li>
+              <li><i class="fa-solid fa-comment-dots" style="color: var(--cyan); margin-right: 10px"></i> Ask in plain English — get computed answers back</li>
             </ul>
             <div class="hero-actions" style="margin-top: 32px; margin-bottom: 0">
-              <a href="{% url 'infinsight_home' %}" class="btn btn-primary">
-                <i class="fa-solid fa-chart-pie"></i> Open Infinsight
-              </a>
+              <a href="{% url 'infinsight_home' %}" class="btn btn-primary"><i class="fa-solid fa-chart-pie"></i> Open Infinsight</a>
             </div>
           </div>
         </div>
 
-        <div class="hero-right" id="visual-infinsight">
-          <div
-            class="data-panel"
-            style="
-              box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
-              border: 1px solid var(--border-soft);
-              border-radius: var(--radius-lg);
-              overflow: hidden;
-              background: var(--surface-1);
-            "
-          >
-            <div
-              class="data-panel-head"
-              style="
-                background: var(--surface-2);
-                padding: 12px 16px;
-                font-size: 0.8rem;
-                font-family: var(--font-mono);
-                color: var(--text-dim);
-                border-bottom: 1px solid var(--border-soft);
-                display: flex;
-                align-items: center;
-              "
-            >
-              <span
-                class="fdot"
-                style="
-                  width: 10px;
-                  height: 10px;
-                  border-radius: 50%;
-                  margin-right: 6px;
-                  background: #ff6b6b;
-                "
-              ></span>
-              <span
-                class="fdot"
-                style="
-                  width: 10px;
-                  height: 10px;
-                  border-radius: 50%;
-                  margin-right: 6px;
-                  background: #ffb454;
-                "
-              ></span>
-              <span
-                class="fdot"
-                style="
-                  width: 10px;
-                  height: 10px;
-                  border-radius: 50%;
-                  margin-right: 10px;
-                  background: #4ee1d6;
-                "
-              ></span>
+        <div class="hero-right reveal scale">
+          <div class="data-panel" style="box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4); border: 1px solid var(--border-soft); border-radius: var(--radius-lg); overflow: hidden; background: var(--surface-1);">
+            <div class="data-panel-head" style="background: var(--surface-2); padding: 12px 16px; font-size: 0.8rem; font-family: var(--font-mono); color: var(--text-dim); border-bottom: 1px solid var(--border-soft); display: flex; align-items: center;">
+              <span class="fdot" style="width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; background: #ff6b6b;"></span>
+              <span class="fdot" style="width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; background: #ffb454;"></span>
+              <span class="fdot" style="width: 10px; height: 10px; border-radius: 50%; margin-right: 10px; background: #4ee1d6;"></span>
               infinsight — sales_q2.xlsx
             </div>
-            <div
-              class="data-panel-body"
-              style="
-                padding: 24px;
-                display: flex;
-                flex-direction: column;
-                gap: 16px;
-              "
-            >
-              <div
-                class="upload-chip"
-                style="
-                  align-self: center;
-                  background: var(--bg);
-                  padding: 6px 12px;
-                  border-radius: 999px;
-                  font-size: 0.75rem;
-                  color: var(--text-dim);
-                  border: 1px solid var(--border-soft);
-                "
-              >
-                <i class="fa-solid fa-file-arrow-up"></i> sales_q2.xlsx · 4,208
-                rows indexed
+            <div class="data-panel-body" style="padding: 24px; display: flex; flex-direction: column; gap: 16px;">
+              <div class="upload-chip" style="align-self: center; background: var(--bg); padding: 6px 12px; border-radius: 999px; font-size: 0.75rem; color: var(--text-dim); border: 1px solid var(--border-soft);">
+                <i class="fa-solid fa-file-arrow-up"></i> sales_q2.xlsx · 4,208 rows indexed
               </div>
-              <div
-                class="msg user"
-                style="
-                  align-self: flex-end;
-                  background: var(--cyan);
-                  color: #000;
-                  padding: 12px 18px;
-                  border-radius: 18px;
-                  border-bottom-right-radius: 4px;
-                  font-weight: 500;
-                "
-              >
+              <div class="msg user" style="align-self: flex-end; background: var(--cyan); color: #000; padding: 12px 18px; border-radius: 18px; border-bottom-right-radius: 4px; font-weight: 500;">
                 Which region underperformed in June?
               </div>
-              <div
-                class="msg ai"
-                style="
-                  align-self: flex-start;
-                  background: var(--surface-2);
-                  padding: 16px 20px;
-                  border-radius: 18px;
-                  border-bottom-left-radius: 4px;
-                  color: var(--text);
-                  border: 1px solid var(--border-soft);
-                  width: 85%;
-                  line-height: 1.5;
-                "
-              >
-                The South region came in 18% below forecast in June, driven
-                mostly by a drop in repeat orders.
-                <div
-                  class="mini-bar"
-                  style="
-                    display: flex;
-                    gap: 4px;
-                    height: 40px;
-                    margin-top: 16px;
-                    align-items: flex-end;
-                  "
-                >
-                  <div
-                    style="
-                      height: 60%;
-                      width: 20px;
-                      background: var(--cyan);
-                      border-radius: 4px;
-                    "
-                  ></div>
-                  <div
-                    style="
-                      height: 80%;
-                      width: 20px;
-                      background: var(--cyan);
-                      border-radius: 4px;
-                    "
-                  ></div>
-                  <div
-                    style="
-                      height: 34%;
-                      width: 20px;
-                      background: var(--red);
-                      border-radius: 4px;
-                    "
-                  ></div>
-                  <div
-                    style="
-                      height: 50%;
-                      width: 20px;
-                      background: var(--cyan);
-                      border-radius: 4px;
-                    "
-                  ></div>
-                  <div
-                    style="
-                      height: 70%;
-                      width: 20px;
-                      background: var(--cyan);
-                      border-radius: 4px;
-                    "
-                  ></div>
-                </div>
+              <div class="msg ai" style="align-self: flex-start; background: rgba(26, 124, 255, 0.08); border: 1px solid rgba(26, 124, 255, 0.25); color: var(--text); padding: 12px 18px; border-radius: 18px; border-bottom-left-radius: 4px; line-height: 1.4;">
+                The South region underperformed by 18% in June, driven mostly by a drop in repeat orders.
               </div>
             </div>
           </div>
         </div>
+      </section>
 
-        <!-- ================= ZENO CONTENT ================= -->
-        <div class="hero-left" id="copy-zeno">
-          <div class="hero-copy" style="padding: 0">
-            <span class="eyebrow"
-              ><i class="fa-solid fa-puzzle-piece"></i> Heros, anywhere on
-              the web</span
-            >
-            <h1>Meet <span class="grad">Zeno</span></h1>
-            <p class="lede">
-              Your personal mini AI assistant browser extension. Get instant
-              answers without switching tabs, powered by Baymax's resilient
-              routing.
-            </p>
-            <ul
-              style="
-                list-style: none;
-                padding: 0;
-                margin-top: 1rem;
-                color: var(--text-dim);
-                display: flex;
-                flex-direction: column;
-                gap: 12px;
-                font-size: 1.05rem;
-              "
-            >
-              <li>
-                <i
-                  class="fa-solid fa-mouse-pointer"
-                  style="color: var(--cyan); margin-right: 10px"
-                ></i>
-                <b>Ask Zeno Plus:</b> Right-click highlighted text to analyze
-                instantly
-              </li>
-              <li>
-                <i
-                  class="fa-solid fa-microphone-lines"
-                  style="color: var(--cyan); margin-right: 10px"
-                ></i>
-                <b>Voice Chat:</b> Talk naturally with instant interruption
-                support
-              </li>
-              <li>
-                <i
-                  class="fa-solid fa-user-secret"
-                  style="color: var(--cyan); margin-right: 10px"
-                ></i>
-                <b>Temporary Chats:</b> Quick answers without cluttering your
-                history
-              </li>
-            </ul>
-            <div
-              class="hero-actions"
-              style="margin-top: 32px; margin-bottom: 0"
-            >
-              <a
-                href="https://github.com/Hudsonmathew1910/Hero-s-AI/releases/download/Heros-Zeno-V2.8-Pro/zeno_v2.1_pro.zip"
-                class="btn btn-primary"
-                download
-              >
-                <i class="fa-brands fa-edge"></i> /
-                <i class="fa-brands fa-chrome"></i> Download for Edge & Chrome
-              </a>
-            </div>
-          </div>
-        </div>
-
-        <div class="hero-right" id="visual-zeno">
-          <div
-            class="chain-card"
-            aria-hidden="false"
-            style="padding: 0; overflow: hidden; position: relative"
-          >
+      <!-- ================= ZENO SECTION ================= -->
+      <section class="hero-row alt" id="section-zeno">
+        <div class="hero-right reveal scale">
+          <div class="chain-card" aria-hidden="false" style="padding: 0; overflow: hidden; position: relative">
             <!-- Faux browser window -->
-            <div
-              style="
-                height: 300px;
-                background: #fff;
-                padding: 20px;
-                position: relative;
-              "
-            >
-              <div
-                style="
-                  height: 10px;
-                  width: 60%;
-                  background: #e2e8f0;
-                  border-radius: 4px;
-                  margin-bottom: 12px;
-                "
-              ></div>
-              <div
-                style="
-                  height: 10px;
-                  width: 40%;
-                  background: #e2e8f0;
-                  border-radius: 4px;
-                  margin-bottom: 24px;
-                "
-              ></div>
-
-              <div
-                style="
-                  padding: 10px;
-                  background: rgba(37, 99, 235, 0.15);
-                  border-radius: 4px;
-                  border-left: 3px solid var(--accent);
-                "
-              >
-                <div
-                  style="
-                    height: 10px;
-                    width: 100%;
-                    background: var(--accent);
-                    opacity: 0.5;
-                    border-radius: 4px;
-                    margin-bottom: 8px;
-                  "
-                ></div>
-                <div
-                  style="
-                    height: 10px;
-                    width: 80%;
-                    background: var(--accent);
-                    opacity: 0.5;
-                    border-radius: 4px;
-                  "
-                ></div>
+            <div style="height: 300px; background: #fff; padding: 20px; position: relative;">
+              <div style="height: 10px; width: 60%; background: #e2e8f0; border-radius: 4px; margin-bottom: 12px;"></div>
+              <div style="height: 10px; width: 40%; background: #e2e8f0; border-radius: 4px; margin-bottom: 24px;"></div>
+              <div style="padding: 10px; background: rgba(37, 99, 235, 0.15); border-radius: 4px; border-left: 3px solid var(--accent);">
+                <div style="height: 10px; width: 100%; background: var(--accent); opacity: 0.5; border-radius: 4px; margin-bottom: 8px;"></div>
+                <div style="height: 10px; width: 80%; background: var(--accent); opacity: 0.5; border-radius: 4px;"></div>
               </div>
             </div>
-
             <!-- Zeno Overlay mock -->
-            <div
-              style="
-                position: absolute;
-                right: 20px;
-                top: 20px;
-                width: 280px;
-                background: #fff;
-                border-radius: 12px;
-                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-                display: flex;
-                flex-direction: column;
-                font-family: 'Inter', sans-serif;
-                overflow: hidden;
-                border: 1px solid #ccc;
-              "
-            >
-              <!-- Header -->
-              <div
-                style="
-                  display: flex;
-                  align-items: center;
-                  justify-content: space-between;
-                  padding: 10px 14px;
-                  border-bottom: 1px solid #eee;
-                "
-              >
+            <div style="position: absolute; right: 20px; top: 20px; width: 280px; background: #fff; border-radius: 12px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3); display: flex; flex-direction: column; font-family: 'Inter', sans-serif; overflow: hidden; border: 1px solid #ccc;">
+              <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-bottom: 1px solid #eee;">
                 <div style="display: flex; align-items: center">
-                  <img
-                    src="{% static 'images/Hero_ai.png' %}"
-                    style="
-                      width: 24px;
-                      height: 24px;
-                      border-radius: 50%;
-                      margin-right: 8px;
-                    "
-                  />
-                  <div
-                    style="
-                      color: #000;
-                      font-size: 15px;
-                      font-weight: 600;
-                    "
-                  >
-                    Zeno
-                  </div>
+                  <img src="/static/images/Hero_ai.png" style="width: 24px; height: 24px; border-radius: 50%; margin-right: 8px;"/>
+                  <div style="color: #000; font-size: 15px; font-weight: 600;">Zeno</div>
                 </div>
-                <div
-                  style="
-                    display: flex;
-                    background: #f0f0f0;
-                    border-radius: 20px;
-                    padding: 2px;
-                    gap: 2px;
-                  "
-                >
-                  <div
-                    style="
-                      background: #fff;
-                      padding: 3px 10px;
-                      font-size: 10px;
-                      font-weight: 600;
-                      color: #333;
-                      border-radius: 18px;
-                      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-                    "
-                  >
-                    Eco
-                  </div>
-                  <div
-                    style="
-                      padding: 3px 10px;
-                      font-size: 10px;
-                      font-weight: 500;
-                      color: #666;
-                      border-radius: 18px;
-                    "
-                  >
-                    Plus
-                  </div>
+                <div style="display: flex; background: #f0f0f0; border-radius: 20px; padding: 2px; gap: 2px;">
+                  <div style="background: #fff; padding: 3px 10px; font-size: 10px; font-weight: 600; color: #333; border-radius: 18px; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">Eco</div>
+                  <div style="padding: 3px 10px; font-size: 10px; font-weight: 500; color: #666; border-radius: 18px;">Plus</div>
                 </div>
               </div>
-              
-              <!-- Body -->
-              <div
-                style="
-                  padding: 12px;
-                  display: flex;
-                  flex-direction: column;
-                  gap: 10px;
-                  background: #fff;
-                "
-              >
-                <div
-                  style="
-                    background: #f1f1f1;
-                    color: #000;
-                    font-size: 12px;
-                    padding: 10px 12px;
-                    border-radius: 10px;
-                    border-bottom-left-radius: 2px;
-                    align-self: flex-start;
-                    max-width: 85%;
-                  "
-                >
+              <div style="padding: 12px; display: flex; flex-direction: column; gap: 10px; background: #fff;">
+                <div style="background: #f1f1f1; color: #000; font-size: 12px; padding: 10px 12px; border-radius: 10px; border-bottom-left-radius: 2px; align-self: flex-start; max-width: 85%;">
                   <p style="margin: 0; line-height: 1.4">Hello! I'm Zeno, your mini AI assistant.</p>
                 </div>
-                <div
-                  style="
-                    background: #333;
-                    color: #fff;
-                    font-size: 12px;
-                    padding: 10px 12px;
-                    border-radius: 10px;
-                    border-bottom-right-radius: 2px;
-                    align-self: flex-end;
-                    max-width: 85%;
-                  "
-                >
+                <div style="background: #333; color: #fff; font-size: 12px; padding: 10px 12px; border-radius: 10px; border-bottom-right-radius: 2px; align-self: flex-end; max-width: 85%;">
                   <p style="margin: 0; line-height: 1.4">Can you break down the python event loop?</p>
                 </div>
               </div>
-
-              <!-- Input -->
-              <div
-                style="
-                  padding: 10px 12px;
-                  border-top: 1px solid #eee;
-                  background: #fff;
-                "
-              >
+              <div style="padding: 10px 12px; border-top: 1px solid #eee; background: #fff;">
                 <div style="display: flex; gap: 6px">
-                  <div
-                    style="
-                      flex: 1;
-                      border: 1px solid #ccc;
-                      border-radius: 10px;
-                      padding: 8px 10px;
-                      font-size: 11px;
-                      color: #999;
-                    "
-                  >
-                    Type your message...
-                  </div>
-                  <div
-                    style="
-                      display: flex;
-                      flex-direction: column;
-                      gap: 4px;
-                      width: 50px;
-                    "
-                  >
-                    <div
-                      style="
-                        background: #f1f1f1;
-                        border: 1px solid #ccc;
-                        color: #333;
-                        border-radius: 8px;
-                        flex: 1;
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                        padding: 3px 0;
-                      "
-                    >
-                      <i class="fa-solid fa-microphone" style="font-size: 11px"></i>
-                    </div>
-                    <div
-                      style="
-                        background: #333;
-                        color: #fff;
-                        border-radius: 8px;
-                        flex: 1;
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                        font-size: 11px;
-                        font-weight: 500;
-                        padding: 3px 0;
-                      "
-                    >
-                      Send
-                    </div>
+                  <div style="flex: 1; border: 1px solid #ccc; border-radius: 10px; padding: 8px 10px; font-size: 11px; color: #999;">Type your message...</div>
+                  <div style="display: flex; flex-direction: column; gap: 4px; width: 50px;">
+                    <div style="background: #f1f1f1; border: 1px solid #ccc; color: #333; border-radius: 8px; flex: 1; display: flex; align-items: center; justify-content: center; padding: 3px 0;"><i class="fa-solid fa-microphone" style="font-size: 11px"></i></div>
+                    <div style="background: #333; color: #fff; border-radius: 8px; flex: 1; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 500; padding: 3px 0;">Send</div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-        <!-- ================= ZUNO CONTENT ================= -->
-        <div class="hero-left" id="copy-zuno">
+
+        <div class="hero-left reveal slide-right">
           <div class="hero-copy" style="padding: 0">
-            <span class="eyebrow"
-              ><i class="fa-solid fa-music"></i> Zuno inside Zeno</span
-            >
+            <span class="eyebrow"><i class="fa-solid fa-puzzle-piece"></i> Heros, anywhere on the web</span>
+            <h1>Meet <span class="grad">Zeno</span></h1>
+            <p class="lede">
+              Your personal mini AI assistant browser extension. Get instant answers without switching tabs, powered by Baymax's resilient routing.
+            </p>
+            <ul style="list-style: none; padding: 0; margin-top: 1rem; color: var(--text-dim); display: flex; flex-direction: column; gap: 12px; font-size: 1.05rem;">
+              <li><i class="fa-solid fa-mouse-pointer" style="color: var(--cyan); margin-right: 10px"></i> <b>Ask Zeno Plus:</b> Right-click highlighted text to analyze instantly</li>
+              <li><i class="fa-solid fa-microphone-lines" style="color: var(--cyan); margin-right: 10px"></i> <b>Voice Chat:</b> Talk naturally with instant interruption support</li>
+              <li><i class="fa-solid fa-user-secret" style="color: var(--cyan); margin-right: 10px"></i> <b>Temporary Chats:</b> Quick answers without cluttering your history</li>
+            </ul>
+            <div class="hero-actions" style="margin-top: 32px; margin-bottom: 0">
+              <a href="https://github.com/Hudsonmathew1910/Hero-s-AI/releases/download/Heros-Zeno-V2.8-Pro/zeno_v2.1_pro.zip" class="btn btn-primary" download>
+                <i class="fa-brands fa-edge"></i> / <i class="fa-brands fa-chrome"></i> Download for Edge &amp; Chrome
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= ZUNO SECTION ================= -->
+      <section class="hero-row" id="section-zuno">
+        <div class="hero-left reveal slide-left">
+          <div class="hero-copy" style="padding: 0">
+            <span class="eyebrow"><i class="fa-solid fa-music"></i> Zuno inside Zeno</span>
             <h1>Meet <span class="grad">Zuno</span></h1>
             <p class="lede">
               Your intelligent built-in music assistant. Control YouTube and YouTube Music seamlessly through the Zeno extension using your voice or a dedicated mini-player.
             </p>
-            <ul
-              style="
-                list-style: none;
-                padding: 0;
-                margin-top: 1rem;
-                color: var(--text-dim);
-                display: flex;
-                flex-direction: column;
-                gap: 12px;
-                font-size: 1.05rem;
-              "
-            >
-              <li>
-                <i
-                  class="fa-solid fa-play"
-                  style="color: var(--cyan); margin-right: 10px"
-                ></i>
-                <b>Silent background control:</b> No more switching tabs.
-              </li>
-              <li>
-                <i
-                  class="fa-solid fa-microphone-lines"
-                  style="color: var(--cyan); margin-right: 10px"
-                ></i>
-                <b>Voice commands:</b> "Play [Song]", "Pause", "Next", "Skip Ad"
-              </li>
-              <li>
-                <i
-                  class="fa-solid fa-compact-disc"
-                  style="color: var(--cyan); margin-right: 10px"
-                ></i>
-                <b>Music Radar:</b> Instantly bring your hidden music tab to the front.
-              </li>
+            <ul style="list-style: none; padding: 0; margin-top: 1rem; color: var(--text-dim); display: flex; flex-direction: column; gap: 12px; font-size: 1.05rem;">
+              <li><i class="fa-solid fa-play" style="color: var(--cyan); margin-right: 10px"></i> <b>Silent background control:</b> No more switching tabs.</li>
+              <li><i class="fa-solid fa-microphone-lines" style="color: var(--cyan); margin-right: 10px"></i> <b>Voice commands:</b> "Play [Song]", "Pause", "Next", "Skip Ad"</li>
+              <li><i class="fa-solid fa-compact-disc" style="color: var(--cyan); margin-right: 10px"></i> <b>Music Radar:</b> Instantly bring your hidden music tab to the front.</li>
             </ul>
-            <div
-              class="hero-actions"
-              style="margin-top: 32px; margin-bottom: 0"
-            >
-              <a
-                href="https://github.com/Hudsonmathew1910/Hero-s-AI/releases/download/Heros-Zeno-V2.8-Pro/zeno_v2.1_pro.zip"
-                class="btn btn-primary"
-                download
-              >
-                <i class="fa-brands fa-edge"></i> /
-                <i class="fa-brands fa-chrome"></i> Download for Edge & Chrome
+            <div class="hero-actions" style="margin-top: 32px; margin-bottom: 0">
+              <a href="https://github.com/Hudsonmathew1910/Hero-s-AI/releases/download/Heros-Zeno-V2.8-Pro/zeno_v2.1_pro.zip" class="btn btn-primary" download>
+                <i class="fa-brands fa-edge"></i> / <i class="fa-brands fa-chrome"></i> Download for Edge &amp; Chrome
               </a>
             </div>
           </div>
         </div>
 
-        <div class="hero-right" id="visual-zuno">
-          <div
-            class="chain-card"
-            aria-hidden="false"
-            style="padding: 0; overflow: hidden; position: relative"
-          >
-            <!-- Mock background -->
-            <div
-              style="
-                height: 300px;
-                background: linear-gradient(135deg, #18181b, #27272a);
-                padding: 20px;
-                position: relative;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-              "
-            >
-              <!-- Zuno Player Mock -->
-              <div
-                style="
-                  width: 320px;
-                  padding: 18px;
-                  border-radius: 35px;
-                  background: #000;
-                  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.7);
-                  display: flex;
-                  flex-direction: column;
-                  gap: 14px;
-                  font-family: 'Inter', sans-serif;
-                  color: white;
-                  box-sizing: border-box;
-                "
-              >
-                <!-- Track Info -->
+        <div class="hero-right reveal scale">
+          <div class="chain-card" aria-hidden="false" style="padding: 0; overflow: hidden; position: relative">
+            <div style="height: 300px; background: linear-gradient(135deg, #18181b, #27272a); padding: 20px; position: relative; display: flex; align-items: center; justify-content: center;">
+              <div style="width: 320px; padding: 18px; border-radius: 35px; background: #000; box-shadow: 0 15px 40px rgba(0, 0, 0, 0.7); display: flex; flex-direction: column; gap: 14px; font-family: 'Inter', sans-serif; color: white; box-sizing: border-box;">
                 <div style="display: flex; align-items: center; gap: 12px;">
-                  <div
-                    style="
-                      width: 64px;
-                      height: 64px;
-                      border-radius: 16px;
-                      background: linear-gradient(135deg, #ff9a9e, #fad0c4);
-                      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
-                      flex-shrink: 0;
-                    "
-                  ></div>
+                  <img src="{% static 'images/leo.png' %}" alt="Album Art" style="width: 64px; height: 64px; border-radius: 16px; object-fit: cover; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5); flex-shrink: 0;" />
                   <div style="flex-grow: 1; overflow: hidden; text-align: left;">
-                    <div style="font-size: 1.3em; font-weight: 600; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">
-                      I'm Scared
-                    </div>
-                    <div style="font-size: 0.9em; color: #d1d1d6; margin-top: 2px;">
-                      Anirudh Ravichander
-                    </div>
+                    <div style="font-size: 1.3em; font-weight: 600; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">I'm Scared</div>
+                    <div style="font-size: 0.9em; color: #d1d1d6; margin-top: 2px;">Anirudh Ravichander</div>
                   </div>
-                  <!-- Volume bars mockup -->
                   <div style="display: flex; align-items: flex-end; gap: 2px; width: 38px; height: 32px;">
                     <div style="width: 3px; height: 16px; background: linear-gradient(180deg, #00c6ff, #0072ff); border-radius: 2px;"></div>
                     <div style="width: 3px; height: 26px; background: linear-gradient(180deg, #00c6ff, #0072ff); border-radius: 2px;"></div>
@@ -2416,25 +2523,18 @@
                     <div style="width: 3px; height: 20px; background: linear-gradient(180deg, #00c6ff, #0072ff); border-radius: 2px;"></div>
                   </div>
                 </div>
-
-                <!-- Playback Controls -->
                 <div style="display: flex; flex-direction: column; gap: 8px;">
-                  <!-- Time -->
                   <div style="display: flex; justify-content: space-between; font-size: 0.8em; color: #8e8e93;">
                     <span>1:12</span>
                     <span>-2:24</span>
                   </div>
-                  <!-- Progress bar -->
                   <div style="width: 100%; height: 4px; background-color: rgba(255, 255, 255, 0.1); border-radius: 2px; position: relative;">
                     <div style="height: 100%; width: 33%; background: linear-gradient(90deg, #00c6ff, #0072ff); border-radius: 2px;"></div>
                   </div>
-                  <!-- Buttons -->
                   <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 4px;">
                     <div style="display: flex; gap: 24px; align-items: center; justify-content: center; flex: 1;">
                       <i class="fa-solid fa-backward-step" style="font-size: 16px; color: #fff; cursor: pointer;"></i>
-                      <div style="width: 48px; height: 48px; border-radius: 50%; background: #fff; display: flex; align-items: center; justify-content: center; color: #000; cursor: pointer;">
-                        <i class="fa-solid fa-pause" style="font-size: 20px;"></i>
-                      </div>
+                      <div style="width: 48px; height: 48px; border-radius: 50%; background: #fff; display: flex; align-items: center; justify-content: center; color: #000; cursor: pointer;"><i class="fa-solid fa-pause" style="font-size: 20px;"></i></div>
                       <i class="fa-solid fa-forward-step" style="font-size: 16px; color: #fff; cursor: pointer;"></i>
                     </div>
                   </div>
@@ -2443,16 +2543,61 @@
             </div>
           </div>
         </div>
-      </header>
+      </section>
 
       <div class="container"><div class="divider"></div></div>
 
       <!-- ============================================================
-       FEATURE GRID
+       DYNAMIC INTENT & FAST MODE SECTION
        ============================================================ -->
-      <section class="section reveal" id="features">
+      <section class="section reveal fade" id="intelligence" style="padding-bottom: 0;">
         <div class="container">
-          <div class="section-head reveal">
+          <div class="section-head reveal slide-up">
+            <span class="section-eyebrow">Advanced NLP Pipeline</span>
+            <h2>Adaptive Personas &amp; Fast Mode</h2>
+            <p>
+              Heros dynamically shifts its intellect, tone, and response budgets 
+              to match your goals, with ultra-fast latency options.
+            </p>
+          </div>
+
+          <div class="grid-features" style="grid-template-columns: repeat(2, 1fr); margin-bottom: 50px;">
+            <article class="fcard reveal slide-left" style="grid-column: span 1;">
+              <div class="ic" style="color: var(--cyan);"><i class="fa-solid fa-brain"></i></div>
+              <h3>Adaptive Personas</h3>
+              <p>
+                The advanced NLP engine routes tasks to specific model personalities based on your intent.
+              </p>
+              <ul style="list-style: none; padding: 0; display: flex; flex-direction: column; gap: 8px; font-size: 0.85rem; color: var(--text-dim);">
+                <li><i class="fa-solid fa-comment-dots" style="color: var(--cyan); margin-right: 6px;"></i> <b>Chat (ChatGPT style):</b> Natural, friendly, and engaging conversation.</li>
+                <li><i class="fa-solid fa-code" style="color: var(--cyan); margin-right: 6px;"></i> <b>Coding (Claude style):</b> Production-ready code blocks and design logic.</li>
+                <li><i class="fa-solid fa-magnifying-glass" style="color: var(--cyan); margin-right: 6px;"></i> <b>Search (Gemini/Grok style):</b> Real-time synthesized search facts.</li>
+                <li><i class="fa-solid fa-microphone-lines" style="color: var(--cyan); margin-right: 6px;"></i> <b>Voice (ChatGPT Voice style):</b> Concise, natural spoken phrases.</li>
+              </ul>
+            </article>
+
+            <article class="fcard reveal slide-right" style="grid-column: span 1;">
+              <div class="ic" style="color: var(--violet);"><i class="fa-solid fa-bolt"></i></div>
+              <h3>Groq Fast Mode &amp; Budgeting</h3>
+              <p>
+                Toggle Fast Mode to bypass heavy reasoning paths for rapid-fire responses in milliseconds.
+              </p>
+              <ul style="list-style: none; padding: 0; display: flex; flex-direction: column; gap: 8px; font-size: 0.85rem; color: var(--text-dim);">
+                <li><i class="fa-solid fa-gauge-high" style="color: var(--violet); margin-right: 6px;"></i> <b>Instant Replies:</b> Accelerated fallback paths for quick Q&amp;A.</li>
+                <li><i class="fa-solid fa-chart-simple" style="color: var(--violet); margin-right: 6px;"></i> <b>Response Budgeting:</b> Automatically adjusts length by intent.</li>
+                <li><i class="fa-solid fa-circle-check" style="color: var(--violet); margin-right: 6px;"></i> <b>Resource Efficiency:</b> Snappy, clean dialogs without context bloat.</li>
+                <li><i class="fa-solid fa-network-wired" style="color: var(--violet); margin-right: 6px;"></i> <b>Halo Integration:</b> Zero-login foundational coordination.</li>
+              </ul>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <div class="container"><div class="divider"></div></div>
+
+      <section class="section reveal fade" id="features">
+        <div class="container">
+          <div class="section-head reveal slide-up">
             <span class="section-eyebrow">Core pillars</span>
             <h2>Four systems, one assistant.</h2>
             <p>
@@ -2462,7 +2607,7 @@
           </div>
 
           <div class="grid-features">
-            <article class="fcard reveal">
+            <article class="fcard reveal slide-up">
               <div class="ic"><i class="fa-solid fa-shuffle"></i></div>
               <h3>Multi-Model Fallback Engine</h3>
               <p>
@@ -2476,7 +2621,7 @@
               </ul>
             </article>
 
-            <article class="fcard reveal">
+            <article class="fcard reveal slide-up">
               <div class="ic"><i class="fa-solid fa-chart-line"></i></div>
               <h3>Infinsight RAG Analytics</h3>
               <p>
@@ -2494,7 +2639,7 @@
               </ul>
             </article>
 
-            <article class="fcard reveal">
+            <article class="fcard reveal slide-up">
               <div class="ic"><i class="fa-solid fa-microphone"></i></div>
               <h3>Voice, Web &amp; File Analysis</h3>
               <p>
@@ -2510,7 +2655,7 @@
               </ul>
             </article>
 
-            <article class="fcard reveal">
+            <article class="fcard reveal slide-up">
               <div class="ic"><i class="fa-solid fa-link"></i></div>
               <h3>Unbroken Chat Context</h3>
               <p>
@@ -2533,7 +2678,7 @@
 
           <div style="margin-top: 100px"></div>
 
-          <div class="section-head reveal">
+          <div class="section-head reveal slide-up">
             <span class="section-eyebrow">Failover order</span>
             <h2>How it fails gracefully.</h2>
             <p>
@@ -2543,7 +2688,7 @@
           </div>
 
           <div class="tier-strip">
-            <div class="tier reveal">
+            <div class="tier reveal slide-up">
               <div class="tier-index">TIER 1</div>
               <h4>Gemini</h4>
               <p>
@@ -2554,7 +2699,7 @@
                 <i class="fa-solid fa-chevron-right"></i>
               </div>
             </div>
-            <div class="tier reveal">
+            <div class="tier reveal slide-up">
               <div class="tier-index">TIER 2</div>
               <h4>OpenRouter</h4>
               <p>
@@ -2565,7 +2710,7 @@
                 <i class="fa-solid fa-chevron-right"></i>
               </div>
             </div>
-            <div class="tier reveal">
+            <div class="tier reveal slide-up">
               <div class="tier-index">TIER 3</div>
               <h4>Groq</h4>
               <p>
@@ -2580,9 +2725,9 @@
       <!-- ============================================================
        PRODUCTS
        ============================================================ -->
-      <section class="section reveal" id="products">
+      <section class="section reveal fade" id="products">
         <div class="container">
-          <div class="section-head reveal">
+          <div class="section-head reveal slide-up">
             <span class="section-eyebrow">Tech Stack & Ecosystem</span>
             <h2>The engines behind Heros.</h2>
             <p>
@@ -2592,7 +2737,7 @@
           </div>
 
           <div class="grid-features">
-            <article class="fcard reveal">
+            <article class="fcard reveal slide-up">
               <div
                 class="ic"
                 style="background: rgba(37, 99, 235, 0.1); color: var(--accent)"
@@ -2617,7 +2762,7 @@
               </ul>
             </article>
 
-            <article class="fcard reveal">
+            <article class="fcard reveal slide-up">
               <div
                 class="ic"
                 style="background: rgba(16, 185, 129, 0.1); color: #10b981"
@@ -2645,7 +2790,7 @@
               </ul>
             </article>
 
-            <article class="fcard reveal">
+            <article class="fcard reveal slide-up">
               <div
                 class="ic"
                 style="background: rgba(245, 158, 11, 0.1); color: #f59e0b"
@@ -2669,7 +2814,7 @@
               </ul>
             </article>
 
-            <article class="fcard reveal">
+            <article class="fcard reveal slide-up">
               <div
                 class="ic"
                 style="background: rgba(139, 92, 246, 0.1); color: #8b5cf6"
@@ -2716,13 +2861,13 @@
        COMPANY
        ============================================================ -->
       <section
-        class="section reveal"
+        class="section reveal fade"
         id="company"
         style="background: var(--surface-1)"
       >
         <div class="container">
           <div
-            class="section-head reveal"
+            class="section-head reveal slide-up"
             style="text-align: center; max-width: 800px; margin: 0 auto"
           >
             <span class="section-eyebrow">About Us</span>
@@ -2764,9 +2909,78 @@
       </section>
 
       <!-- ============================================================
+       FAQ SECTION
+       ============================================================ -->
+      <section class="section reveal fade" id="faq" style="background: var(--bg-soft);">
+        <div class="container">
+          <div class="section-head reveal slide-up" style="text-align: center; max-width: 650px; margin: 0 auto 50px;">
+            <span class="section-eyebrow">Got Questions?</span>
+            <h2>Frequently Asked Questions</h2>
+            <p>Everything you need to know about the Heros AI ecosystem, failover routing, and setup.</p>
+          </div>
+
+          <div class="faq-accordion">
+            <!-- FAQ 1 -->
+            <div class="faq-item">
+              <button type="button" class="faq-trigger">
+                <span>How does the 3-Tier Fallback engine work?</span>
+                <i class="fa-solid fa-chevron-down"></i>
+              </button>
+              <div class="faq-content">
+                <div class="faq-content-inner">
+                  Heros routes every query through Baymax. If Gemini (Tier 1) experiences a rate limit or API outage, Baymax instantly handshakes with OpenRouter (Tier 2), and subsequently Groq (Tier 3) if needed, preserving your chat context perfectly.
+                </div>
+              </div>
+            </div>
+
+            <!-- FAQ 2 -->
+            <div class="faq-item">
+              <button type="button" class="faq-trigger">
+                <span>Are my API keys stored securely?</span>
+                <i class="fa-solid fa-chevron-down"></i>
+              </button>
+              <div class="faq-content">
+                <div class="faq-content-inner">
+                  Yes, absolutely. Your API keys are encrypted at-rest using standard Fernet cryptography inside the Django database. Furthermore, keys are linked strictly to your user profile session.
+                </div>
+              </div>
+            </div>
+
+            <!-- FAQ 3 -->
+            <div class="faq-item">
+              <button type="button" class="faq-trigger">
+                <span>Is Heros fully free and open-source?</span>
+                <i class="fa-solid fa-chevron-down"></i>
+              </button>
+              <div class="faq-content">
+                <div class="faq-content-inner">
+                  Yes. Heros is released under the MIT License. You can run it locally, deploy it to staging or production using Docker, and configure custom fallback models without licensing fees.
+                </div>
+              </div>
+            </div>
+
+            <!-- FAQ 4 -->
+            <div class="faq-item">
+              <button type="button" class="faq-trigger">
+                <span>What is the difference between Zeno and Zuno?</span>
+                <i class="fa-solid fa-chevron-down"></i>
+              </button>
+              <div class="faq-content">
+                <div class="faq-content-inner">
+                  Zeno is the core companion browser extension that puts the AI assistant directly inside any web page (right-click highlighted text lookup, voice chat overlay, etc.). Zuno is a specialized module embedded inside Zeno that allows background YouTube and music radar controls.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="container"><div class="divider"></div></div>
+
+      <!-- ============================================================
        FINAL CTA
        ============================================================ -->
-      <section class="cta-band reveal">
+      <section class="cta-band reveal scale">
         <h2>Bring your own keys.<br />Never worry about downtime again.</h2>
         <p>
           Free, open source, and self-hostable. Connect Gemini, OpenRouter, and
@@ -2795,28 +3009,49 @@
       <!-- ============================================================
        FOOTER
        ============================================================ -->
-      <footer>
-        <div class="footer-inner">
-          <span>&copy; 2026 Heros. MIT Licensed.</span>
-          <div class="footer-links">
-            <a
-              href="https://github.com/Hudsonmathew1910/Hero-s-AI"
-              target="_blank"
-              rel="noopener"
-              ><i class="fa-brands fa-github"></i> Repository</a
-            >
-            <a
-              href="https://docs.google.com/document/d/12qacbbTQLBEjjzO7vZ4iIGcG8QiGQs6M_JePxMnsZaE/edit?usp=sharing"
-              target="_blank"
-              rel="noopener"
-              >Documentation</a
-            >
-            <a
-              href="https://github.com/Hudsonmathew1910/Hero-s-AI/security"
-              target="_blank"
-              rel="noopener"
-              >Security</a
-            >
+      <footer class="footer-refined">
+        <div class="footer-grid">
+          <div class="footer-brand-col">
+            <div class="brand">
+              <img src="{% static 'images/Hero_ai.png' %}" class="brand-mark" alt="Heros Logo" />
+              Heros
+            </div>
+            <p class="brand-desc">The resilient, multi-tier AI routing gateway built for guaranteed uptime and privacy.</p>
+            <div class="status-indicator">
+              <span class="status-dot pulsing"></span> All Systems Operational
+            </div>
+          </div>
+          <div class="footer-nav-col">
+            <h5>Platform</h5>
+            <ul>
+              <li><a href="#features">Features</a></li>
+              <li><a href="#intelligence">Pipeline</a></li>
+              <li><a href="#products">Ecosystem</a></li>
+            </ul>
+          </div>
+          <div class="footer-nav-col">
+            <h5>Resources</h5>
+            <ul>
+              <li><a href="https://docs.google.com/document/d/1ob42_kMVSGRNzEID4G3BnRPwnUiEFgmRnpogke7tMS0/edit?usp=sharing" target="_blank" rel="noopener">Documentation</a></li>
+              <li><a href="https://github.com/Hudsonmathew1910/Hero-s-AI" target="_blank" rel="noopener">GitHub Repository</a></li>
+              <li><a href="https://github.com/Hudsonmathew1910/Hero-s-AI/security" target="_blank" rel="noopener">Security Policy</a></li>
+            </ul>
+          </div>
+          <div class="footer-nav-col">
+            <h5>Ecosystem</h5>
+            <ul>
+              <li><a href="https://github.com/Hudsonmathew1910/Hero-s-AI/releases/download/Heros-Zeno-V2.8-Pro/zeno_v2.1_pro.zip" download>Zeno Extension</a></li>
+              <li><a href="https://github.com/Hudsonmathew1910/Hero-s-AI/releases/download/Heros-Zeno-V2.8-Pro/zeno_v2.1_pro.zip" download>Zuno Audio</a></li>
+              <li><a href="{% url 'infinsight_home' %}">Infinsight RAG</a></li>
+            </ul>
+          </div>
+        </div>
+        <div class="footer-bottom">
+          <span>&copy; 2026 Heros AI platform. Licensed under MIT.</span>
+          <div class="footer-socials">
+            <a href="https://github.com/Hudsonmathew1910/Hero-s-AI" target="_blank" rel="noopener"><i class="fa-brands fa-github"></i></a>
+            <a href="#" aria-label="Twitter"><i class="fa-brands fa-x-twitter"></i></a>
+            <a href="#" aria-label="Discord"><i class="fa-brands fa-discord"></i></a>
           </div>
         </div>
       </footer>
@@ -2847,7 +3082,7 @@
             <label>
               <span class="provider-dot" style="background: #4ee1d6"></span>
               Gemini API Key
-              <span class="hint">tier 1</span>
+              <span class="hint">tier 1 · <a href="https://aistudio.google.com/" target="_blank" rel="noopener" class="label-link">Get Key <i class="fa-solid fa-arrow-up-right-from-square"></i></a></span>
             </label>
             <div class="key-input">
               <input
@@ -2866,7 +3101,7 @@
             <label>
               <span class="provider-dot" style="background: #8b7bff"></span>
               OpenRouter API Key
-              <span class="hint">tier 2</span>
+              <span class="hint">tier 2 · <a href="https://openrouter.ai/keys" target="_blank" rel="noopener" class="label-link">Get Key <i class="fa-solid fa-arrow-up-right-from-square"></i></a></span>
             </label>
             <div class="key-input">
               <input
@@ -2889,7 +3124,7 @@
             <label>
               <span class="provider-dot" style="background: #ffb454"></span>
               Groq API Key
-              <span class="hint">tier 3</span>
+              <span class="hint">tier 3 · <a href="https://console.groq.com/keys" target="_blank" rel="noopener" class="label-link">Get Key <i class="fa-solid fa-arrow-up-right-from-square"></i></a></span>
             </label>
             <div class="key-input">
               <input
@@ -3353,7 +3588,7 @@
             });
         });
 
-        /* ---------- HERO CHAIN DIAGRAM — live failover cycle ---------- */
+        /* ---------- HERO CHAIN DIAGRAM & SIMULATOR ---------- */
         var nodes = document.querySelectorAll("#chainDiagram .chain-node");
         var noteText = document.getElementById("chainNoteText");
         var providers = [
@@ -3371,6 +3606,8 @@
           },
         ];
         var current = 0;
+        var isSimulating = false;
+        var cycleInterval = null;
 
         function reducedMotion() {
           return (
@@ -3380,17 +3617,115 @@
         }
 
         function cycle() {
-          if (reducedMotion()) return;
+          if (reducedMotion() || isSimulating) return;
           nodes.forEach(function (n) {
             n.classList.remove("active");
           });
           current = (current + 1) % nodes.length;
           nodes[current].classList.add("active");
-          noteText.textContent = providers[current].note;
+          if (noteText) noteText.textContent = providers[current].note;
         }
 
-        if (!reducedMotion()) {
-          setInterval(cycle, 4200);
+        function startCycle() {
+          if (cycleInterval) clearInterval(cycleInterval);
+          if (!reducedMotion()) {
+            cycleInterval = setInterval(cycle, 4200);
+          }
+        }
+        startCycle();
+
+        // Simulator Logic
+        var simConsole = document.getElementById("simConsole");
+        var btnSimGemini = document.getElementById("btnSimGemini");
+        var btnSimRouter = document.getElementById("btnSimRouter");
+        var btnSimReset = document.getElementById("btnSimReset");
+
+        function addLog(msg, type) {
+          if (!simConsole) return;
+          var div = document.createElement("div");
+          div.className = "log-line " + (type || "");
+          var time = new Date().toLocaleTimeString();
+          div.textContent = "[" + time + "] " + msg;
+          simConsole.appendChild(div);
+          simConsole.scrollTop = simConsole.scrollHeight;
+        }
+
+        if (btnSimGemini) {
+          btnSimGemini.addEventListener("click", function() {
+            isSimulating = true;
+            nodes.forEach(function(n) {
+              n.classList.remove("active");
+              n.classList.remove("outage");
+            });
+            nodes[0].classList.add("outage");
+            nodes[1].classList.add("active");
+            
+            addLog("SIMULATE: Gemini (Tier 1) outage triggered.", "system");
+            setTimeout(function() {
+              addLog("DIAL: Attempting connection to Gemini API...", "system");
+            }, 300);
+            setTimeout(function() {
+              addLog("ERROR: Gemini API connection timeout (504 gateway timeout)", "error");
+            }, 1000);
+            setTimeout(function() {
+              addLog("FAILOVER: Initiating secondary fallback routing...", "system");
+            }, 1600);
+            setTimeout(function() {
+              addLog("DIAL: Connecting to OpenRouter API (Tier 2)...", "system");
+            }, 2100);
+            setTimeout(function() {
+              addLog("SUCCESS: Connection established. Failover handoff completed in 12ms.", "success");
+            }, 2600);
+          });
+        }
+
+        if (btnSimRouter) {
+          btnSimRouter.addEventListener("click", function() {
+            isSimulating = true;
+            nodes.forEach(function(n) {
+              n.classList.remove("active");
+              n.classList.remove("outage");
+            });
+            nodes[0].classList.add("outage");
+            nodes[1].classList.add("outage");
+            nodes[2].classList.add("active");
+            
+            addLog("SIMULATE: Primary and Secondary provider outages triggered.", "system");
+            setTimeout(function() {
+              addLog("DIAL: Attempting Gemini connection...", "system");
+            }, 300);
+            setTimeout(function() {
+              addLog("ERROR: Gemini API service unavailable.", "error");
+            }, 900);
+            setTimeout(function() {
+              addLog("DIAL: Attempting OpenRouter connection...", "system");
+            }, 1400);
+            setTimeout(function() {
+              addLog("ERROR: OpenRouter returned 502 Bad Gateway.", "error");
+            }, 2000);
+            setTimeout(function() {
+              addLog("FAILOVER: Engaging Tier 3 Groq inference net...", "system");
+            }, 2500);
+            setTimeout(function() {
+              addLog("SUCCESS: Routed successfully via Groq in 4ms.", "success");
+            }, 3100);
+          });
+        }
+
+        if (btnSimReset) {
+          btnSimReset.addEventListener("click", function() {
+            isSimulating = false;
+            nodes.forEach(function(n) {
+              n.classList.remove("active");
+              n.classList.remove("outage");
+            });
+            nodes[0].classList.add("active");
+            addLog("RESET: Restoring default routing configuration...", "system");
+            setTimeout(function() {
+              addLog("STATUS: All systems healthy. Auto-routing active.", "success");
+            }, 600);
+            startCycle();
+          });
         }
 
         /* ---------- MOBILE NAV TOGGLE ---------- */
@@ -3430,6 +3765,31 @@
       /* ==========================================
    SCROLL REVEAL ANIMATION
    ========================================== */
+      function triggerStatsCountUp(banner) {
+        banner.classList.add("counted");
+        const nums = banner.querySelectorAll(".stat-num");
+        nums.forEach(num => {
+          const target = parseInt(num.getAttribute("data-val"), 10);
+          let current = 0;
+          const duration = 1200; // ms
+          const stepTime = 15; // ms
+          const totalSteps = duration / stepTime;
+          const increment = target / totalSteps;
+          
+          let step = 0;
+          const timer = setInterval(() => {
+            step++;
+            current += increment;
+            if (step >= totalSteps || current >= target) {
+              num.textContent = target;
+              clearInterval(timer);
+            } else {
+              num.textContent = Math.floor(current);
+            }
+          }, stepTime);
+        });
+      }
+
       function reveal() {
         const reveals = document.querySelectorAll(".reveal");
         for (let i = 0; i < reveals.length; i++) {
@@ -3438,6 +3798,9 @@
           const elementVisible = 50;
           if (elementTop < windowHeight - elementVisible) {
             reveals[i].classList.add("active");
+            if (reveals[i].classList.contains("stats-banner") && !reveals[i].classList.contains("counted")) {
+              triggerStatsCountUp(reveals[i]);
+            }
           }
         }
       }
@@ -3446,29 +3809,80 @@
       reveal();
 
       /* ==========================================
-   HERO TABS SWITCHING
+   HERO TABS SCROLL & GLIDER UPDATES
    ========================================== */
-      const heroRadios = document.querySelectorAll('input[name="hero-tabs"]');
-      const heroLefts = document.querySelectorAll(".hero-left");
-      const heroRights = document.querySelectorAll(".hero-right");
+      function updateGlider(index) {
+        const glider = document.querySelector('.glider');
+        if (glider) {
+          glider.style.transform = `translateX(${index * 100}%)`;
+        }
+      }
 
-      heroRadios.forEach((radio) => {
-        radio.addEventListener("change", function () {
-          // Hide all
-          heroLefts.forEach((el) => {
-            el.classList.remove("active");
-            // trigger reflow to restart animation
-            void el.offsetWidth;
-          });
-          heroRights.forEach((el) => {
-            el.classList.remove("active");
-            void el.offsetWidth;
-          });
+      document.querySelectorAll('#heroTabs .tab').forEach((tab) => {
+        tab.addEventListener('click', function (e) {
+          e.preventDefault();
+          document.querySelectorAll('#heroTabs .tab').forEach(t => t.classList.remove('active'));
+          this.classList.add('active');
+          const index = parseInt(this.getAttribute('data-index'), 10);
+          updateGlider(index);
 
-          // Show selected
-          const selected = this.value;
-          document.getElementById("copy-" + selected).classList.add("active");
-          document.getElementById("visual-" + selected).classList.add("active");
+          const target = document.querySelector(this.getAttribute('href'));
+          if (target) {
+            const offset = 140; // Avoid navbar overlay
+            const bodyRect = document.body.getBoundingClientRect().top;
+            const elementRect = target.getBoundingClientRect().top;
+            const elementPosition = elementRect - bodyRect;
+            const offsetPosition = elementPosition - offset;
+
+            window.scrollTo({
+              top: offsetPosition,
+              behavior: 'smooth'
+            });
+          }
+        });
+      });
+
+      // Intersection Observer to update glider as user scrolls
+      const observerOptions = {
+        root: null,
+        rootMargin: '-30% 0px -50% 0px',
+        threshold: 0
+      };
+
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            const id = entry.target.getAttribute('id');
+            const activeTab = document.querySelector(`#heroTabs .tab[href="#${id}"]`);
+            if (activeTab) {
+              document.querySelectorAll('#heroTabs .tab').forEach(t => t.classList.remove('active'));
+              activeTab.classList.add('active');
+              const index = parseInt(activeTab.getAttribute('data-index'), 10);
+              updateGlider(index);
+            }
+          }
+        });
+      }, observerOptions);
+
+      document.querySelectorAll('.hero-row').forEach(sec => observer.observe(sec));
+
+      /* ==========================================
+   FAQ ACCORDION TOGGLE
+   ========================================== */
+      document.querySelectorAll('.faq-trigger').forEach(trigger => {
+        trigger.addEventListener('click', function() {
+          const item = this.parentElement;
+          const isOpen = item.classList.contains('open');
+          
+          document.querySelectorAll('.faq-item').forEach(i => {
+            if (i !== item) i.classList.remove('open');
+          });
+          
+          if (!isOpen) {
+            item.classList.add('open');
+          } else {
+            item.classList.remove('open');
+          }
         });
       });
     </script>

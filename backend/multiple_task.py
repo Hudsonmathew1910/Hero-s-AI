@@ -95,3 +95,64 @@ class MultipleTask:
             task="voice",
             current_files=files_data
         )
+
+    def handle_voice_search(self, message: str) -> str:
+        """search and send result to LLM with voice chat response constraints"""
+        get_hist = getattr(self.baymax, "_get_limited_history", lambda x: getattr(self.baymax, "chat_history", []))
+        chat_history = get_hist("web_search")
+        search_result, _ = perform_web_search(
+            message,
+            gemini_key=getattr(self.baymax, "gemini_key", "") or "",
+            chat_history=chat_history
+        )
+        
+        prompt = (
+            f"User message: {message}\n\n"
+            f"[Search Result]\n{search_result}\n\n"
+            f"Important: Answer the user query using the search results. Keep your response extremely brief, casual, and natural (max 2-3 short sentences, under 60 words total) since this is a voice chat. Do not output lists or bullets."
+        )
+        
+        primary = self.baymax.models.get("voice_chat", "gemini-3.1-flash-lite")
+        max_tok = self.baymax._TOKEN_BUDGETS.get("voice", 256)
+        
+        if getattr(self.baymax, 'is_fast', False):
+            from backend.fast import run_fast_route
+            return run_fast_route(self.baymax, prompt, max_tokens=max_tok, task="voice")
+            
+        return self.baymax._with_fallback(
+            primary_model=primary,
+            text=prompt,
+            max_tokens=max_tok,
+            task="voice"
+        )
+
+    def handle_voice_search_file(self, message: str, files_data: list) -> str:
+        """search + file preprocessing and send result to LLM with voice chat constraints"""
+        get_hist = getattr(self.baymax, "_get_limited_history", lambda x: getattr(self.baymax, "chat_history", []))
+        chat_history = get_hist("web_search")
+        search_result, _ = perform_web_search(
+            message,
+            gemini_key=getattr(self.baymax, "gemini_key", "") or "",
+            chat_history=chat_history
+        )
+        
+        prompt = (
+            f"User message: {message}\n\n"
+            f"[Search Result]\n{search_result}\n\n"
+            f"Important: The user has attached files. Answer the user query using the search results and files. Keep your response extremely brief, casual, and natural (max 2-3 short sentences, under 60 words total) since this is a voice chat. Do not output lists or bullets."
+        )
+        
+        primary = self.baymax.models.get("voice_chat", "gemini-3.1-flash-lite")
+        max_tok = self.baymax._TOKEN_BUDGETS.get("voice", 256)
+        
+        if getattr(self.baymax, 'is_fast', False):
+            from backend.fast import run_fast_route
+            return run_fast_route(self.baymax, prompt, max_tokens=max_tok, task="voice")
+            
+        return self.baymax._with_fallback(
+            primary_model=primary,
+            text=prompt,
+            max_tokens=max_tok,
+            task="voice",
+            current_files=files_data
+        )

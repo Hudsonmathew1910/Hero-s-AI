@@ -1,5 +1,5 @@
 /* ════════════════════════════════════════════════════════════════
-   HERO AI — app.js
+   Heros — app.js
    1. TTS / STT:  strips emojis AND links before speaking
    2. Toggle / Save animations fixed in Personalization modal
    3. Voice-chat AI reply panel is scrollable for long text
@@ -38,18 +38,20 @@
 let messages = [];
 let attachedFiles = [];
 let isLoading = false;
-let currentModel = 'Baymax';
+let currentModel = 'Halo';
 let inlineMicOn = false;
 let inlineRecog = null;
 let userMenuOpen = false;
 let currentUser = null;
 let plusMenuOpen = false;
 let activeMode = null;
+let isSearchMode = true;
+let isCodeMode = false;
 let tempChatActive = false;
 let currentSessionId = null;
 
 /* Mute state — default MUTED */
-let isMuted = false;
+let isMuted = true;
 
 /* ════════ CSRF TOKEN ════════ */
 function getCsrfToken() {
@@ -58,9 +60,9 @@ function getCsrfToken() {
 
 /* User Settings State */
 let userSettings = {
-  autoReadResponses: true,
+  autoReadResponses: false,
   compactLayout: false,
-  rememberHistory: true,
+  rememberHistory: false,
   syntaxHighlighting: true,
   enableCustomInstructions: true
 };
@@ -78,13 +80,16 @@ const VOICE_STATE = { IDLE: 'idle', LISTENING: 'listening', THINKING: 'thinking'
 let voiceState = VOICE_STATE.IDLE;
 let voiceFinalText = '';
 let voiceInterimText = '';
+let ignoreVoiceUntil = 0;
+let currentAITextClean = '';
 
-/* FIX 4: 3-second silence timer before sending to AI */
+/* 1-second silence timer before sending to AI (fast response) */
 let silenceTimer = null;
-const SILENCE_DELAY_MS = 3000;
+const SILENCE_DELAY_MS = 1000;
 
 /* API Keys State */
 let hasExistingApiKeys = false;
+let hasGroqKey = false;
 
 /* ════════ DOM HELPERS ════════ */
 const $ = (id) => document.getElementById(id);
@@ -168,11 +173,15 @@ async function loadUserSettings() {
 }
 
 function _loadDisplaySettings() {
-  userSettings.autoReadResponses        = JSON.parse(localStorage.getItem('hero-auto-read')        ?? 'true');
+  userSettings.autoReadResponses        = JSON.parse(localStorage.getItem('hero-auto-read')        ?? 'false');
   userSettings.compactLayout            = JSON.parse(localStorage.getItem('hero-compact-layout')   ?? 'false');
-  userSettings.rememberHistory          = JSON.parse(localStorage.getItem('hero-remember-history') ?? 'true');
+  userSettings.rememberHistory          = JSON.parse(localStorage.getItem('hero-remember-history') ?? 'false');
   userSettings.syntaxHighlighting       = JSON.parse(localStorage.getItem('hero-syntax-highlight') ?? 'true');
   userSettings.enableCustomInstructions = JSON.parse(localStorage.getItem('hero-custom-inst')      ?? 'true');
+  userSettings.developerOption          = JSON.parse(localStorage.getItem('hero-developer-option') ?? 'false');
+  
+  isMuted = !userSettings.autoReadResponses;
+  _syncMuteBtn();
   _syncSettingsUI();
 }
 
@@ -183,16 +192,57 @@ function _syncSettingsUI() {
     'rememberHistory':         'rememberHistory',
     'syntaxHighlighting':      'syntaxHighlighting',
     'enableCustomInstructions':'enableCustomInstructions',
+    'developerOption':         'developerOption',
   };
   Object.entries(map).forEach(([attr, key]) => {
     const btn = document.querySelector(`[data-setting="${attr}"]`);
     if (btn) btn.classList.toggle('on', !!userSettings[key]);
   });
   document.body.classList.toggle('compact-mode', userSettings.compactLayout);
+  
+  // Handle Developer Option in model selects
+  const devSelects = [document.getElementById('modelSelect'), document.getElementById('devModelSelect'), document.getElementById('sideDevModelSelect')];
+  devSelects.forEach(select => {
+    if (!select) return;
+    let opt = select.querySelector('option[value="Developer"]');
+    if (userSettings.developerOption && currentUser) {
+      if (!opt) {
+        opt = document.createElement('option');
+        opt.value = 'Developer';
+        opt.textContent = 'Developer Mode';
+        select.appendChild(opt);
+      }
+    } else {
+      if (opt) {
+        if (select.value === 'Developer') {
+          select.value = select.options[0].value;
+          if (select.onchange) select.onchange();
+        }
+        opt.remove();
+      }
+    }
+  });
 }
 
 function toggleSetting(settingName) {
   userSettings[settingName] = !userSettings[settingName];
+  if (settingName === 'autoReadResponses') {
+    isMuted = !userSettings.autoReadResponses;
+    _syncMuteBtn();
+    if (isMuted) window.speechSynthesis?.cancel();
+  }
+  if (settingName === 'compactLayout') {
+    document.body.classList.toggle('compact-mode', userSettings.compactLayout);
+  }
+  if (settingName === 'syntaxHighlighting') {
+    if (userSettings.syntaxHighlighting && window.hljs) {
+      document.querySelectorAll('#messages pre code').forEach((block) => {
+        try { hljs.highlightElement(block); } catch(e) {}
+      });
+    } else {
+      loadChatHistory();
+    }
+  }
   const storageKey = 'hero-' + settingName.replace(/([A-Z])/g, (m) => '-' + m.toLowerCase());
   localStorage.setItem(storageKey, JSON.stringify(userSettings[settingName]));
   const btn = document.querySelector(`[data-setting="${settingName}"]`);
@@ -215,6 +265,7 @@ function _getSettingLabel(key) {
     'rememberHistory':         'Conversation history',
     'syntaxHighlighting':      'Syntax highlighting',
     'enableCustomInstructions':'Custom instructions',
+    'developerOption':         'Developer option',
   };
   return labels[key] || key;
 }
@@ -229,17 +280,18 @@ function setTheme(theme, btn) {
 }
 
 function _syncThemeSwitch(theme) {
-  const checkbox = $('themeCheckbox');
-  if (checkbox) checkbox.checked = (theme === 'light');
-}
-
-function toggleThemeSwitch(checkbox) {
-  const theme = checkbox.checked ? 'light' : 'dark';
-  document.documentElement.setAttribute('data-theme', theme);
-  localStorage.setItem('hero-theme', theme);
+  // Keeping this function for backwards compatibility with the Settings menu buttons
   const db = $('theme-dark-btn'), lb = $('theme-light-btn');
   if (theme === 'light') { lb?.classList.add('active'); db?.classList.remove('active'); }
   else                   { db?.classList.add('active'); lb?.classList.remove('active'); }
+}
+
+function toggleThemeSimple() {
+  const current = document.documentElement.getAttribute('data-theme') || 'dark';
+  const newTheme = current === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', newTheme);
+  localStorage.setItem('hero-theme', newTheme);
+  _syncThemeSwitch(newTheme);
 }
 
 (function () {
@@ -257,7 +309,10 @@ function toggleThemeSwitch(checkbox) {
 /* ════════ MUTE BUTTON ════════ */
 function toggleMute() {
   isMuted = !isMuted;
+  userSettings.autoReadResponses = !isMuted;
+  localStorage.setItem('hero-auto-read', JSON.stringify(userSettings.autoReadResponses));
   _syncMuteBtn();
+  _syncSettingsUI();
   if (isMuted) window.speechSynthesis?.cancel();
   showNotification(isMuted ? 'AI voice muted' : 'AI voice unmuted', 'info');
 }
@@ -344,6 +399,7 @@ async function handleGoogleSetup() {
       switchAuthTab('login');
       
       hasExistingApiKeys = false;
+      hasGroqKey = false;
       setTimeout(() => {
         showConfirm('API keys are required to use Hero\'s AI. Would you like to configure them now?',
           () => openApiKeys(), null, 'Configure Keys', 'Later');
@@ -359,33 +415,58 @@ async function checkSession() {
     if (data.logged_in && data.user) {
       loginUser(data.user);
       hasExistingApiKeys = data.user.has_api_keys;
+      hasGroqKey = data.user.has_groq_key;
+      updateFastModeDefault();
+      
       if (!data.user.has_api_keys) {
         setTimeout(() => {
           showConfirm(
             'API keys are required to use Hero\'s AI. Would you like to configure them now?',
-            () => openApiKeys(), null, 'Configure Keys', 'Later'
+            () => openSettings('apikeys'), null, 'Configure Keys', 'Later'
           );
-        }, 1000);
+        }, 3000);
       }
     } else {
-      showAuthScreen();
+      handleLoggedOutState();
     }
   } catch (err) {
     console.error('Session check failed:', err);
-    showAuthScreen();
+    handleLoggedOutState();
+  }
+  const searchBtn = $('searchToggleBtn');
+  if (searchBtn) {
+    searchBtn.classList.toggle('active', isSearchMode);
+  }
+  onModelChange(); // Init UI based on default model
+}
+
+function handleLoggedOutState() {
+  const rowIn = $('userInfoRowLoggedIn'); if (rowIn) rowIn.style.display = 'none';
+  const rowOut = $('userInfoRowLoggedOut'); if (rowOut) rowOut.style.display = 'flex';
+  
+  const modelSelect = $('modelSelect');
+  if (modelSelect) {
+      Array.from(modelSelect.options).forEach(opt => {
+          if (opt.value !== 'Halo' && opt.value !== 'Baymax') opt.disabled = true;
+      });
+      if (modelSelect.value !== 'Halo' && modelSelect.value !== 'Baymax') {
+          modelSelect.value = 'Halo';
+          onModelChange();
+      }
   }
 }
 
 function showAuthScreen() {
   const auth = $('authScreen');
-  if (auth) auth.style.display = 'flex';
+  if (auth) {
+    auth.style.cssText = 'display:flex;opacity:1;transform:scale(1);';
+  }
 }
 
 function hideAuthScreen() {
   const auth = $('authScreen');
   if (auth) {
-    auth.style.cssText = 'opacity:0;transform:scale(0.97);transition:opacity 0.3s ease,transform 0.3s ease';
-    setTimeout(() => auth.style.display = 'none', 300);
+    auth.style.cssText = 'display:none;';
   }
 }
 
@@ -411,6 +492,8 @@ async function handleSignup() {
       loginUser(data.user);
       $('signupName').value = ''; $('signupEmail').value = ''; $('signupPassword').value = '';
       hasExistingApiKeys = false;
+      hasGroqKey = false;
+      updateFastModeDefault();
       setTimeout(() => {
         showConfirm('API keys are required to use Hero\'s AI. Would you like to configure them now?',
           () => openApiKeys(), null, 'Configure Keys', 'Later');
@@ -439,6 +522,8 @@ async function handleLogin() {
       loginUser(data.user);
       $('loginEmail').value = ''; $('loginPassword').value = '';
       hasExistingApiKeys = data.user.has_api_keys;
+      hasGroqKey = data.user.has_groq_key;
+      updateFastModeDefault();
       if (!data.user.has_api_keys) {
         setTimeout(() => {
           showConfirm('API keys are required to use Hero\'s AI. Would you like to configure them now?',
@@ -450,6 +535,21 @@ async function handleLogin() {
 }
 
 function loginUser(user) {
+  hasExistingApiKeys = !!user.has_api_keys;
+  hasGroqKey = !!user.has_groq_key;
+
+  const rowIn = $('userInfoRowLoggedIn'); if (rowIn) rowIn.style.display = 'flex';
+  const rowOut = $('userInfoRowLoggedOut'); if (rowOut) rowOut.style.display = 'none';
+  
+  const modelSelect = $('modelSelect');
+  if (modelSelect) {
+      Array.from(modelSelect.options).forEach(opt => opt.disabled = false);
+      if (modelSelect.value === 'Halo') {
+          modelSelect.value = 'Baymax';
+          onModelChange();
+      }
+  }
+  
   const parts = user.name.trim().split(' ');
   user.initials = parts.length >= 2
     ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
@@ -477,7 +577,9 @@ async function handleLogout() {
       const data = await getJsonResponse(res);
       if (data.status === 'success') {
         currentUser = null; closeUserMenu();
-        messages = []; attachedFiles = []; hasExistingApiKeys = false;
+        _syncSettingsUI();
+        messages = []; attachedFiles = []; hasExistingApiKeys = false; hasGroqKey = false;
+        updateFastModeDefault();
         currentSessionId = null;
         const md = $('messages'), ws = $('welcomeScreen'), ap = $('attachPreviewRow');
         if (md) { md.innerHTML = ''; md.style.display = 'none'; }
@@ -507,27 +609,35 @@ function switchAuthTab(tab) {
 }
 
 /* ════════ API KEYS ════════ */
-async function openApiKeys() {
-  closeUserMenu();
+async function updateApiKeysPlaceholders() {
   try {
     const res  = await fetch('/api/keys/check', { method: 'GET', credentials: 'include' });
     const data = await getJsonResponse(res);
     if (data.status === 'success') {
       hasExistingApiKeys = data.has_api_keys;
-      const gi = $('geminiApiKey'), oi = $('openrouterApiKey'), gri = $('groqApiKey');
-      if (gi)  gi.placeholder  = data.keys.gemini     ? 'Modify your Gemini API key'    : 'Enter your Gemini API key';
-      if (oi)  oi.placeholder  = data.keys.openrouter ? 'Modify your OpenRouter API key' : 'Enter your OpenRouter API key';
-      if (gri) gri.placeholder = data.keys.groq       ? 'Modify your Groq API key'       : 'Enter your Groq API key (optional)';
+      hasGroqKey = data.has_groq_key;
+      updateFastModeDefault();
+      const gi = $('geminiApiKey'), oi = $('openrouterApiKey'), gri = $('groqApiKey'), hfi = $('huggingfaceApiKey');
+      if (gi)  gi.placeholder  = data.keys.gemini      ? 'Modify your Gemini API key'     : 'Enter your Gemini API key';
+      if (oi)  oi.placeholder  = data.keys.openrouter  ? 'Modify your OpenRouter API key'  : 'Enter your OpenRouter API key';
+      if (gri) gri.placeholder = data.keys.groq        ? 'Modify your Groq API key'        : 'Enter your Groq API key (optional)';
+      if (hfi) hfi.placeholder = data.keys.huggingface ? 'Modify your Hugging Face API key': 'Enter your Hugging Face API key (optional)';
     }
   } catch (err) { console.error('Failed to check API keys:', err); }
-  $('apiKeysModal')?.classList.add('active');
+}
+
+async function openApiKeys() {
+  closeUserMenu();
+  await updateApiKeysPlaceholders();
+  openSettings('apikeys');
 }
 
 async function saveApiKeys() {
-  const gemini     = $('geminiApiKey')?.value.trim()     || '';
-  const openrouter = $('openrouterApiKey')?.value.trim() || '';
-  const groq       = $('groqApiKey')?.value.trim()       || '';
-  if (!gemini && !openrouter && !groq) {
+  const gemini      = $('geminiApiKey')?.value.trim()      || '';
+  const openrouter  = $('openrouterApiKey')?.value.trim()  || '';
+  const groq        = $('groqApiKey')?.value.trim()        || '';
+  const huggingface = $('huggingfaceApiKey')?.value.trim() || '';
+  if (!gemini && !openrouter && !groq && !huggingface) {
     showNotification('Please enter at least one API key', 'error'); return;
   }
   try {
@@ -538,25 +648,36 @@ async function saveApiKeys() {
         'X-CSRFToken': getCsrfToken()
       }, 
       credentials: 'include',
-      body: JSON.stringify({ gemini, openrouter, groq })
+      body: JSON.stringify({ gemini, openrouter, groq, huggingface })
     });
     const data = await getJsonResponse(res);
     if (data.status === 'success') {
-      const modal   = $('apiKeysModal');
-      const saveBtn = modal?.querySelector('.modal-save-btn');
+      const saveBtn = document.querySelector('#spanel-apikeys .modal-save-btn');
       if (saveBtn) {
         const orig = saveBtn.innerHTML;
         saveBtn.innerHTML = '<i class="fa-solid fa-check"></i> Saved Successfully!';
         saveBtn.style.background = 'linear-gradient(135deg, #0f8a55, var(--accent))';
         setTimeout(() => {
           saveBtn.innerHTML = orig; saveBtn.style.background = '';
-          closeModal('apiKeysModal');
+          closeModal('personalizationModal');
           showNotification('API keys saved successfully!', 'success');
-          hasExistingApiKeys = true;
-          if ($('geminiApiKey'))     $('geminiApiKey').value     = '';
-          if ($('openrouterApiKey')) $('openrouterApiKey').value = '';
-          if ($('groqApiKey'))       $('groqApiKey').value       = '';
+          // Re-evaluate API keys state from inputs
+          hasExistingApiKeys = !!(gemini || openrouter);
+          hasGroqKey = !!groq;
+          updateFastModeDefault();
+          updateApiKeysPlaceholders();
+          if ($('geminiApiKey'))      $('geminiApiKey').value      = '';
+          if ($('openrouterApiKey'))  $('openrouterApiKey').value  = '';
+          if ($('groqApiKey'))        $('groqApiKey').value        = '';
+          if ($('huggingfaceApiKey')) $('huggingfaceApiKey').value = '';
         }, 1500);
+      } else {
+        closeModal('personalizationModal');
+        showNotification('API keys saved successfully!', 'success');
+        hasExistingApiKeys = !!(gemini || openrouter);
+        hasGroqKey = !!groq;
+        updateFastModeDefault();
+        updateApiKeysPlaceholders();
       }
     } else { showNotification(data.message || 'Failed to save API keys', 'error'); }
   } catch (err) { showNotification('Error: ' + err.message, 'error'); }
@@ -603,6 +724,26 @@ async function savePersonalization() {
 }
 
 /* ════════ MODEL SELECTION ════════ */
+function syncFastModeVisibility(model) {
+  const fastBtn = $('fastModeBtn');
+  if (fastBtn) {
+    const hideFast = ['Halo', 'ZORVIN', 'Developer'].includes(model);
+    fastBtn.style.display = hideFast ? 'none' : 'flex';
+    if (hideFast) {
+      isFastMode = false;
+      fastBtn.classList.remove('active');
+    }
+  }
+}
+
+function toggleSearchMode() {
+  isSearchMode = !isSearchMode;
+  const btn = $('searchToggleBtn');
+  if (btn) {
+    btn.classList.toggle('active', isSearchMode);
+  }
+}
+
 function onModelChange() {
   const select = $('modelSelect'); if (!select) return;
   const newModel = select.value;
@@ -611,18 +752,40 @@ function onModelChange() {
       () => {
         showNotification('Currently in development status', 'info');
         select.value = currentModel;
+        syncFastModeVisibility(currentModel);
       },
-      () => { select.value = currentModel; },
+      () => {
+        select.value = currentModel;
+        syncFastModeVisibility(currentModel);
+      },
       'Download', 'Cancel');
+  } else if (newModel === 'Developer') {
+    openDeveloperModal();
+    syncFastModeVisibility('Developer');
   } else {
+    if (isDeveloperMode) {
+      isDeveloperMode = false;
+      const devSidebar = $('developerSidebar');
+      if (devSidebar) devSidebar.style.display = 'none';
+      const toggleBtn = $('devSidebarToggleBtn');
+      if (toggleBtn) toggleBtn.style.display = 'none';
+      newChat();
+    }
     currentModel = newModel;
     const chip = $('modelChipName');
     if (chip) chip.textContent = currentModel;
-    const talkBtn = document.querySelector('.cssbuttons-io-button');
-    if (talkBtn) {
-      const textNode = Array.from(talkBtn.childNodes).find(n => n.nodeType === 3);
-      if (textNode) textNode.textContent = 'Talk to ' + currentModel + ' ';
+    
+    const voiceModelSpan = $('voiceModelName');
+    if (voiceModelSpan) {
+      voiceModelSpan.textContent = select.options[select.selectedIndex].text;
     }
+    
+    if (currentModel === 'Baymax' && !hasExistingApiKeys) {
+        showNotification('Please add Gemini or OpenRouter API key in profile / settings / api key to use Baymax.', 'info');
+    }
+    
+    syncFastModeVisibility(currentModel);
+    updateFastModeDefault();
     addSystemNote('Switched to ' + currentModel);
   }
 }
@@ -632,22 +795,62 @@ function activateChatBg() {
   const ws = $('welcomeScreen'), md = $('messages');
   if (!ws || !md) return;
   ws.classList.add('chat-bg');
+  ws.style.display = 'none';
   md.style.display = 'block';
 }
 
 /* ════════ CHAT ════════ */
+let isFastMode = false;
+
+function toggleFastModeBtn(btn) {
+  if (!isFastMode && !hasGroqKey) {
+    showNotification('Please add Groq API key in profile / settings / api key for Fast response.', 'error');
+    return;
+  }
+  isFastMode = !isFastMode;
+  if (isFastMode) {
+    btn.classList.add('active');
+    showNotification('Fast mode enabled', 'info');
+  } else {
+    btn.classList.remove('active');
+  }
+}
+
+function updateFastModeDefault() {
+  const fastBtn = $('fastModeBtn');
+  if (fastBtn) {
+    if (hasGroqKey) {
+      isFastMode = true;
+      fastBtn.classList.add('active');
+    } else {
+      isFastMode = false;
+      fastBtn.classList.remove('active');
+    }
+  }
+}
+
 async function sendMessage() {
   if (isLoading) return;
   const inp = $('chatInput'); if (!inp) return;
   const text = inp.value.trim();
   if (!text && attachedFiles.length === 0) return;
-  if (!currentUser) { showNotification('Please login first', 'error'); return; }
 
   activateChatBg();
 
   let taskType = activeMode;
-  if (attachedFiles.length > 0) taskType = 'file_handle';
-  else if (!taskType)            taskType = 'text';
+  if (isDeveloperMode) {
+    taskType = 'developer';
+  } else {
+    const hasFile = attachedFiles.length > 0;
+    if (isSearchMode && isCodeMode && hasFile) taskType = 'search_code_file';
+    else if (isSearchMode && isCodeMode) taskType = 'search_code';
+    else if (isSearchMode && hasFile) taskType = 'search_file';
+    else if (isCodeMode && hasFile) taskType = 'code_file';
+    else if (hasFile) taskType = 'file_handle';
+    else if (isSearchMode) taskType = 'websearch';
+    else if (isCodeMode) taskType = 'coding';
+    else if (!taskType) taskType = 'text';
+  }
 
   // Transient modes: Reset after use so the next message defaults to text
   if (activeMode === 'voice_message') {
@@ -673,7 +876,7 @@ async function sendMessage() {
 
   try {
     let sessionHistory = [];
-    if (userSettings.rememberHistory && messages.length > 2) {
+    if (messages.length > 1) {
       sessionHistory = messages.slice(0, -1);
     }
 
@@ -686,14 +889,20 @@ async function sendMessage() {
       },
       credentials: 'include',
       body: JSON.stringify({
-        message:      text,
-        model:        currentModel,
-        mode:         taskType,
-        session_id:   tempChatActive ? null : currentSessionId,  // FIX: Don't send session_id if temp
-        temporary_chat: tempChatActive,  // FIX: Send the correct flag name
-        has_files:    userMsg.files.length > 0,
-        file_count:   userMsg.files.length,
-        files:        userMsg.files,
+        message:          text,
+        model:            currentModel,
+        mode:             taskType,
+        session_id:       (tempChatActive || isDeveloperMode) ? null : currentSessionId,
+        temporary_chat:   isDeveloperMode ? true : tempChatActive,
+        is_fast:          isFastMode,
+        has_files:        userMsg.files.length > 0,
+        file_count:       userMsg.files.length,
+        files:            userMsg.files,
+        is_developer:     isDeveloperMode,
+        dev_provider:     isDeveloperMode ? devConfig.provider : '',
+        dev_model_name:   isDeveloperMode ? devConfig.model : '',
+        send_history:     sessionHistory,
+        remember_history: !!userSettings.rememberHistory
       })
     });
     
@@ -703,22 +912,30 @@ async function sendMessage() {
 
     if (data.status === 'success') {
       // FIX: Don't update currentSessionId if this was a temporary chat
-      if (data.session_id && !currentSessionId && !tempChatActive) {
+      if (data.session_id && !currentSessionId && !tempChatActive && !isDeveloperMode) {
         currentSessionId = data.session_id;
         loadChatHistory();
       }
-      const aiMsg = { role: 'assistant', content: data.reply };
+      const aiMsg = { 
+        role: 'assistant', 
+        content: data.reply,
+        is_developer: isDeveloperMode,
+        status_code: data.status_code,
+        error: data.error,
+        dev_model: data.dev_model,
+        time_taken: data.time_taken
+      };
       messages.push(aiMsg);
       renderMessage(aiMsg);
 
-      /* TTS: skip for coding & file_handle; skip if muted */
+      /* Auto-read AI responses aloud when enabled in settings */
       const ttsBlockedModes = ['coding', 'file_handle'];
-      if (userSettings.autoReadResponses && !ttsBlockedModes.includes(taskType) && !isMuted) {
+      if (userSettings.autoReadResponses && !ttsBlockedModes.includes(taskType)) {
         speakText(data.reply);
       }
 
       // FIX: Only reload chat history if it's not a temporary chat
-      if (data.is_new_chat && !tempChatActive) {
+      if (data.is_new_chat && !tempChatActive && !isDeveloperMode) {
         loadChatHistory();
       }
     } else {
@@ -742,10 +959,10 @@ async function sendMessage() {
 }
 
 /* ── Voice → Chat thread ── */
-function pushVoiceToChat(userText, aiText) {
+function pushVoiceToChat(userText, aiText, data, filesPayload = []) {
   if (!userText) return;
   activateChatBg();
-  const userMsg = { role: 'user', content: userText, files: [], mode: 'voice' };
+  const userMsg = { role: 'user', content: userText, files: filesPayload ? [...filesPayload] : [], mode: 'voice' };
   messages.push(userMsg); renderMessage(userMsg);
   if (aiText) {
     const aiMsg = { role: 'assistant', content: aiText, mode: 'voice' };
@@ -760,15 +977,15 @@ function pushVoiceToChat(userText, aiText) {
 /* ════════ RENDER MESSAGE ════════ */
 function renderMessage(msg) {
   const container = $('messages'); if (!container) return;
+  const isUser     = msg.role === 'user';
   const row = document.createElement('div');
-  row.className = 'msg-row';
+  row.className = 'msg-row' + (isUser ? ' user-row' : '');
   if (userSettings.compactLayout) row.style.padding = '8px 0';
 
-  const isUser     = msg.role === 'user';
   const initials   = (currentUser && isUser) ? currentUser.initials : (isUser ? 'U' : '');
   const avatarHTML = isUser
     ? initials
-    : '<img src="/static/images/ai.png" width="34" height="34" style="border-radius:10px;object-fit:cover;display:block;" alt="AI">';
+    : '<img src="/static/images/Hero_ai.png" width="30" height="30" style="object-fit:contain;display:block;" alt="Heros">';
 
   let filesHTML = '';
   if (msg.files?.length > 0) {
@@ -780,18 +997,19 @@ function renderMessage(msg) {
   }
 
   let modeTag = '';
-  if (msg.mode) {
-    let bgColor, tc, icon, label;
-    if      (msg.mode === 'coding')    { bgColor='rgba(25,195,125,0.12)'; tc='var(--accent)'; icon='fa-code';            label='Coding';     }
-    else if (msg.mode === 'websearch') { bgColor='rgba(245,166,35,0.12)'; tc='#f5a623';       icon='fa-magnifying-glass'; label='Web search'; }
-    else if (msg.mode === 'voice')     { bgColor='rgba(99,102,241,0.12)'; tc='#818cf8';       icon='fa-microphone';       label='Voice';      }
-    if (label) {
-      modeTag = `<span style="display:inline-flex;align-items:center;gap:5px;font-size:0.7rem;padding:2px 8px;border-radius:6px;margin-bottom:6px;font-weight:600;background:${bgColor};color:${tc}">
-        <i class="fa-solid ${icon}" style="font-size:0.65rem;"></i>${label}</span><br>`;
-    }
-  }
+  // Removed modeTag rendering per user request
 
-  const displayName = isUser ? (currentUser ? currentUser.name.split(' ')[0] : 'You') : "Heros";
+  const displayName = isUser ? (currentUser ? currentUser.name.split(' ')[0] : 'You') : (msg.is_developer ? 'Developer AI' : "Heros");
+
+  let devFooter = '';
+  if (msg.is_developer) {
+    devFooter = `<div style="margin-top: 10px; padding: 10px; background: rgba(0,0,0,0.2); border-left: 3px solid var(--accent); font-family: monospace; font-size: 0.85em; border-radius: 4px;">
+      <strong style="color: var(--accent);">Model:</strong> <span style="color: #ccc;">${msg.dev_model || 'Unknown'}</span><br>
+      <strong style="color: ${msg.status_code === 200 ? '#4ade80' : '#f87171'};">Status Code: ${msg.status_code || 'Unknown'}</strong><br>
+      <strong style="color: var(--accent);">Time Taken:</strong> <span style="color: #ccc;">${msg.time_taken ? msg.time_taken + 's' : 'Unknown'}</span><br>
+      <strong style="color: var(--accent);">Error:</strong> <span style="color: #999;">${msg.error ? escHtml(msg.error) : 'None'}</span>
+    </div>`;
+  }
 
   row.innerHTML = `
     <div class="msg-avatar ${isUser ? 'user' : 'ai'}">${avatarHTML}</div>
@@ -801,41 +1019,139 @@ function renderMessage(msg) {
         <button class="copy-msg-btn" title="Copy" onclick="copyMsg(this)"><i class="fa-regular fa-copy"></i></button>
       </div>
       ${modeTag}${filesHTML}
-      <div class="bubble">${formatContent(msg.content || '')}</div>
+      <div class="bubble">${formatContent(msg.content || '')}${devFooter}</div>
     </div>`;
 
+  // If the reply is a login-required alert, inject navigation buttons into the bubble
+  if (!isUser && msg.content && msg.content.includes('Login Required')) {
+    const bubble = row.querySelector('.bubble');
+    if (bubble) {
+      const btnRow = document.createElement('div');
+      btnRow.style.cssText = 'display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;';
+      btnRow.innerHTML = `
+        <a href="/" style="display:inline-flex;align-items:center;gap:6px;padding:7px 18px;border-radius:30px;background:linear-gradient(135deg,#7b2cbf,#c77dff);color:#fff;font-size:0.9rem;font-weight:600;text-decoration:none;transition:transform 0.2s,box-shadow 0.2s;box-shadow:0 4px 14px rgba(123,44,191,0.35);" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 22px rgba(123,44,191,0.5)'" onmouseout="this.style.transform='';this.style.boxShadow='0 4px 14px rgba(123,44,191,0.35)'">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M8.354 1.146a.5.5 0 0 0-.708 0l-6 6A.5.5 0 0 0 1.5 7.5v7a.5.5 0 0 0 .5.5h4.5a.5.5 0 0 0 .5-.5v-4h2v4a.5.5 0 0 0 .5.5H14a.5.5 0 0 0 .5-.5v-7a.5.5 0 0 0-.146-.354L13 5.793V2.5a.5.5 0 0 0-.5-.5h-1a.5.5 0 0 0-.5.5v1.293L8.354 1.146z"/></svg>
+          Go to Home
+        </a>
+        <a href="http://127.0.0.1:8000/" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:7px 18px;border-radius:30px;background:transparent;color:#c77dff;font-size:0.9rem;font-weight:600;text-decoration:none;border:1.5px solid #c77dff;transition:transform 0.2s,background 0.2s;" onmouseover="this.style.transform='translateY(-2px)';this.style.background='rgba(199,125,255,0.1)'" onmouseout="this.style.transform='';this.style.background='transparent'">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8zm7.5-6.923c-.67.204-1.335.82-1.887 1.855A7.97 7.97 0 0 0 5.145 4H7.5V1.077zM4.09 4a9.267 9.267 0 0 1 .64-1.539 6.7 6.7 0 0 1 .597-.933A7.025 7.025 0 0 0 2.255 4H4.09zm-.582 3.5c.03-.877.138-1.718.312-2.5H1.674a6.958 6.958 0 0 0-.656 2.5h2.49zM4.847 5a12.5 12.5 0 0 0-.338 2.5H7.5V5H4.847zM8.5 5v2.5h2.99a12.495 12.495 0 0 0-.337-2.5H8.5zM4.51 8.5a12.5 12.5 0 0 0 .337 2.5H7.5V8.5H4.51zm3.99 0V11h2.653c.187-.765.306-1.608.338-2.5H8.5zM5.145 12c.138.386.295.744.468 1.068.552 1.035 1.218 1.65 1.887 1.855V12H5.145zm.182 2.472a6.696 6.696 0 0 1-.597-.933A9.268 9.268 0 0 1 4.09 12H2.255a7.024 7.024 0 0 0 3.072 2.472zM3.82 11a13.652 13.652 0 0 1-.312-2.5h-2.49c.062.89.291 1.733.656 2.5H3.82zm6.853 3.472A7.024 7.024 0 0 0 13.745 12H11.91a9.27 9.27 0 0 1-.64 1.539 6.688 6.688 0 0 1-.597.933zM8.5 12v2.923c.67-.204 1.335-.82 1.887-1.855.173-.324.33-.682.468-1.068H8.5zm3.68-1h2.146c.365-.767.594-1.61.656-2.5h-2.49a13.65 13.65 0 0 1-.312 2.5zm2.802-3.5a6.959 6.959 0 0 0-.656-2.5H11.68c.174.782.282 1.623.312 2.5h2.49zM11.27 2.461c.247.464.462.98.64 1.539h1.835a7.024 7.024 0 0 0-3.072-2.472c.218.284.418.598.597.933zM10.855 4a7.966 7.966 0 0 0-.468-1.068C9.835 1.897 9.17 1.282 8.5 1.077V4h2.355z"/></svg>
+          Go to Localhost
+        </a>`;
+      bubble.appendChild(btnRow);
+    }
+  }
+
   container.appendChild(row);
-  container.scrollTop = container.scrollHeight;
+  
+  if (isUser) {
+    container.scrollTop = container.scrollHeight;
+  } else {
+    const offset = row.offsetTop - 20; 
+    container.scrollTo({ top: Math.max(0, offset), behavior: 'smooth' });
+    // Render math in the new bubble using KaTeX auto-render
+    const bubble = row.querySelector('.bubble');
+    if (bubble && window.renderMathInElement) {
+      try {
+        renderMathInElement(bubble, {
+          delimiters: [
+            { left: '$$', right: '$$', display: true },
+            { left: '$',  right: '$',  display: false }
+          ],
+          throwOnError: false
+        });
+      } catch(e) {}
+    }
+    // Highlight code blocks if syntax highlighting is enabled
+    if (bubble && userSettings.syntaxHighlighting && window.hljs) {
+      bubble.querySelectorAll('pre code').forEach((block) => {
+        try { hljs.highlightElement(block); } catch(e) {}
+      });
+    }
+  }
+  return row;
 }
+
 
 /* ════════ TYPING INDICATOR ════════ */
 function showTyping(mode) {
   const container = $('messages');
   if (!container) return document.createElement('div');
-  const labels = {
-    coding:        'Coding',
-    websearch:     'Searching',
-    file_handle:   'Analyzing',
-    'Voice Chat':  'Thinking',
-    voice_message: 'Thinking',
-  };
-  const label = labels[mode] || '';
   const row = document.createElement('div');
   row.className = 'msg-row';
+  
+  // Decide the list of task words
+  let tasks = ['Processing query', 'Identifying task', 'Formulating response', 'Finalizing response'];
+  if (mode === 'websearch' || mode === 'voice_search') {
+    tasks = ['Processing query', 'Identifying task', 'Searching the web', 'Synthesizing search data', 'Finalizing response'];
+  } else if (mode === 'coding' || mode === 'search_code') {
+    tasks = ['Processing query', 'Identifying task', 'Generating code', 'Finalizing response'];
+  } else if (mode === 'file_handle' || mode === 'code_file' || mode === 'voice_file') {
+    tasks = ['Processing query', 'Identifying task', 'Reading attachments', 'Analyzing file data', 'Finalizing response'];
+  } else if (mode === 'search_file' || mode === 'search_code_file' || mode === 'voice_search_file') {
+    tasks = ['Processing query', 'Identifying task', 'Reading attachments', 'Searching the web', 'Analyzing file data', 'Finalizing response'];
+  } else if (mode === 'Voice Chat' || mode === 'voice_message' || mode === 'zeno_voice') {
+    tasks = ['Processing query', 'Formulating response', 'Finalizing response'];
+  }
+
   row.innerHTML = `
     <div class="msg-avatar ai">
-      <img src="/static/images/ai.png" width="34" height="34"
-           style="border-radius:10px;object-fit:cover;display:block;" alt="AI">
+      <img src="/static/images/Hero_ai.png" width="30" height="30"
+           style="object-fit:contain;display:block;" alt="Heros">
     </div>
     <div class="msg-content ai">
       <div class="sender-row"><span class="sender">Heros</span></div>
       <div class="typing-inline">
-        ${label ? `<span class="typing-mode-label">${label}</span>` : ''}
-        <div class="typing-balls">
-          <div class="tb"></div><div class="tb"></div><div class="tb"></div>
+        <div class="spinnerContainer">
+          <div class="spinner"></div>
+          <div class="loader">
+            <div class="words-wrapper">
+              <span class="word active-word">Processing query</span>
+              <span class="word next-word"></span>
+            </div>
+          </div>
         </div>
       </div>
     </div>`;
+
+  // Animation controller
+  const wrapper = row.querySelector('.words-wrapper');
+  const activeWord = row.querySelector('.active-word');
+  const nextWord = row.querySelector('.next-word');
+  
+  if (wrapper && activeWord && nextWord) {
+    let index = 0;
+    activeWord.textContent = tasks[0];
+
+    const intervalId = setInterval(() => {
+      if (index >= tasks.length - 1) {
+        clearInterval(intervalId);
+        return;
+      }
+      index++;
+      
+      nextWord.textContent = tasks[index];
+      wrapper.classList.remove('no-transition');
+      wrapper.classList.add('slide-up');
+      
+      setTimeout(() => {
+        activeWord.textContent = tasks[index];
+        wrapper.classList.add('no-transition');
+        wrapper.classList.remove('slide-up');
+      }, 350); // Matches CSS transition duration
+    }, 1500); // Shift every 1.5s
+
+    row._loaderInterval = intervalId;
+  }
+
+  // Override remove to clean up the interval automatically
+  const originalRemove = row.remove;
+  row.remove = function() {
+    if (row._loaderInterval) {
+      clearInterval(row._loaderInterval);
+    }
+    originalRemove.call(row);
+  };
+
   container.appendChild(row);
   container.scrollTop = container.scrollHeight;
   return row;
@@ -933,6 +1249,14 @@ function formatContent(raw) {
   // ── Step 0b: linkify bare URLs before any HTML processing ────
   text = _linkifyUrls(text);
 
+  // ── Protect raw HTML blocks (extracted before escaping) ───────
+  const rawHtmlBlocks = [];
+  text = text.replace(/<div data-raw[^>]*>[\s\S]*?<\/div>/g, (match) => {
+    const i = rawHtmlBlocks.length;
+    rawHtmlBlocks.push(match);
+    return `%%RAWHTML_${i}%%`;
+  });
+
   // ── Protect code blocks (extract before escaping) ─────────────
   const codeBlocks = [];
   text = text.replace(/```(\w+)?\n?([\s\S]*?)```/g, (_, lang, code) => {
@@ -996,6 +1320,21 @@ function formatContent(raw) {
     }
   );
 
+  // ── Protect LaTeX math blocks before HTML escaping ─────────────
+  const mathBlocks = [];
+  // Block math: $$...$$
+  text = text.replace(/\$\$([\s\S]+?)\$\$/g, (_, inner) => {
+    const i = mathBlocks.length;
+    mathBlocks.push(`<span class="math-block">$$${inner}$$</span>`);
+    return `%%MATHBLOCK_${i}%%`;
+  });
+  // Inline math: $...$  (not $$)
+  text = text.replace(/(?<!\$)\$([^$\n]+?)\$(?!\$)/g, (_, inner) => {
+    const i = mathBlocks.length;
+    mathBlocks.push(`<span class="math-inline">$${inner}$</span>`);
+    return `%%MATHBLOCK_${i}%%`;
+  });
+
   // ── HTML-escape everything else ───────────────────────────────
   text = text
     .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
@@ -1015,6 +1354,8 @@ function formatContent(raw) {
   text = text.replace(/\*([^*\n]+?)\*/g,    '<em>$1</em>');
 
   // ── Markdown: lists ───────────────────────────────────────────
+  // First: fix "number on its own line" pattern — join `1.\nText` into `1. Text`
+  text = text.replace(/^([ \t]*\d+\.)\n+(?=\S)/gm, '$1 ');
   text = text.replace(/^[ \t]*[-•*]\s+(.+)$/gm, '<li>$1</li>');
   text = text.replace(/((<li>(?!.*class=).*?<\/li>\n?)+)/gs, '<ul class="msg-list">$1</ul>');
   text = text.replace(/^[ \t]*\d+\.\s+(.+)$/gm, '<li class="ol-item">$1</li>');
@@ -1031,9 +1372,11 @@ function formatContent(raw) {
   text = text.replace(/(<\/(?:ul|ol|h[123]|hr|div|pre|table|tbody|tr|th|td)>)\s*<br>/g, '$1');
 
   // ── Restore protected blocks ──────────────────────────────────
-  codeBlocks.forEach((block, i) => { text = text.replace(`%%CODEBLOCK_${i}%%`, block); });
-  inlineCodes.forEach((block, i) => { text = text.replace(`%%INLINE_${i}%%`,   block); });
-  tables.forEach((block, i)      => { text = text.replace(`%%TABLE_${i}%%`,    block); });
+  codeBlocks.forEach((block, i) => { text = text.replace(`%%CODEBLOCK_${i}%%`, () => block); });
+  inlineCodes.forEach((block, i) => { text = text.replace(`%%INLINE_${i}%%`,   () => block); });
+  tables.forEach((block, i)      => { text = text.replace(`%%TABLE_${i}%%`,    () => block); });
+  rawHtmlBlocks.forEach((block, i) => { text = text.replace(`%%RAWHTML_${i}%%`, () => block); });
+  mathBlocks.forEach((block, i)    => { text = text.replace(`%%MATHBLOCK_${i}%%`, () => block); });
 
   // ── FIX 2: Restore clickable link placeholders ────────────────
   text = _restoreLinks(text);
@@ -1084,39 +1427,61 @@ document.addEventListener('click', (e) => {
 
 function triggerAttach() {
   closePlusMenu();
-  if (activeMode) {
-    showNotification(`Attach file is not available in ${activeMode === 'coding' ? 'Coding' : 'Web search'} mode. Remove the mode first.`, 'warning');
-    return;
-  }
   $('fileInput')?.click();
+}
+
+function toggleCodingMode() {
+  isCodeMode = !isCodeMode;
+  const btn = $('codeToggleBtn');
+  if (btn) {
+    btn.classList.toggle('active', isCodeMode);
+  }
 }
 
 function setMode(mode) {
   closePlusMenu();
-  if (attachedFiles.length > 0) {
-    showNotification(`Cannot enable ${mode === 'coding' ? 'Coding' : 'Web search'} mode while a file is attached`, 'warning');
-    return;
-  }
-  activeMode = mode;
-  const badge = $('modeBadge'), badgeTxt = $('modeBadgeText');
-  if (badge && badgeTxt) {
-    badge.className = 'mode-badge visible ' + mode;
-    badgeTxt.textContent = mode === 'coding' ? 'Coding' : 'Web search';
+  if (mode === 'websearch') {
+    isSearchMode = true;
+    $('searchToggleBtn')?.classList.add('active');
+  } else if (mode === 'coding') {
+    isCodeMode = true;
+    $('codeToggleBtn')?.classList.add('active');
+  } else {
+    activeMode = mode;
   }
   $('chatInput')?.focus();
 }
 
 function clearMode() {
   activeMode = null;
+  isSearchMode = false;
+  isCodeMode = false;
   const badge = $('modeBadge');
   if (badge) { badge.classList.remove('visible'); badge.className = 'mode-badge'; }
+  const searchBtn = $('searchToggleBtn');
+  if (searchBtn) {
+    searchBtn.classList.remove('active');
+  }
+  const codeBtn = $('codeToggleBtn');
+  if (codeBtn) {
+    codeBtn.classList.remove('active');
+  }
 }
 
+function switchSettingsNav(name) {
+  document.querySelectorAll('.settings-nav-item').forEach(i => i.classList.remove('active'));
+  document.querySelectorAll('.settings-panel').forEach(p => p.classList.remove('active'));
+  $('snav-' + name)?.classList.add('active');
+  $('spanel-' + name)?.classList.add('active');
+  if (name === 'apikeys') {
+    updateApiKeysPlaceholders();
+  }
+}
+
+/* Legacy tab switcher kept for any old references */
 function switchPTab(name, btn) {
-  $$('.p-tab').forEach(t => t.classList.remove('active'));
-  $$('.p-panel').forEach(p => p.classList.remove('active'));
-  btn?.classList.add('active');
-  $('p-panel-' + name)?.classList.add('active');
+  const map = { interface: 'general', about: 'personalization', instructions: 'instructions' };
+  switchSettingsNav(map[name] || name);
 }
 
 function toggleUserMenu() {
@@ -1131,14 +1496,18 @@ function closeUserMenu() {
   $('userChevron')?.classList.remove('open');
 }
 
-async function openPersonalization() {
+async function openPersonalization() { openSettings('personalization'); }
+
+async function openSettings(panel) {
   closeUserMenu();
   loadUserSettings();
+  switchSettingsNav(panel || 'general');
   $('personalizationModal')?.classList.add('active');
 }
 
-function openHelp()       { closeUserMenu(); $('helpModal')?.classList.add('active'); }
-function openAboutHeros() { closeUserMenu(); $('aboutHerosModal')?.classList.add('active'); }
+
+function openHelp()       { openSettings('help'); }
+function openAboutHeros() { openSettings('about'); }
 function closeModal(id)   { $(id)?.classList.remove('active'); }
 
 document.querySelectorAll('.modal-overlay').forEach(overlay => {
@@ -1181,8 +1550,9 @@ function fillSuggestion(text) {
 function handleKey(e) {
   if (e.key === 'Enter' && !e.shiftKey) {
     e.preventDefault();
-    const sendBtn = $('sendBtn');
-    if (sendBtn && !sendBtn.disabled) sendMessage();
+    const inp = $('chatInput');
+    const hasContent = (inp && (inp.value.trim().length > 0 || attachedFiles.length > 0));
+    if (hasContent && !isLoading) sendMessage();
   }
 }
 
@@ -1192,26 +1562,36 @@ function autoResize(el) {
   el.style.height = Math.min(el.scrollHeight, 200) + 'px';
 }
 
+function handleSendMicClick() {
+  const inp = $('chatInput');
+  const hasContent = (inp && (inp.value.trim().length > 0 || attachedFiles.length > 0));
+  if (hasContent || isLoading) {
+    sendMessage();
+  } else {
+    toggleInlineMic();
+  }
+}
+
 function toggleSendBtn() {
-  const inp = $('chatInput'), sendBtn = $('sendBtn'), micBtn = $('micBtn');
-  if (!inp || !sendBtn || !micBtn) return;
+  const inp = $('chatInput'), btn = $('sendMicBtn'), icon = $('sendMicIcon');
+  if (!inp || !btn || !icon) return;
   
   const hasContent = (inp.value.trim().length > 0 || attachedFiles.length > 0);
-  sendBtn.disabled = !hasContent || isLoading;
   
-  // Mobile toggle logic: show mic by default, switch to send if has content or is loading
-  if (window.innerWidth <= 768) {
-    if (hasContent || isLoading) {
-      micBtn.style.display = 'none';
-      sendBtn.style.display = 'flex';
-    } else {
-      micBtn.style.display = 'flex';
-      sendBtn.style.display = 'none';
-    }
+  if (hasContent || isLoading) {
+    btn.className = 'send-btn';
+    btn.style.background = 'var(--accent)';
+    btn.style.color = '#000';
+    btn.title = 'Send message';
+    icon.className = 'fa-solid fa-paper-plane';
+    btn.disabled = isLoading;
   } else {
-    // Desktop: always show both (default flex state)
-    micBtn.style.display = 'flex';
-    sendBtn.style.display = 'flex';
+    btn.className = inlineMicOn ? 'mic-btn listening' : 'mic-btn';
+    btn.style.background = inlineMicOn ? 'rgba(25,195,125,0.15)' : 'transparent';
+    btn.style.color = inlineMicOn ? 'var(--accent)' : 'var(--text-muted)';
+    btn.title = inlineMicOn ? 'Listening...' : 'Talk to AI';
+    icon.className = 'fa-solid fa-microphone';
+    btn.disabled = false;
   }
 }
 
@@ -1255,7 +1635,7 @@ function toggleInlineMic() {
   if (!SR) { showNotification('Speech recognition not supported. Try Chrome', 'error'); return; }
   if (inlineMicOn) {
     inlineRecog?.stop(); inlineMicOn = false;
-    $('micBtn')?.classList.remove('listening'); return;
+    toggleSendBtn(); return;
   }
   inlineRecog = new SR();
   inlineRecog.lang = 'en-US'; inlineRecog.continuous = false; inlineRecog.interimResults = true;
@@ -1269,9 +1649,10 @@ function toggleInlineMic() {
       if (!activeMode) activeMode = 'voice_message'; 
     }
   };
-  inlineRecog.onend = () => { inlineMicOn = false; $('micBtn')?.classList.remove('listening'); };
+  inlineRecog.onend = () => { inlineMicOn = false; toggleSendBtn(); };
   inlineRecog.start();
-  inlineMicOn = true; $('micBtn')?.classList.add('listening');
+  inlineMicOn = true;
+  toggleSendBtn();
 }
 
 /* ══════════════════════════════════════════════════════
@@ -1279,18 +1660,18 @@ function toggleInlineMic() {
    ══════════════════════════════════════════════════════ */
 function _sanitiseForTTS(raw) {
   let t = raw || '';
-  t = t.replace(/<[^>]+>/g, '');
-  t = t.replace(/```[\s\S]*?```/g, 'code block.');
-  t = t.replace(/`([^`]+)`/g, '$1');
-  t = t.replace(/https?:\/\/[^\s)>\]"']+/gi, '');
+  t = t.replace(/<[^>]+>/g, ' ');          // strip HTML tags
+  t = t.replace(/```[\s\S]*?```/g, ' code block. ');  // code blocks → spoken label
+  t = t.replace(/`([^`]+)`/g, '$1');       // inline code → just text
+  t = t.replace(/\$\$[\s\S]+?\$\$/g, ' ');  // strip block math
+  t = t.replace(/(?<!\$)\$[^$\n]+?\$/g, ' ');  // strip inline math
+  t = t.replace(/https?:\/\/[^\s)>\]"']+/gi, '');  // strip URLs
   t = t.replace(/www\.[^\s)>\]"']+/gi, '');
-  t = t.replace(/\*\*(.*?)\*\*/g, '$1');
-  t = t.replace(/\*(.*?)\*/g, '$1');
-  t = t.replace(/#+\s/g, '');
-  t = t.replace(
-    /[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{FE00}-\u{FE0F}\u{1F1E0}-\u{1F1FF}\u{200D}\u{20E3}]/gu,
-    ''
-  );
+  t = t.replace(/\*\*(.*?)\*\*/g, '$1');   // bold → plain
+  t = t.replace(/\*(.*?)\*/g, '$1');       // italic → plain
+  t = t.replace(/^#+\s*/gm, '');          // headings → plain
+  t = t.replace(/[-*_]{2,}/g, ' ');       // horizontal rules / decorations
+  t = t.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '');
   t = t.replace(/\s+/g, ' ').trim();
   return t;
 }
@@ -1311,41 +1692,80 @@ function speakText(raw) {
 /* ════════ VOICE MODAL STATE ════════ */
 function _setVoiceState(state) {
   voiceState = state;
-  const statusEl = $('voiceStatus'), speakBtn = $('speakBtn'), pauseBtn = $('pauseVoiceBtn');
+  const statusEl = $('voiceStatus'), speakBtn = $('speakBtn'), pauseBtn = $('pauseVoiceBtn'), waitBtn = $('waitVoiceBtn'), mainWaitBtn = $('mainWaitBtn');
   switch (state) {
     case VOICE_STATE.IDLE:
       if (statusEl) statusEl.textContent = '';
       if (speakBtn) { speakBtn.innerHTML = '<i class="fa-solid fa-microphone"></i> Speak'; speakBtn.style.background = ''; speakBtn.style.color = ''; }
       if (pauseBtn) pauseBtn.disabled = true;
+      if (waitBtn) waitBtn.disabled = true;
+      if (mainWaitBtn) { mainWaitBtn.disabled = true; mainWaitBtn.style.display = 'none'; }
       isListening = false; break;
     case VOICE_STATE.LISTENING:
       if (statusEl) statusEl.innerHTML = '<span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:8px;height:8px;border-radius:50%;background:#e74c3c;animation:pulse-dot 1s infinite;display:inline-block;"></span>Listening…</span>';
       if (speakBtn) { speakBtn.innerHTML = '<i class="fa-solid fa-stop"></i> Stop'; speakBtn.style.background = '#e74c3c'; speakBtn.style.color = '#fff'; }
       if (pauseBtn) pauseBtn.disabled = true;
-      isListening = true; break;
+      if (waitBtn) waitBtn.disabled = true;
+      if (mainWaitBtn) { mainWaitBtn.disabled = true; mainWaitBtn.style.display = 'none'; }
+      isListening = true; 
+      restartMicStream();
+      break;
     case VOICE_STATE.THINKING:
       if (statusEl) statusEl.innerHTML = '<span style="display:inline-flex;align-items:center;gap:6px;"><span class="typing-dots" style="display:inline-flex;gap:3px;"><span style="width:5px;height:5px;border-radius:50%;background:var(--accent);animation:bounce-dot 0.8s infinite 0s;display:inline-block;"></span><span style="width:5px;height:5px;border-radius:50%;background:var(--accent);animation:bounce-dot 0.8s infinite 0.15s;display:inline-block;"></span><span style="width:5px;height:5px;border-radius:50%;background:var(--accent);animation:bounce-dot 0.8s infinite 0.3s;display:inline-block;"></span></span> Thinking…</span>';
       if (pauseBtn) pauseBtn.disabled = true;
-      isListening = false; break;
+      if (waitBtn) waitBtn.disabled = true;
+      if (mainWaitBtn) { mainWaitBtn.disabled = true; mainWaitBtn.style.display = 'none'; }
+      isListening = false; 
+      stopMicStream();
+      break;
     case VOICE_STATE.SPEAKING:
-      if (statusEl) statusEl.innerHTML = '<span style="display:inline-flex;align-items:center;gap:6px;"><i class="fa-solid fa-volume-high" style="color:var(--accent);animation:pulse-dot 0.8s infinite;"></i> Speaking…</span>';
+      if (statusEl) statusEl.innerHTML = '<span style="display:inline-flex;align-items:center;gap:6px;"><i class="fa-solid fa-volume-high" style="color:var(--accent);animation:pulse-dot 0.8s infinite;"></i> Speaking… (Press Space to interrupt)</span>';
       if (pauseBtn) pauseBtn.disabled = false;
-      isListening = true; break;
+      if (waitBtn) waitBtn.disabled = false;
+      if (mainWaitBtn) { mainWaitBtn.disabled = false; mainWaitBtn.style.display = 'inline-flex'; }
+      isListening = true; 
+      stopMicStream();
+      break;
   }
 }
 
+function handleWaitButtonClick(e) {
+  if (e) {
+    try { e.preventDefault(); e.stopPropagation(); } catch(_) {}
+  }
+  if (voiceActive && voiceState === VOICE_STATE.SPEAKING) {
+    try {
+      stopCurrentTTSAudio(true);
+    } catch(err) {
+      console.warn('Error during TTS interruption:', err);
+    }
+    _setVoiceState(VOICE_STATE.LISTENING);
+    const el = $('voiceTranscript'); if (el) el.textContent = 'Speak now…';
+    ignoreVoiceUntil = Date.now() + 200;
+    restartMicStream().finally(() => {
+      if (voiceActive && voiceState === VOICE_STATE.LISTENING) {
+        _startRecognition();
+      }
+    });
+  }
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.code === 'Space' || e.key === ' ' || e.keyCode === 32) {
+    if (voiceActive && voiceState === VOICE_STATE.SPEAKING) {
+      const tag = document.activeElement ? document.activeElement.tagName : '';
+      if (['INPUT', 'TEXTAREA'].includes(tag) || document.activeElement?.isContentEditable) {
+        return;
+      }
+      e.preventDefault();
+      e.stopPropagation();
+      handleWaitButtonClick(e);
+    }
+  }
+}, true);
+
 function setModeCodingAndPrompt() {
-  closePlusMenu();
-  if (attachedFiles.length > 0) {
-    showNotification('Cannot enable Coding mode while a file is attached', 'warning');
-    return;
-  }
-  activeMode = 'coding';
-  const badge = $('modeBadge'), badgeTxt = $('modeBadgeText');
-  if (badge && badgeTxt) {
-    badge.className = 'mode-badge visible coding';
-    badgeTxt.textContent = 'Coding';
-  }
+  setMode('coding');
   const inp = $('chatInput');
   if (inp) {
     inp.value = 'Generate code: ';
@@ -1357,22 +1777,41 @@ function setModeCodingAndPrompt() {
 function _showTranscript(userText, aiText) {
   const el = $('voiceTranscript'); if (!el) return;
   if (!userText && !aiText) { el.textContent = 'Speak now…'; return; }
+  
+  const isInline = el.classList.contains('inline-mode');
   let html = '';
-  if (userText) html += `<div style="margin-bottom:0.65rem;padding:0.6rem 0.85rem;background:rgba(255,255,255,0.05);border-radius:8px;">
-    <div style="font-size:0.72rem;color:var(--accent);font-weight:600;margin-bottom:3px;">YOU</div>
-    <div style="font-size:0.9rem;">${escHtml(userText)}</div></div>`;
-  if (aiText)   html += `<div style="padding:0.6rem 0.85rem;background:rgba(25,195,125,0.07);border-radius:8px;">
-    <div style="font-size:0.72rem;color:var(--accent);font-weight:600;margin-bottom:3px;">HERO AI</div>
-    <div style="font-size:0.9rem;">${formatContent(aiText)}</div></div>`;
+  
+  if (userText) {
+    if (isInline) {
+      html += `<div style="font-size:0.95rem;color:var(--text);">${escHtml(userText)}</div>`;
+    } else {
+      html += `<div style="margin-bottom:0.65rem;padding:0.6rem 0.85rem;background:rgba(255,255,255,0.05);border-radius:8px;">
+        <div style="font-size:0.72rem;color:var(--accent);font-weight:600;margin-bottom:3px;">YOU</div>
+        <div style="font-size:0.9rem;">${escHtml(userText)}</div></div>`;
+    }
+  }
+  
+  if (aiText && !isInline) {
+    html += `<div style="padding:0.6rem 0.85rem;background:rgba(25,195,125,0.07);border-radius:8px;">
+      <div style="font-size:0.72rem;color:var(--accent);font-weight:600;margin-bottom:3px;">Heros</div>
+      <div style="font-size:0.9rem;">${formatContent(aiText)}</div></div>`;
+  }
+  
   el.innerHTML = html;
   requestAnimationFrame(() => { el.scrollTop = el.scrollHeight; });
 }
 
 function _showInterim(text) {
   const el = $('voiceTranscript'); if (!el || !text) return;
-  el.innerHTML = `<div style="padding:0.6rem 0.85rem;border-radius:8px;border:0.5px dashed rgba(25,195,125,0.3);">
-    <div style="font-size:0.72rem;color:var(--accent);font-weight:600;margin-bottom:3px;">YOU</div>
-    <div style="font-size:0.9rem;color:var(--text-dim);">${escHtml(text)}</div></div>`;
+  const isInline = el.classList.contains('inline-mode');
+  
+  if (isInline) {
+    el.innerHTML = `<div style="font-size:0.95rem;color:var(--text-dim);">${escHtml(text)}</div>`;
+  } else {
+    el.innerHTML = `<div style="padding:0.6rem 0.85rem;border-radius:8px;border:0.5px dashed rgba(25,195,125,0.3);">
+      <div style="font-size:0.72rem;color:var(--accent);font-weight:600;margin-bottom:3px;">YOU</div>
+      <div style="font-size:0.9rem;color:var(--text-dim);">${escHtml(text)}</div></div>`;
+  }
   el.scrollTop = el.scrollHeight;
 }
 
@@ -1390,7 +1829,7 @@ function pauseVoiceReply() {
 async function startVoiceSession() {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SR) { showNotification('Speech recognition not supported. Please use Chrome', 'error'); return; }
-  try { mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
+  try { mediaStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } }); }
   catch (err) { showNotification('Microphone permission denied', 'error'); return; }
   audioCtx  = new (window.AudioContext || window.webkitAudioContext)();
   analyser  = audioCtx.createAnalyser();
@@ -1405,17 +1844,48 @@ async function startVoiceSession() {
 
 function _startRecognition() {
   if (!voiceActive) return;
+  if (voiceRecog) {
+    try { voiceRecog.onend = null; voiceRecog.onerror = null; voiceRecog.abort(); } catch (_) {}
+    voiceRecog = null;
+  }
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) return;
   voiceRecog = new SR();
   voiceRecog.lang = 'en-US'; voiceRecog.continuous = true; voiceRecog.interimResults = true;
 
   voiceRecog.onresult = (event) => {
-    if (voiceState !== VOICE_STATE.LISTENING) return;
+    if (Date.now() < ignoreVoiceUntil) return;
+    
     let interim = '', final = '';
     for (let i = event.resultIndex; i < event.results.length; i++) {
       const t = event.results[i][0].transcript;
       event.results[i].isFinal ? (final += t + ' ') : (interim += t);
     }
+
+    // While model is THINKING, allow user to modify / add to their spoken message
+    if (voiceState === VOICE_STATE.THINKING) {
+      const added = (final + interim).trim();
+      if (added.length > 0) {
+        const lastMsg = messages[messages.length - 1];
+        if (lastMsg && lastMsg.role === 'user') {
+          lastMsg.content = (lastMsg.content + ' ' + added).trim();
+          const bubbles = document.querySelectorAll('.msg-row.user-row .bubble');
+          if (bubbles.length > 0) {
+            bubbles[bubbles.length - 1].innerHTML = formatContent(lastMsg.content);
+          }
+        }
+        const currentPrompt = messages[messages.length - 1]?.content || added;
+        _showTranscript(currentPrompt, 'Thinking…');
+      }
+      return;
+    }
+
+    // Mic is OFF while AI is SPEAKING — ignore any residual events
+    if (voiceState === VOICE_STATE.SPEAKING) {
+      return;
+    }
+
+    if (voiceState !== VOICE_STATE.LISTENING) return;
     if (final.trim()) voiceFinalText += final;
     voiceInterimText = interim;
     _showInterim((voiceFinalText + voiceInterimText).trim());
@@ -1434,9 +1904,9 @@ function _startRecognition() {
 
   voiceRecog.onspeechend = () => {};
   voiceRecog.onend = () => {
-    if (voiceActive && voiceState === VOICE_STATE.LISTENING) {
+    if (voiceActive && (voiceState === VOICE_STATE.LISTENING || voiceState === VOICE_STATE.SPEAKING)) {
       setTimeout(() => {
-        if (voiceActive && voiceState === VOICE_STATE.LISTENING) _startRecognition();
+        if (voiceActive) _startRecognition();
       }, 150);
     }
   };
@@ -1447,67 +1917,353 @@ function _startRecognition() {
   try { voiceRecog.start(); } catch (_) {}
 }
 
+function muteMicStream() {
+  if (mediaStream) {
+    try { mediaStream.getAudioTracks().forEach(t => t.enabled = false); } catch(_) {}
+  }
+}
+
+async function unmuteMicStream() {
+  if (!mediaStream) {
+    try {
+      mediaStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+      if (audioCtx && analyser) {
+        audioCtx.createMediaStreamSource(mediaStream).connect(analyser);
+      }
+    } catch (e) {
+      console.warn('Failed to get mic stream:', e);
+    }
+  } else {
+    try { mediaStream.getAudioTracks().forEach(t => t.enabled = true); } catch(_) {}
+  }
+}
+
+function stopMicStream() {
+  muteMicStream();
+}
+
+function closeMicStream() {
+  if (mediaStream) {
+    try { mediaStream.getTracks().forEach(t => t.stop()); } catch(_) {}
+    mediaStream = null;
+  }
+}
+
+async function restartMicStream() {
+  await unmuteMicStream();
+}
+
 async function _sendToAI(userText) {
   if (!voiceActive || !userText) return;
-  if (!currentUser) {
-    const el = $('voiceStatus'); if (el) el.textContent = 'Please login first.';
-    _setVoiceState(VOICE_STATE.LISTENING); _startRecognition(); return;
-  }
   if (voiceState !== VOICE_STATE.THINKING) _setVoiceState(VOICE_STATE.THINKING);
   _showTranscript(userText, '');
   voiceFinalText = ''; voiceInterimText = '';
+  
+  let mode = 'Voice Chat';
+  let filesPayload = [];
+  const hasFile = attachedFiles.length > 0;
+  if (hasFile) {
+    filesPayload = [...attachedFiles];
+    attachedFiles = [];
+    const ap = $('attachPreviewRow'); if (ap) ap.innerHTML = '';
+    toggleSendBtn();
+  }
+
+  if (isSearchMode && isCodeMode && hasFile) mode = 'voice_search_code_file';
+  else if (isSearchMode && isCodeMode) mode = 'voice_search_code';
+  else if (isSearchMode && hasFile) mode = 'voice_search_file';
+  else if (isCodeMode && hasFile) mode = 'voice_code_file';
+  else if (isCodeMode) mode = 'voice_code';
+  else if (isSearchMode) mode = 'voice_search';
+  else if (hasFile) mode = 'voice_file';
+  
+  // Render user message to the main chat screen immediately
+  activateChatBg();
+  const userMsg = { role: 'user', content: userText, files: filesPayload ? [...filesPayload] : [], mode: 'voice' };
+  messages.push(userMsg);
+  renderMessage(userMsg);
+  
+  const active = document.querySelector('.history-item.active');
+  if (active && (active.textContent.includes('Welcome chat') || active.textContent.includes('New chat'))) {
+    active.innerHTML = '<i class="fa-solid fa-microphone"></i><span class="history-preview">' + escHtml(userText.slice(0, 40)) + '</span>';
+  }
+
+  // Show thinking typing row in chat interface
+  const typingRow = showTyping('Voice Chat');
+  
+  let sessionHistory = [];
+  if (typeof userSettings !== 'undefined' && userSettings.rememberHistory && messages.length > 0) {
+    sessionHistory = messages.slice();
+  } else if (messages.length > 0) {
+    sessionHistory = messages.slice(); // Safe fallback if userSettings isn't available
+  }
+  
   try {
     const res  = await fetch('/api/chat', {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
-      body: JSON.stringify({ message: userText, model: currentModel, mode: 'Voice Chat', session_id: currentSessionId })
+      body: JSON.stringify({ 
+        message:          userText, 
+        model:            currentModel, 
+        mode:             mode, 
+        session_id:       currentSessionId,
+        has_files:        filesPayload.length > 0,
+        file_count:       filesPayload.length,
+        files:            filesPayload,
+        send_history:     sessionHistory,
+        remember_history: !!userSettings.rememberHistory
+      })
     });
     const data = await getJsonResponse(res);
+    
+    // Remove the typing indicator row
+    if (typingRow) typingRow.remove();
+    
     if (data.status === 'success') {
       if (data.session_id && !currentSessionId) { currentSessionId = data.session_id; loadChatHistory(); }
       const reply = (data.reply || '').trim();
       _showTranscript(userText, reply);
       _setVoiceState(VOICE_STATE.SPEAKING);
-      pushVoiceToChat(userText, reply);
-      _speakReply(reply, () => {
-        if (voiceActive && voiceState === VOICE_STATE.SPEAKING) {
-          _setVoiceState(VOICE_STATE.LISTENING);
-          const el = $('voiceTranscript'); if (el) el.textContent = 'Speak now…';
-          _startRecognition();
-        }
+      
+      // Render only AI message now
+      const aiMsg = { role: 'assistant', content: reply, mode: 'voice' };
+      messages.push(aiMsg);
+      const aiMsgRow = renderMessage(aiMsg);
+      
+      currentAITextClean = _sanitiseForTTS(reply).toLowerCase().replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ').trim();
+
+      // Immediately shut off microphone and STT BEFORE starting TTS playback
+      try { voiceRecog?.stop(); } catch(_) {}
+      stopMicStream();
+
+      _speakReply(reply, aiMsgRow, () => {
+        if (!voiceActive) return;
+        _setVoiceState(VOICE_STATE.LISTENING);
+        const el = $('voiceTranscript'); if (el) el.textContent = 'Speak now…';
+        ignoreVoiceUntil = Date.now() + 1500;
+        setTimeout(() => {
+          if (voiceActive && voiceState === VOICE_STATE.LISTENING) {
+            restartMicStream().then(() => _startRecognition());
+          }
+        }, 1500);
       });
     } else {
       const el = $('voiceStatus'); if (el) el.textContent = 'Error: ' + (data.message || 'AI failed');
       if (voiceActive) { _setVoiceState(VOICE_STATE.LISTENING); _startRecognition(); }
     }
   } catch (err) {
+    if (typingRow) typingRow.remove();
     console.error('Voice AI error:', err);
     const el = $('voiceStatus'); if (el) el.textContent = 'Network error. Listening again…';
     if (voiceActive) { _setVoiceState(VOICE_STATE.LISTENING); _startRecognition(); }
   }
 }
 
-function _speakReply(raw, onDone) {
-  if (!window.speechSynthesis) { onDone?.(); return; }
-  window.speechSynthesis.cancel();
-  const clean = _sanitiseForTTS(raw).slice(0, 800);
+function _wrapBubbleWords(msgRow) {
+  if (!msgRow) return [];
+  const bubble = msgRow.querySelector('.bubble');
+  if (!bubble) return [];
+  // Only wrap text nodes — don't touch code blocks or other HTML
+  const wordSpans = [];
+  const treeWalker = document.createTreeWalker(bubble, NodeFilter.SHOW_TEXT);
+  const textNodes = [];
+  let node;
+  while ((node = treeWalker.nextNode())) {
+    // Skip text inside <code>, <pre>, <script>, <style>
+    let parent = node.parentElement;
+    let skip = false;
+    while (parent && parent !== bubble) {
+      if (['CODE','PRE','SCRIPT','STYLE'].includes(parent.tagName)) { skip = true; break; }
+      parent = parent.parentElement;
+    }
+    if (!skip && node.textContent.trim().length > 0) textNodes.push(node);
+  }
+  textNodes.forEach(textNode => {
+    const frag = document.createDocumentFragment();
+    const parts = textNode.textContent.split(/(\s+)/);
+    parts.forEach(part => {
+      if (/\S/.test(part)) {
+        const span = document.createElement('span');
+        span.className = 'tts-word';
+        span.textContent = part;
+        wordSpans.push(span);
+        frag.appendChild(span);
+      } else {
+        frag.appendChild(document.createTextNode(part));
+      }
+    });
+    textNode.parentNode.replaceChild(frag, textNode);
+  });
+  return wordSpans;
+}
+
+let currentAudioSource = null;
+let ttsAnimFrame = null;
+let ttsQueueCancelled = false;
+let activeTTSWordSpans = [];
+let activeTTSWordIdx = -1;
+let activeTTSMsgRow = null;
+
+function stopCurrentTTSAudio(isUserInterruption = false) {
+  ttsQueueCancelled = true;
+  if (isUserInterruption && activeTTSWordSpans.length > 0 && activeTTSWordIdx >= 0) {
+    const spokenWords = activeTTSWordSpans.slice(0, activeTTSWordIdx + 1).map(s => s.textContent).join(' ');
+    if (spokenWords.length > 0) {
+      if (messages.length > 0) {
+        const lastAi = messages[messages.length - 1];
+        if (lastAi && lastAi.role === 'assistant') {
+          lastAi.content = spokenWords + ' ... [User interrupted AI response here]';
+        }
+      }
+      if (activeTTSMsgRow) {
+        const bubble = activeTTSMsgRow.querySelector('.bubble');
+        if (bubble) {
+          bubble.innerHTML = formatContent(spokenWords + ' ...');
+        }
+      }
+    }
+  }
+
+  if (currentAudioSource) {
+    try { currentAudioSource.stop(); } catch (_) {}
+    currentAudioSource = null;
+  }
+  if (ttsAnimFrame) {
+    cancelAnimationFrame(ttsAnimFrame);
+    ttsAnimFrame = null;
+  }
+  activeTTSWordSpans = [];
+  activeTTSWordIdx = -1;
+  activeTTSMsgRow = null;
+  window.speechSynthesis?.cancel();
+}
+
+async function fetchTTSBuffer(text) {
+  try {
+    const res = await fetch('/api/tts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: text })
+    });
+    if (!res.ok) return null;
+    const arrayBuffer = await res.arrayBuffer();
+    if (!arrayBuffer || arrayBuffer.byteLength === 0) return null;
+    return await audioCtx.decodeAudioData(arrayBuffer);
+  } catch (err) {
+    return null;
+  }
+}
+
+async function _speakReply(raw, msgRow, onDone) {
+  stopCurrentTTSAudio(false);
+  ttsQueueCancelled = false;
+  const clean = _sanitiseForTTS(raw);
   if (!clean) { onDone?.(); return; }
-  const utter = new SpeechSynthesisUtterance(clean);
-  utter.rate = 1.1; utter.pitch = 1.0; utter.volume = 1.0;
-  const voices    = window.speechSynthesis.getVoices();
-  const preferred = voices.find(v => v.lang.startsWith('en') && v.name.toLowerCase().includes('google'))
-    || voices.find(v => v.lang.startsWith('en'));
-  if (preferred) utter.voice = preferred;
-  utter.onend = () => onDone?.(); utter.onerror = () => onDone?.();
-  window.speechSynthesis.speak(utter);
+
+  // Split into sentence chunks for ultra-fast initial playback start (~200ms instead of 3500ms)
+  const sentences = clean.split(/(?<=[.!?])\s+/).map(s => s.trim()).filter(s => s.length > 0);
+  if (sentences.length === 0) { onDone?.(); return; }
+
+  const wordSpans = _wrapBubbleWords(msgRow);
+  activeTTSMsgRow = msgRow;
+  activeTTSWordSpans = wordSpans;
+  activeTTSWordIdx = 0;
+
+  try {
+    if (!audioCtx) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (AC) audioCtx = new AC();
+    }
+    if (audioCtx && audioCtx.state === 'suspended') {
+      await audioCtx.resume();
+    }
+
+    // Pre-fetch sentence 1 first for immediate start
+    let nextBufferPromise = fetchTTSBuffer(sentences[0]);
+    let globalWordIdx = 0;
+
+    for (let i = 0; i < sentences.length; i++) {
+      if (ttsQueueCancelled || !voiceActive) break;
+
+      const audioBuffer = await nextBufferPromise;
+      // Start fetching the NEXT sentence in parallel while current sentence plays!
+      if (i + 1 < sentences.length) {
+        nextBufferPromise = fetchTTSBuffer(sentences[i + 1]);
+      }
+
+      if (!audioBuffer || ttsQueueCancelled) continue;
+
+      const source = audioCtx.createBufferSource();
+      
+      // Volume Ducking: Set gain to 0.8 to optimize for speaker echo cancellation
+      const gainNode = audioCtx.createGain();
+      gainNode.gain.value = 0.8;
+      source.buffer = audioBuffer;
+      source.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+
+      currentAudioSource = source;
+
+      const chunkWords = sentences[i].split(/\s+/).filter(w => w.length > 0).length;
+      const duration = audioBuffer.duration;
+      const startTime = audioCtx.currentTime;
+      const startWordIdx = globalWordIdx;
+
+      let lastIdx = -1;
+      const updateHighlight = () => {
+        if (!currentAudioSource || ttsQueueCancelled) return;
+        const elapsed = audioCtx.currentTime - startTime;
+        const progress = Math.min(1, elapsed / duration);
+        const currentIdx = startWordIdx + Math.floor(progress * chunkWords);
+        activeTTSWordIdx = currentIdx;
+        if (currentIdx !== lastIdx && currentIdx < wordSpans.length) {
+          if (lastIdx >= 0 && wordSpans[lastIdx]) wordSpans[lastIdx].classList.remove('tts-highlight');
+          if (wordSpans[currentIdx]) {
+            wordSpans[currentIdx].classList.add('tts-highlight');
+            wordSpans[currentIdx].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+          }
+          lastIdx = currentIdx;
+        }
+        if (progress < 1) {
+          ttsAnimFrame = requestAnimationFrame(updateHighlight);
+        }
+      };
+
+      const sentencePromise = new Promise((resolve) => {
+        source.onended = () => {
+          if (lastIdx >= 0 && wordSpans[lastIdx]) wordSpans[lastIdx].classList.remove('tts-highlight');
+          currentAudioSource = null;
+          if (ttsAnimFrame) cancelAnimationFrame(ttsAnimFrame);
+          globalWordIdx += chunkWords;
+          resolve();
+        };
+      });
+
+      if (chunkWords > 0) updateHighlight();
+      source.start(0);
+
+      await sentencePromise;
+    }
+
+    wordSpans.forEach(s => s.classList.remove('tts-highlight'));
+    onDone?.();
+
+  } catch (err) {
+    console.error('Edge-TTS playback error:', err);
+    wordSpans?.forEach(s => s.classList.remove('tts-highlight'));
+    onDone?.();
+  }
 }
 
 function stopVoiceSession() {
   clearTimeout(silenceTimer); silenceTimer = null;
   voiceActive = false;
+  stopCurrentTTSAudio();
   try { voiceRecog?.stop(); } catch (_) {}
-  mediaStream?.getTracks().forEach(t => t.stop());
-  audioCtx?.close();
-  window.speechSynthesis?.cancel();
+  closeMicStream();
+  if (audioCtx && audioCtx.state !== 'closed') {
+    try { audioCtx.close(); } catch (_) {}
+    audioCtx = null;
+  }
   cancelAnimationFrame(animFrame);
   voiceFinalText = ''; voiceInterimText = '';
   _setVoiceState(VOICE_STATE.IDLE);
@@ -1602,6 +2358,11 @@ async function loadChatMessages(sessionId) {
       const activeItem = document.querySelector(`[data-session-id="${sessionId}"]`);
       if (activeItem) activeItem.classList.add('active');
       currentSessionId = sessionId;
+      if (data.chat_info && data.chat_info.is_developer_session) {
+        // Do nothing with the model, preserve the user's current selection
+      } else {
+        // Do nothing with the model, preserve the user's current selection
+      }
       (data.messages || []).forEach(msg => { messages.push(msg); renderMessage(msg); });
     }
   } catch (err) {
@@ -1637,13 +2398,40 @@ function initBallCanvas() {
 
 function animateBall(listening) { isListening = listening; cancelAnimationFrame(animFrame); drawBall(); }
 
+function hexToRgba(hex, alpha) {
+  hex = hex.replace('#', '');
+  if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
+  const r = parseInt(hex.substring(0, 2), 16);
+  const g = parseInt(hex.substring(2, 4), 16);
+  const b = parseInt(hex.substring(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+function hexToRgb(hex) {
+  hex = hex.replace('#', '');
+  if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
+  return {
+    r: parseInt(hex.substring(0, 2), 16),
+    g: parseInt(hex.substring(2, 4), 16),
+    b: parseInt(hex.substring(4, 6), 16)
+  };
+}
+
 function drawBall() {
-  const canvas = $('voiceCanvas'); if (!canvas) return;
+  const canvas = $(typeof activeVoiceCanvasId !== "undefined" ? activeVoiceCanvasId : "voiceCanvas"); if (!canvas) return;
   const ctx = canvas.getContext('2d');
   const W = canvas.width, H = canvas.height, cx = W/2, cy = H/2;
   ctx.clearRect(0,0,W,H); ballPhase += 0.018;
+
+  // Retrieve theme variables dynamically
+  const styles = getComputedStyle(document.documentElement);
+  const accent = styles.getPropertyValue('--accent').trim() || '#9CB080';
+  const accent2 = styles.getPropertyValue('--accent2').trim() || '#607456';
+  const bg = styles.getPropertyValue('--bg').trim() || '#0a0a0b';
+  const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
+
   let volume = 0;
-  if (analyser && isListening) {
+  if (analyser && isListening && mediaStream) {
     const data = new Uint8Array(analyser.frequencyBinCount);
     analyser.getByteFrequencyData(data);
     volume = data.reduce((a,b) => a+b, 0) / data.length / 128;
@@ -1660,7 +2448,7 @@ function drawBall() {
   const outerR = drawBall._innerR;
   drawBall._bars  = drawBall._bars  || new Array(BAR_COUNT).fill(0);
   drawBall._tBars = drawBall._tBars || new Array(BAR_COUNT).fill(0);
-  if (isListening && analyser) {
+  if (isListening && analyser && mediaStream) {
     const fftData = new Uint8Array(analyser.frequencyBinCount);
     analyser.getByteFrequencyData(fftData);
     const binPerBar = Math.floor(fftData.length / BAR_COUNT);
@@ -1687,17 +2475,28 @@ function drawBall() {
     drawBall._bars[i] += (drawBall._tBars[i] - drawBall._bars[i]) * lerpSpeed;
   const glowA = 0.07+sv*0.11;
   const halo = ctx.createRadialGradient(cx,cy,outerR*0.55,cx,cy,outerR*1.40);
-  halo.addColorStop(0,`rgba(25,195,125,${glowA})`);
-  halo.addColorStop(0.45,`rgba(15,155,90,${glowA*0.40})`);
+  halo.addColorStop(0,hexToRgba(accent, glowA));
+  halo.addColorStop(0.45,hexToRgba(accent2, glowA*0.40));
   halo.addColorStop(1,'rgba(0,0,0,0)');
   ctx.beginPath(); ctx.arc(cx,cy,outerR*1.40,0,Math.PI*2); ctx.fillStyle=halo; ctx.fill();
   ctx.beginPath(); ctx.arc(cx,cy,outerR,0,Math.PI*2);
-  ctx.strokeStyle=`rgba(25,195,125,${0.20+sv*0.28})`; ctx.lineWidth=5; ctx.stroke();
+  ctx.strokeStyle=hexToRgba(accent, 0.20+sv*0.28); ctx.lineWidth=5; ctx.stroke();
   ctx.beginPath(); ctx.arc(cx,cy,outerR,0,Math.PI*2);
-  ctx.strokeStyle=`rgba(50,235,155,${0.55+sv*0.38})`; ctx.lineWidth=1.5; ctx.stroke();
+  ctx.strokeStyle=hexToRgba(accent2, 0.55+sv*0.38); ctx.lineWidth=1.5; ctx.stroke();
   const df = ctx.createRadialGradient(cx-outerR*0.22,cy-outerR*0.22,0,cx,cy,outerR);
-  df.addColorStop(0,'hsl(210,45%,10%)'); df.addColorStop(0.58,'hsl(215,55%,5%)'); df.addColorStop(1,'hsl(220,70%,2%)');
+  if (isDark) {
+    df.addColorStop(0, '#1d273a');
+    df.addColorStop(0.58, '#111827');
+    df.addColorStop(1, bg);
+  } else {
+    df.addColorStop(0, '#f4f6f1');
+    df.addColorStop(0.58, '#e2e7dc');
+    df.addColorStop(1, '#cdd5c5');
+  }
   ctx.beginPath(); ctx.arc(cx,cy,outerR-1,0,Math.PI*2); ctx.fillStyle=df; ctx.fill();
+  
+  const cAccent2 = hexToRgb(accent2);
+  const cAccent = hexToRgb(accent);
   for (let i = 0; i < BAR_COUNT; i++) {
     const angle = (i/BAR_COUNT)*Math.PI*2-Math.PI/2;
     const barH  = drawBall._bars[i]*MAX_BAR_H;
@@ -1705,25 +2504,35 @@ function drawBall() {
     const x1=cx+Math.cos(angle)*r1, y1=cy+Math.sin(angle)*r1;
     const x2=cx+Math.cos(angle)*r2, y2=cy+Math.sin(angle)*r2;
     const intensity = Math.min(1,drawBall._bars[i]*2.4);
-    const hue=155+intensity*28, lit=44+intensity*36, alpha=0.30+intensity*0.70;
+    const r = Math.round(cAccent2.r + (cAccent.r - cAccent2.r) * intensity);
+    const g = Math.round(cAccent2.g + (cAccent.g - cAccent2.g) * intensity);
+    const b = Math.round(cAccent2.b + (cAccent.b - cAccent2.b) * intensity);
+    const alpha = 0.30+intensity*0.70;
     ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2);
-    ctx.strokeStyle=`hsla(${hue},100%,${lit}%,${alpha*0.28})`; ctx.lineWidth=4.5; ctx.lineCap='round'; ctx.stroke();
+    ctx.strokeStyle=`rgba(${r},${g},${b},${alpha*0.28})`; ctx.lineWidth=4.5; ctx.lineCap='round'; ctx.stroke();
     ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2);
-    ctx.strokeStyle=`hsla(${hue},100%,${lit+14}%,${alpha})`; ctx.lineWidth=1.6; ctx.stroke();
+    ctx.strokeStyle=`rgba(${r},${g},${b},${alpha})`; ctx.lineWidth=1.6; ctx.stroke();
     if (intensity > 0.5) {
       ctx.beginPath(); ctx.arc(x2,y2,1.8,0,Math.PI*2);
-      ctx.fillStyle=`rgba(180,255,220,${(intensity-0.5)*2*alpha})`; ctx.fill();
+      const peakR = Math.round(r + (255 - r) * 0.5);
+      const peakG = Math.round(g + (255 - g) * 0.5);
+      const peakB = Math.round(b + (255 - b) * 0.5);
+      ctx.fillStyle=`rgba(${peakR},${peakG},${peakB},${(intensity-0.5)*2*alpha})`; ctx.fill();
     }
   }
   const innerZoneR = outerR-MAX_BAR_H-10;
   const coreA = isListening ? 0.18+sv*0.35 : 0.08;
   const core = ctx.createRadialGradient(cx,cy,0,cx,cy,innerZoneR*0.90);
-  core.addColorStop(0,`rgba(80,220,155,${coreA})`); core.addColorStop(0.5,`rgba(30,160,100,${coreA*0.45})`); core.addColorStop(1,'rgba(0,0,0,0)');
+  core.addColorStop(0,hexToRgba(accent, coreA)); 
+  core.addColorStop(0.5,hexToRgba(accent2, coreA*0.45)); 
+  core.addColorStop(1,'rgba(0,0,0,0)');
   ctx.save(); ctx.beginPath(); ctx.arc(cx,cy,innerZoneR,0,Math.PI*2); ctx.clip();
   ctx.beginPath(); ctx.arc(cx,cy,innerZoneR*0.90,0,Math.PI*2); ctx.fillStyle=core; ctx.fill(); ctx.restore();
   const sX=cx-outerR*0.26, sY=cy-outerR*0.28;
   const spec = ctx.createRadialGradient(sX,sY,0,sX,sY,outerR*0.38);
-  spec.addColorStop(0,'rgba(255,255,255,0.55)'); spec.addColorStop(0.28,'rgba(200,255,225,0.18)'); spec.addColorStop(1,'rgba(255,255,255,0)');
+  spec.addColorStop(0,'rgba(255,255,255,0.55)'); 
+  spec.addColorStop(0.28,hexToRgba(accent, 0.18)); 
+  spec.addColorStop(1,'rgba(255,255,255,0)');
   ctx.save(); ctx.beginPath(); ctx.arc(cx,cy,outerR-1,0,Math.PI*2); ctx.clip();
   ctx.beginPath(); ctx.arc(sX,sY,outerR*0.38,0,Math.PI*2); ctx.fillStyle=spec; ctx.fill(); ctx.restore();
   drawBall._waves = drawBall._waves || []; drawBall._lastSv = drawBall._lastSv || 0;
@@ -1733,9 +2542,9 @@ function drawBall() {
     const wv = drawBall._waves[w]; wv.r += 2.5; wv.life -= 0.030;
     if (wv.life <= 0) { drawBall._waves.splice(w,1); continue; }
     ctx.beginPath(); ctx.arc(cx,cy,wv.r,0,Math.PI*2);
-    ctx.strokeStyle=`rgba(25,210,130,${wv.life*0.25})`; ctx.lineWidth=wv.life*5; ctx.stroke();
+    ctx.strokeStyle=hexToRgba(accent, wv.life*0.25); ctx.lineWidth=wv.life*5; ctx.stroke();
     ctx.beginPath(); ctx.arc(cx,cy,wv.r,0,Math.PI*2);
-    ctx.strokeStyle=`rgba(60,240,160,${wv.life*0.55})`; ctx.lineWidth=wv.life*1.2; ctx.stroke();
+    ctx.strokeStyle=hexToRgba(accent2, wv.life*0.55); ctx.lineWidth=wv.life*1.2; ctx.stroke();
   }
   animFrame = requestAnimationFrame(drawBall);
 }
@@ -1745,3 +2554,180 @@ if (window.speechSynthesis) window.speechSynthesis.getVoices();
 setTimeout(() => { initBallCanvas(); _syncMuteBtn(); toggleSendBtn(); }, 100);
 document.addEventListener('DOMContentLoaded', checkSession);
 console.log('✅ Heros loaded.');
+
+/* ════════ DEVELOPER MODE ════════ */
+let isDeveloperMode = false;
+let devConfig = { provider: 'openrouter', model: '', saveHistory: true };
+
+const devModels = {
+  openrouter: [
+    'nvidia/nemotron-3-nano-30b-a3b:free',
+    'google/gemma-4-26b-a4b-it:free',
+    'meta-llama/llama-3.3-70b-instruct:free',
+    'google/gemma-4-31b-it:free',
+    'nvidia/nemotron-nano-9b-v2:free',
+    'meta-llama/llama-3.2-3b-instruct:free',
+    'meta-llama/llama-3.3-70b:free',
+    'nvidia/nemotron-3-super-120b-a12b:free',
+    'custom'
+  ],
+  groq: [
+    'llama-3.1-8b-instant',
+    'openai/gpt-oss-120b',
+    'openai/gpt-oss-20b',
+    'llama-3.3-70b-versatile',
+    'qwen/qwen3.6-27b',
+    'qwen/qwen3-32b',
+    'custom'
+  ],
+  gemini: [
+    'gemini-3.5-flash',
+    'gemini-3.1-flash-lite',
+    'gemini-2.5-flash',
+    'gemini-2.5-flash-lite',
+    'custom'
+  ]
+};
+
+function openDeveloperModal() {
+  developerModal.style.display = 'flex';
+  onDevProviderChange(); // init dropdown
+}
+
+function closeDeveloperModal() {
+  developerModal.style.display = 'none';
+  if (!isDeveloperMode) {
+    const select = modelSelect;
+    if (select) select.value = currentModel || 'Baymax';
+  }
+}
+
+function onDevProviderChange() {
+  const provider = devProviderSelect.value;
+  const modelSelect = devModelSelect;
+  modelSelect.innerHTML = '';
+  devModels[provider].forEach(m => {
+    const opt = document.createElement('option');
+    opt.value = m;
+    opt.textContent = m === 'custom' ? 'Custom Input...' : m;
+    modelSelect.appendChild(opt);
+  });
+  onDevModelChange();
+}
+
+function onDevModelChange() {
+  const model = devModelSelect.value;
+  const customInput = devCustomModelInput;
+  if (model === 'custom') {
+    customInput.style.display = 'block';
+  } else {
+    customInput.style.display = 'none';
+  }
+}
+
+function startDeveloperSession() {
+  const provider = $('devProviderSelect').value;
+  const modelSelectVal = $('devModelSelect').value;
+  const customModel = $('devCustomModelInput').value.trim();
+
+  const finalModel = modelSelectVal === 'custom' ? customModel : modelSelectVal;
+  if (!finalModel) {
+    showNotification('Please enter a custom model name', 'error');
+    return;
+  }
+
+  if (provider === 'groq' && !hasGroqKey) {
+    showNotification('Groq API Key is required. Please set it in profile / settings / api key.', 'error');
+    return;
+  }
+  if (provider === 'openrouter' && !hasExistingApiKeys) {
+    showNotification('OpenRouter API Key is required. Please set it in profile / settings / api key.', 'error');
+    return;
+  }
+
+  isDeveloperMode = true;
+  devConfig = {
+    provider: provider,
+    model: finalModel
+  };
+
+  isFastMode = false;
+  const fastBtn = $('fastModeBtn');
+  if (fastBtn) { fastBtn.classList.remove('active'); fastBtn.style.display = 'none'; }
+  const toggleBtn = $('devSidebarToggleBtn');
+  if (toggleBtn) toggleBtn.style.display = '';
+  
+  const devSidebar = $('developerSidebar');
+  if (devSidebar) devSidebar.style.display = 'none'; // Default hidden as requested
+
+  const sideProv = $('sideDevProviderSelect');
+  if (sideProv) {
+    sideProv.value = provider;
+    onSideDevProviderChange();
+    const sideModel = $('sideDevModelSelect');
+    if (modelSelectVal === 'custom') {
+      sideModel.value = 'custom';
+      onSideDevModelChange();
+      $('sideDevCustomModelInput').value = customModel;
+    } else {
+      sideModel.value = finalModel;
+      onSideDevModelChange();
+    }
+  }
+
+  $('developerModal').style.display = 'none';
+  
+  newChat();
+  addSystemNote(`Started Developer Session (${provider.toUpperCase()}: ${finalModel})`);
+}
+
+function onSideDevProviderChange() {
+  const provider = $('sideDevProviderSelect').value;
+  const modelSelect = $('sideDevModelSelect');
+  if (!modelSelect) return;
+  modelSelect.innerHTML = '';
+  devModels[provider].forEach(m => {
+    const opt = document.createElement('option');
+    opt.value = m;
+    opt.textContent = m === 'custom' ? 'Custom Input...' : m;
+    modelSelect.appendChild(opt);
+  });
+  onSideDevModelChange();
+}
+
+function onSideDevModelChange() {
+  const model = $('sideDevModelSelect').value;
+  const customInput = $('sideDevCustomModelInput');
+  if (!customInput) return;
+  if (model === 'custom') {
+    customInput.style.display = 'block';
+  } else {
+    customInput.style.display = 'none';
+  }
+}
+
+function applySidebarDevConfig() {
+  const provider = $('sideDevProviderSelect').value;
+  const modelSelectVal = $('sideDevModelSelect').value;
+  const customModel = $('sideDevCustomModelInput').value.trim();
+  const finalModel = modelSelectVal === 'custom' ? customModel : modelSelectVal;
+  if (!finalModel) {
+    showNotification('Please enter a custom model name', 'error');
+    return;
+  }
+  
+  devConfig = {
+    provider: provider,
+    model: finalModel
+  };
+  addSystemNote(`Updated Developer Config (${provider.toUpperCase()}: ${finalModel})`);
+  showNotification('Developer configuration applied', 'success');
+}
+
+function toggleDevSidebar() {
+  const devSidebar = $('developerSidebar');
+  if (devSidebar) {
+    devSidebar.style.display = devSidebar.style.display === 'none' ? 'block' : 'none';
+  }
+}
+

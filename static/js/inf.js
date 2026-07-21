@@ -460,8 +460,12 @@ function toggleInsTheme() {
 
 // ── Sidebar ────────────────────────────────────────────────────
 function toggleInsSidebar() {
-  document.getElementById("insSidebar").classList.toggle("open");
+  const sb = document.getElementById("insSidebar");
+  const bd = document.getElementById("insSidebarBackdrop");
+  sb.classList.toggle("open");
+  bd?.classList.toggle("visible", sb.classList.contains("open"));
 }
+
 
 // ── Notification ───────────────────────────────────────────────
 function notify(msg, type = "info") {
@@ -581,6 +585,8 @@ async function openSession(sessionId) {
     // Close sidebar on mobile
     const sidebar = document.getElementById("insSidebar");
     if (sidebar) sidebar.classList.remove("open");
+    const backdrop = document.getElementById("insSidebarBackdrop");
+    if (backdrop) backdrop.classList.remove("visible");
 
   } catch (e) {
     notify("Failed to load session.", "error");

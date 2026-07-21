@@ -64,9 +64,9 @@ def process_audio(request):
     groq_client = get_groq_client(request)
     if not groq_client:
         return JsonResponse({
-            "error": "⚠️ Please log in to Hero AI and add your Groq API Key to use Zuno.",
-            "message": "🔑 **Groq API Key Missing**\n\nTo use Zuno, please configure your Groq API key in your Hero AI profile settings:\n1. Log in to your Hero AI account.\n2. Navigate to **Settings** / **API Keys**.\n3. Add your Groq API Key and save.",
-            "details": ["Please log in and configure your Groq API key in your profile settings."]
+            "error": "⚠️ Please log in to Heros and add your Groq API Key to use Zuno.",
+            "message": "🔑 **Groq API Key Missing**\n\nTo use Zuno, please configure your Groq API key in your account:\n1. Log in to your Heros account.\n2. Navigate to **Account** / **API Keys**.\n3. Add your Groq API Key and save.",
+            "details": ["Please log in and configure your Groq API key in your account settings."]
         }, status=500)
 
     try:

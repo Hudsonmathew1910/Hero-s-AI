@@ -35,15 +35,12 @@ _INTENT_RULES: list[tuple[str, list[str]]] = [
         r"\bgit\b", r"\bdocker\b", r"\bdjango\b", r"\bflask\b", r"\breact\b",
     ]),
 
-    # ── Web search / research ─────────────────────────────────────────────
+    # ── Web search / research (Legacy / Explicit overrides) ───────────────
+    # The new Agentic Orchestrator in handle_text will handle most implied searches.
+    # We only trigger forced web_search here if the user is extremely explicit.
     ("web_search", [
-        r"\bsearch\b", r"\bgoogle\b",
-        r"\b(?:what|who)\s+(?:is|are|was|were)\s+(?:the\s+)?(?:latest|current|recent|news)\b",
-        r"\b(?:who|what)\s+(?:is|are)\s+.*?\b(?:now|currently|today)\b",
-        r"\blatest\s+news\b", r"\bcurrent\s+price\b",
-        r"\blook\s+up\b", r"\bstock\s+(?:price|market)\b",
-        r"\bweather\b", r"\bnews\b", r"\btoday\b", r"\blatest\b",
-        r"\brecent\b", r"\bcurrent\b", r"\blive\b",
+        r"\bsearch\s+(?:for|google|web)\b",
+        r"\blook\s+up\s+on\s+(?:the\s+)?(?:web|google|internet)\b",
     ]),
 
     # ── Music / Zuno ──────────────────────────────────────────────────────

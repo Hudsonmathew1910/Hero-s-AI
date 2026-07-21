@@ -86,6 +86,8 @@ class Setting(models.Model):
     
     # Display & Behavior Settings
     enable_custom_instructions = models.BooleanField(default=True)
+    remember_history = models.BooleanField(default=False)
+    auto_read_aloud = models.BooleanField(default=False)
     
     updated_at = models.DateTimeField(auto_now=True)
 

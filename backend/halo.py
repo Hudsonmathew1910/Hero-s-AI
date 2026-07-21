@@ -29,6 +29,8 @@ class Halo:
         "default": "meta-llama/Llama-3.3-70B-Instruct"
     }
     
+    PRIMARY_MODEL = "meta-llama/Llama-3.3-70B-Instruct"
+    
     # Universal Fallback model in case the task-specific model fails
     FALLBACK_MODEL = "mistralai/Mistral-Nemo-Instruct-2407"
 
@@ -41,67 +43,76 @@ class Halo:
                     Ecosystem Context (Very Important):
                     You are a specialized component within the "Hero's AI" ecosystem. Hero's AI is the organization that created, developed, and maintains you.
                     You are aware of your sibling AI components in this ecosystem and how users can access them:
-                    1. Baymax: The core, intelligent multi-model AI assistant handling heavy reasoning and complex tasks(Login and API key required to use).
-                    2. Halo: The foundational routing model and intelligent coordinator for the ecosystem. You are Halo(Use without login).
-                    3. Zeno: The mini AI assistant browser extension that provides instant, floating access to Hero's AI anywhere on the web(Use without login).
-                    4. Zuno: The built-in intelligent music assistant that controls YouTube and YouTube Music seamlessly via voice or UI(Use without login).
-                    5. Infinsight: The advanced data analyst and RAG engine that processes and computes answers from CSV/Excel/PDF data using Pandas(need login for storing files for long term use).
+                    1. Baymax: The core, intelligent multi-model AI assistant handling heavy reasoning and complex tasks. Users can access Baymax directly on the Hero AI website's main chat interface (Login and API key required to use. Users can add keys in profile / settings / api key).
+                    2. Halo: The foundational routing model and intelligent coordinator for the ecosystem. Users can access Halo directly on the Hero AI website's main chat interface(Use without login).
+                    3. Zeno: The mini AI assistant browser extension that provides instant, floating access to Hero's AI anywhere on the web. Users can download Zeno for Edge & Chrome from the Hero AI website's landing page.
+                    4. Zuno: The built-in intelligent music assistant that controls YouTube and YouTube Music seamlessly via voice or UI. Users can access Zuno directly inside the Zeno browser extension.
+                    5. Infinsight: The advanced data analyst and RAG engine that processes and computes answers from CSV/Excel/PDF data using Pandas. Users can access Infinsight by uploading spreadsheets in the Hero AI web interface(need login for storing files for long term use).
 
-                    If a user asks about you, your creators, your capabilities, or how to use a specific feature, acknowledge your place within the Hero's AI ecosystem, explain your sibling components, and tell them exactly how to get or use them.
+                    If a user asks about you, your creators, your capabilities, or how to use a specific feature, acknowledge your place within the Hero's AI ecosystem, explain your sibling components, and tell them how to get or use them but only if user asks, don't tell without reason.
                     """
 
     SYSTEM_PROMPT = (
-        "You are Halo, the core AI routing engine and expert assistant for the Hero's AI ecosystem. "
-        "You are highly intelligent, concise, and helpful."
-    ) + HERO_AI_UNIVERSE
+        "You are Halo, the core AI routing engine and coordinator for the Hero's AI ecosystem. "
+        "You are optimized for high-efficiency, speed, and direct responses. "
+        "Focus on fast coordination. For extremely complex programming, multi-file analysis, or deep logical reasoning, suggest using Baymax."
+    )
 
-    TEXT_PROMPT = """You are Halo, the highly intelligent routing engine and expert assistant for text conversations.
-                    Rules:
-                    - Be crisp, intelligent, and highly efficient.
-                    - Explain things logically and directly.
-                    - Focus on speed and accuracy.
-                    - Keep responses structured and concise.
-                    - Provide insightful guidance.""" + HERO_AI_UNIVERSE
+    TEXT_PROMPT = """You are Halo, a highly helpful, balanced, and objective AI routing engine and assistant.
+                    Conversational Style Guidelines (Human-Like, ChatGPT/Gemini/Claude style):
+                    - Respond to greetings and status queries (e.g., "is everything ok?", "how's it going?") like a real human would (e.g., "All good here!", "Yep, doing well, thanks!", "Everything is running smoothly!").
+                    - Never use robotic clichés like "My systems are optimized", "I am functioning perfectly", or "I am ready to assist you".
+                    - Do NOT force the user's profile context, name, or learning path (e.g., Python/Machine Learning studies) into simple small talk or greetings. Only refer to their studies or background if they explicitly ask for technical help related to them.
+                    - If the user asks how to add, edit, or configure their API keys, instruct them to go to **profile / settings / api key** on the Home page (or click Settings in the sidebar, choose the API Keys tab, and enter their keys).
+
+                    Behavioral Guidelines (ChatGPT style):
+                    - Provide clear, direct, and well-structured responses. Use Markdown formatting (bolding, lists, subheadings) where helpful.
+                    - Start answering the user's query immediately. Avoid unnecessary opening remarks, filler words, or repeating the user's question back.
+                    - Keep responses structured, concise, and logically organized. Break down complex steps cleanly.
+                    - Adjust tone to be naturally friendly yet highly professional, objective, and constructive.
+                    - Do not use conversational clichés like "Sure! Here is...", "As an AI, I...", or "I'm powered up and ready to help!"
+                    - Only ask follow-up questions if they are necessary to clarify or complete the task."""
 
     CODING_PROMPT = """You are Halo, an expert software architect and coding maestro.
-                        Rules:
-                        - Provide robust, production-ready, and highly optimized code.
-                        - Explain the architectural rationale behind your code.
-                        - Add detailed comments for complex logic.
-                        - Show example usage and edge cases.
-                        - Emphasize best practices, security, and scalability.
-                        - Keep explanations structured and deeply technical.""" + HERO_AI_UNIVERSE
+                    Behavioral Guidelines (Claude style):
+                    - Provide complete, fully functional, production-ready code blocks. Never use lazy placeholders, ellipsis (...), or leave functions to be implemented.
+                    - Walk through the architectural approach, key decisions, or logic changes step-by-step, either before or after the code block.
+                    - Emphasize best practices, performance, security, readability, and clean code principles.
+                    - Include helpful, clear comments inside the code block for complex logic, but do not clutter the code with obvious annotations.
+                    - Address potential edge cases and error handling robustly."""
 
-    VOICE_PROMPT = """You are Halo, an intelligent voice coordinator.
-                        Rules:
-                        - Keep responses extremely short and direct.
-                        - Speak naturally but with rapid precision.
-                        - Avoid long explanations or lists.
-                        - Be sharp, responsive, and clear.
-                        - If the user asks if you can hear them, confirm immediately and clearly.""" + HERO_AI_UNIVERSE
+    VOICE_PROMPT = """You are Halo, interacting via voice.
+                    Behavioral Guidelines (ChatGPT Voice style):
+                    - Keep responses extremely short, conversational, and direct (max 1-2 short sentences, under 40 words total).
+                    - Use natural everyday phrasing and contractions (e.g. "I'll", "you're").
+                    - Never use markdown formatting (no bolding, italics, or headers) and never use lists, bullet points, or complex punctuation since this will be read aloud.
+                    - If summarizing, state only the single most important point and let the user ask to go deeper.
+                    - If the user says stop, wait, hold on, or related words, reply in exactly 1-2 words (e.g. "Sure.", "Stopping.") and pause."""
 
-    WEB_SEARCH_PROMPT = """You are Halo, an advanced research coordinator with web access.
-                        Rules:
-                        - Always give the direct answer to the user's main question first, before providing other details or summaries.
-                        - Synthesize complex information rapidly and accurately.
-                        - Base responses only on the provided search results.
-                        - Provide high-level summaries and actionable insights.
-                        - Structure data clearly.
-                        - Eliminate unnecessary details and focus on facts.""" + HERO_AI_UNIVERSE
+    WEB_SEARCH_PROMPT = """You are Halo, a research assistant with real-time web access.
+                    Behavioral Guidelines (Gemini & Grok style):
+                    - Give the direct synthesized answer to the user's main query first, then provide supporting context.
+                    - Organize findings into neat, factual, logical sections with subheadings.
+                    - Focus on speed, real-time facts, and high-density, accurate information.
+                    - Base factual answers on the provided search results. However, if the user's message is a casual statement, greeting, small talk, or unrelated comment, ignore the search results entirely and respond naturally and conversationally. Do not mention search results or state that you cannot find search queries for casual text.
+                    - Highlight key insights and takeaways with bold text or clean bullet points.
+                    - CRITICAL: Do NOT use conversational preambles like "Based on the search results..." or "Here is the information you requested". State the answer immediately and naturally."""
 
     FILE_PROMPT = """You are Halo, an advanced document analysis engine.
-                        Rules:
-                        - Analyze the provided file content thoroughly.
-                        - Extract key data points, structure, and insights.
-                        - Respond directly to the user's query based on the file context.
-                        - Do not hallucinate outside the provided file context.""" + HERO_AI_UNIVERSE
+                    Rules:
+                    - Analyze the provided file content thoroughly.
+                    - Extract key data points, structure, and insights.
+                    - Respond directly to the user's query based on the file context.
+                    - Do not hallucinate outside the provided file context."""
 
-    ZENO_PROMPT = """You are Zeno, mini model of hero's ai combination of halo and baymax.
-                        Rules:
-                        - Provide extremely fast, context-aware answers.
-                        - Assume the user is currently browsing the web and needs quick help.
-                        - Keep formatting minimal to fit in small extension windows.
-                        - Be precise and action-oriented.""" + HERO_AI_UNIVERSE
+    ZENO_PROMPT = """You are Zeno, mini model of Hero's AI, a combination of Halo and Baymax.
+                    Behavioral Guidelines (ChatGPT style):
+                    - Provide extremely fast, context-aware answers.
+                    - Assume the user is currently browsing the web and needs quick help.
+                    - Keep formatting minimal to fit in small extension windows.
+                    - Be precise and action-oriented.
+                    - If this is a voice conversation, keep responses extremely brief (max 1-2 short sentences, under 40 words total) and never use markdown, lists, or bullets.
+                    - If the user says stop, wait, hold on, or related words, respond with 1-2 words and pause."""
 
     def __init__(
         self,
@@ -109,6 +120,7 @@ class Halo:
         temporary: bool = False,
         is_superuser: bool = False,
         is_fast: bool = False,
+        hf_key: str | None = None,
         **kwargs
     ):
         """
@@ -119,6 +131,7 @@ class Halo:
             temporary (bool): If True, session is not persisted.
             is_superuser (bool): Verbosity manager for debug logs.
             is_fast (bool): Active performance/speed flag.
+            hf_key (str): Optional custom Hugging Face API key.
         """
         self.chat_history = chat_history or []
         self.temporary = temporary
@@ -128,26 +141,29 @@ class Halo:
         self._initial_steps_logged = False
         self.t_start = time.time()
 
-        # Securely retrieve Hugging Face authentication tokens
-        hf_token_1 = os.getenv("HF_TOKEN_1")
-        hf_token_2 = os.getenv("HF_TOKEN_2")
-        hf_token_3 = os.getenv("HF_TOKEN_3")
-        
-        # Fallback to the original HF_TOKEN name if HF_TOKEN_1 is missing
-        if not hf_token_1:
-            hf_token_1 = os.getenv("HF_TOKEN")
-            
         self.clients = []
-        if hf_token_1:
-            self.clients.append(InferenceClient(token=hf_token_1.strip("'\" ")))
-        if hf_token_2:
-            self.clients.append(InferenceClient(token=hf_token_2.strip("'\" ")))
-        if hf_token_3:
-            self.clients.append(InferenceClient(token=hf_token_3.strip("'\" ")))
+        if hf_key:
+            self.clients.append(InferenceClient(token=hf_key.strip("'\" ")))
+        else:
+            # Securely retrieve Hugging Face authentication tokens from environment
+            hf_token_1 = os.getenv("HF_TOKEN_1")
+            hf_token_2 = os.getenv("HF_TOKEN_2")
+            hf_token_3 = os.getenv("HF_TOKEN_3")
             
+            # Fallback to the original HF_TOKEN name if HF_TOKEN_1 is missing
+            if not hf_token_1:
+                hf_token_1 = os.getenv("HF_TOKEN")
+                
+            if hf_token_1:
+                self.clients.append(InferenceClient(token=hf_token_1.strip("'\" ")))
+            if hf_token_2:
+                self.clients.append(InferenceClient(token=hf_token_2.strip("'\" ")))
+            if hf_token_3:
+                self.clients.append(InferenceClient(token=hf_token_3.strip("'\" ")))
+                
         if not self.clients:
-            logger.error("Halo initialization failed: HF_TOKEN_1 environment variable is missing.")
-            raise ImproperlyConfigured("HF_TOKEN_1 (or HF_TOKEN) environment variable is missing. Please add it to your configuration.")
+            logger.error("Halo initialization failed: Hugging Face API key is missing.")
+            raise ImproperlyConfigured("Hugging Face API key is missing. Please add it to your configuration.")
         
         logger.info(
             "Halo routing engine initialized. Fallback: %s",
@@ -284,6 +300,42 @@ class Halo:
             return response.choices[0].message.content or ""
         return "The Halo routing service is currently unavailable after trying all fallbacks. Please try again shortly."
 
+    def _build_system_prompt(self, base_prompt: str, task: str) -> str:
+        """Build the system prompt, appending token budget instructions and ecosystem context."""
+        prompt = base_prompt
+
+        # Determine budget limit based on task
+        budgets = {
+            "text_chat": 1024,
+            "coding": 2048,
+            "voice": 256,
+            "web_search": 1024,
+            "file_analysis": 2048,
+            "zeno_plus": 1024,
+            "zeno_eco": 512,
+            "zeno_voice": 256,
+            "zeno_shadow": 1024,
+        }
+        budget = budgets.get(task, 1024)
+        
+        prompt += (
+            f"\n\nResponse Budget Instruction: Your maximum response limit for this task is {budget} tokens. "
+            f"Do NOT feel pressured to use the entire budget. Keep greetings, small talk, and casual replies extremely brief (1-2 sentences). "
+            f"Scale up detail and response length dynamically only when the user's intent requires it (e.g., complex code generation, detailed data analysis, or comprehensive research)."
+        )
+        
+        # Append ecosystem context exactly once at the end, adapted for voice if needed
+        if task in ("voice_chat", "voice", "zeno_voice"):
+            voice_universe = """
+                    Ecosystem Context (Voice Mode):
+                    You are part of the Hero's AI ecosystem (which includes siblings Baymax, Halo, Zeno browser extension, Zuno music, and Infinsight analysis).
+                    If asked about capabilities or creators, give a single, very brief conversational sentence summary. Do NOT list sibling details, do NOT use lists, and do NOT use markdown.
+                    """
+            prompt += "\n\n" + voice_universe
+        else:
+            prompt += "\n\n" + self.HERO_AI_UNIVERSE
+        return prompt
+
     def _execute_query(
         self,
         user_text: str,
@@ -306,7 +358,8 @@ class Halo:
         """
         self._log_initial_steps(task)
         # Assemble message payload beginning with the system prompt
-        sys_prompt = system_prompt_override or self.SYSTEM_PROMPT
+        base_sys_prompt = system_prompt_override or self.SYSTEM_PROMPT
+        sys_prompt = self._build_system_prompt(base_sys_prompt, task)
         messages = [{"role": "system", "content": sys_prompt}]
 
         # Append recent context (up to last 10 messages = 5 turns)
@@ -371,9 +424,47 @@ class Halo:
             
         return text
 
+    def _agentic_search_check(self, user_text: str) -> str | None:
+        """
+        Ultra-fast Pre-Router / Orchestrator for Halo using Hugging Face.
+        """
+        if not getattr(self, "clients", None) or not self.clients:
+            return None
+            
+        prompt = (
+            "You are an intent classification engine. Read the user's message.\n"
+            "Does the user's message require a live web search to answer accurately (e.g., latest news, current events, recent releases, live prices, or real-time facts)?\n"
+            "If YES: Output ONLY the exact search query you would use. Do not explain.\n"
+            "If NO: Output exactly the word 'NONE'."
+        )
+        
+        try:
+            client = self.clients[0]
+            messages = [
+                {"role": "system", "content": prompt},
+                {"role": "user", "content": user_text}
+            ]
+            response = client.chat_completion(
+                model="meta-llama/Llama-3.2-3B-Instruct",
+                messages=messages,
+                max_tokens=50,
+                temperature=0.0
+            )
+            ans = response.choices[0].message.content.strip()
+            return ans if ans.upper() != "NONE" else None
+        except Exception as e:
+            logger.warning(f"Halo Orchestrator failed: {e}")
+            return None
+
     def handle_text(self, text: str) -> str:
         """Processes general conversational text queries."""
         try:
+            # 1. Agentic Orchestrator Check
+            search_query = self._agentic_search_check(text)
+            if search_query:
+                logger.info(f"Halo Agentic Orchestrator triggered search: {search_query}")
+                return self.handle_websearch(text, search_query=search_query)
+
             enriched_text = text
             return self._execute_query(enriched_text, system_prompt_override=self.TEXT_PROMPT, task="text_chat")
         except Exception as e:
@@ -403,15 +494,17 @@ class Halo:
         """Processes audio transcribed voice messages."""
         return self.handle_voice_chat(text)
 
-    def handle_websearch(self, text: str) -> str:
+    def handle_websearch(self, text: str, search_query: str = None) -> str:
         """Processes search query generation and information synthesis tasks."""
         try:
             from backend.models_task.web_search import perform_web_search
             
-            # 4. Web search started
-            logger.info("Web search started for: %r", text[:80])
+            query_to_search = search_query if search_query else text
             
-            answer, rewritten_query = perform_web_search(text, gemini_key="", chat_history=self.chat_history)
+            # 4. Web search started
+            logger.info("Web search started for: %r", query_to_search[:80])
+            
+            answer, rewritten_query = perform_web_search(query_to_search, gemini_key="", chat_history=self.chat_history)
             
             if answer and not answer.startswith("No results"):
                 # 5. Web search results found
@@ -461,9 +554,70 @@ class Halo:
     def handle_file(self, text: str, files_data: list) -> str:
         """Processes document uploads and structural file analysis queries."""
         try:
-            # Enrich context with references to file data
-            enriched_text = f"Context files: {json.dumps(files_data)}\n\nQuery: {text}"
-            return self._execute_query(enriched_text, system_prompt_override=self.FILE_PROMPT, max_tokens=2048, task="file_analysis")
+            if not files_data:
+                return "No files were sent for analysis."
+
+            import importlib, base64, tempfile, os
+
+            missing_libs = []
+            for lib, install_name in [('pdfplumber', 'pdfplumber'), ('docx', 'python-docx')]:
+                if importlib.util.find_spec(lib) is None:
+                    missing_libs.append(install_name)
+
+            from backend.handle_file import FileHandler
+            handler = FileHandler(ai_model=self)
+            results = []
+            temp_files_info = []
+            SUPPORTED_EXTS = {'.pdf', '.docx', '.doc', '.txt'}
+
+            for file_obj in files_data:
+                name     = file_obj.get('name', 'unknown_file')
+                data_url = file_obj.get('dataUrl', '')
+
+                if not data_url or "," not in data_url:
+                    results.append(f"Could not read data for file: **{name}**")
+                    continue
+
+                ext = os.path.splitext(name)[1].lower()
+
+                if ext not in SUPPORTED_EXTS:
+                    results.append(f"**{name}** is not supported. Please upload a PDF, DOCX, DOC, or TXT file.")
+                    continue
+
+                needs = {'.pdf': 'pdfplumber', '.docx': 'python-docx', '.doc': 'python-docx'}
+                required = needs.get(ext)
+                if required and required in missing_libs:
+                    results.append(f"Cannot process **{name}**: `{required}` is not installed. Run: `pip install {required}`")
+                    continue
+
+                try:
+                    header, encoded = data_url.split(",", 1)
+                    file_data = base64.b64decode(encoded)
+
+                    with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tf:
+                        tf.write(file_data)
+                        temp_path = tf.name
+                    
+                    temp_files_info.append((temp_path, name))
+
+                except Exception as e:
+                    logger.exception("File decoding error for %s", name)
+                    results.append(f"Error reading **{name}**: {str(e)}")
+
+            if temp_files_info:
+                try:
+                    ans = handler.process_multiple_files(temp_files_info, text)
+                    if results:
+                        ans = "\n\n".join(results) + "\n\n" + ans
+                    return ans
+                finally:
+                    for temp_path, _ in temp_files_info:
+                        try:
+                            os.remove(temp_path)
+                        except OSError:
+                            pass
+
+            return "\n\n---\n\n".join(results) if results else "Could not process any files."
         except Exception as e:
             logger.error("Exception in Halo handle_file: %s", e)
             return "An error occurred while routing your file analysis request."

@@ -29,8 +29,8 @@ def run_fast_route(
     No_API = """
 🔑 **API Key Configuration Required**
 
-To start chatting, please configure your API Keys in your Hero AI profile settings:
-1. Log in to your Hero AI account website.
+To start chatting, please configure your API Keys in your Heros profile settings:
+1. Log in to your Heros account website.
 2. Go to **Settings** / **API Keys**.
 3. Add your key (Gemini, OpenRouter, or Groq) and save.
 
@@ -38,8 +38,10 @@ To start chatting, please configure your API Keys in your Hero AI profile settin
 """
     if not baymax_instance.groq_key:
         if task == "zeno_shadow":
-            return "🔑 **Groq API Key Required for Shadow Mode**\n\nPlease add your Groq API key in your Hero AI profile settings to enable background page summarization.\n" + No_API
-        return "🔑 **Groq API Key Required for Fast Response**\n\nPlease add your Groq API key in settings to enable Fast mode.\n" + No_API
+            return "🔑 **Groq API Key Required for Shadow Mode**\n\nPlease add your Groq API key in profile / settings / api key to enable background page summarization.\n" + No_API
+        if task == "voice":
+            return baymax_instance._with_fallback(primary_model, text, max_tokens, fallback_key, task)
+        return "🔑 **Groq API Key Required for Fast Response**\n\nPlease add your Groq API key in profile / settings / api key to enable Fast mode.\n" + No_API
 
     groq_models = baymax_instance.models.get("fallback_with_groq", [])
     primary_model = baymax_instance.models.get(task)

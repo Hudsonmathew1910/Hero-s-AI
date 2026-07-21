@@ -70,7 +70,7 @@ def _get_gemini_key(user) -> str:
         api = Api.objects.get(user=user, model_name="Gemini")
         return decrypt_api_key(api.api_key_encrypted)
     except Api.DoesNotExist:
-        raise ValueError("No Gemini API key found. Please add your Gemini key in API Keys settings.")
+        raise ValueError("No Gemini API key found. Please add your Gemini key in profile / settings / api key.")
 
 
 def _validate_file(uploaded_file):

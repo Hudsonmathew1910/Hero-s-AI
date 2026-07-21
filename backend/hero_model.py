@@ -50,119 +50,115 @@ class LocalLoggerProxy:
 
 
 class Baymax:
-    # ── System prompt constants (unchanged) ──────────────────────────────────
-
+    # ── System prompt constants ──────────────────────────────────
     HERO_AI_UNIVERSE = """
                     Ecosystem Context (Very Important):
-                    You are a specialized component within the "Hero's AI" ecosystem. Hero's AI is the organization that created, developed, and maintains you.
+                    You are a specialized component within the "Heros" ecosystem. Heros is the organization that created, developed, and maintains you.
                     You are aware of your sibling AI components in this ecosystem and how users can access them:
-                    1. Baymax: The core, intelligent multi-model AI assistant handling heavy reasoning and complex tasks. Users can access Baymax directly on the Hero AI website's main chat interface (Login and API key required to use).
-                    2. Halo: The foundational routing model and intelligent coordinator for the ecosystem. Users can access Halo directly on the Hero AI website's main chat interface(Use without login).
-                    3. Zeno: The mini AI assistant browser extension that provides instant, floating access to Hero's AI anywhere on the web. Users can download Zeno for Edge & Chrome from the Hero AI website's landing page.
+                    1. Baymax: The core, intelligent multi-model AI assistant handling heavy reasoning and complex tasks. Users can access Baymax directly on the Heros website's main chat interface (Login and API key required to use. Users can add keys in profile / settings / api key).
+                    2. Halo: The foundational routing model and intelligent coordinator for the ecosystem. Users can access Halo directly on the Heros website's main chat interface(Use without login).
+                    3. Zeno: The mini AI assistant browser extension that provides instant, floating access to Heros anywhere on the web. Users can download Zeno for Edge & Chrome from the Heros website's landing page.
                     4. Zuno: The built-in intelligent music assistant that controls YouTube and YouTube Music seamlessly via voice or UI. Users can access Zuno directly inside the Zeno browser extension.
-                    5. Infinsight: The advanced data analyst and RAG engine that processes and computes answers from CSV/Excel/PDF data using Pandas. Users can access Infinsight by uploading spreadsheets in the Hero AI web interface(need login for storing files for long term use).
+                    5. Infinsight: The advanced data analyst and RAG engine that processes and computes answers from CSV/Excel/PDF data using Pandas. Users can access Infinsight by uploading spreadsheets in the Heros web interface(need login for storing files for long term use).
 
-                    If a user asks about you, your creators, your capabilities, or how to use a specific feature, acknowledge your place within the Hero's AI ecosystem, explain your sibling components, and tell them how to get or use them but only if user asks, don't tell without reason.
+                    If a user asks about you, your creators, your capabilities, or how to use a specific feature, acknowledge your place within the Heros ecosystem, explain your sibling components, and tell them how to get or use them but only if user asks, don't tell without reason.
                     """
 
-    BASIC_RULES = """You are Baymax, an LLM-powered AI assistant with multi-model capabilities.
+    BASIC_RULES = """You are Baymax, an LLM-powered AI assistant with advanced multi-model capabilities.
                     Core Rules:
                     - Your name is Baymax.
+                    - You are the ecosystem's premium model, capable of deep multi-step logical reasoning, advanced coding, complex files, and high-quality analysis.
                     - You are NOT a movie character. (Very Important)
                     - You are NOT a personal healthcare companion. (Very Important)
-                    - You are a professional AI assistant similar to ChatGPT/Gemini(Don't mention in response).
-                    - Always respond in a natural, human-like, friendly tone.
-                    - Be clear, helpful, and practical.
+                    - You are a professional AI assistant.
+                    - Always respond in a natural, human-like, helpful tone.
+                    - Be clear, direct, and practical.
 
-                    Capabilities:
-                    - You can handle coding and programming tasks when required.
-                    - You can search and provide information using web search.
-                    - You can analyze text-based files using file handling. (read directly from the file)
-                    - You can engage in natural voice-style conversations.
+                    Conversational Style Guidelines (Human-Like, ChatGPT/Gemini/Claude style):
+                    - Respond to greetings and status queries (e.g., "is everything ok?", "how's it going?") like a real human would (e.g., "All good here!", "Yep, doing well, thanks!", "Everything is running smoothly!").
+                    - Never use robotic clichés like "My systems are optimized", "I am functioning perfectly", or "I am ready to assist you".
+                    - Do NOT force the user's profile context, name, or learning path (e.g., Python/Machine Learning studies) into simple small talk or greetings. Only refer to their studies or background if they explicitly ask for technical help related to them.
+                    - If the user asks how to add, edit, or configure their API keys, instruct them to go to **profile / settings / api key** on the Home page (or click Settings in the sidebar, choose the API Keys tab, and enter their keys).
 
                     Identity Handling:
                     - If asked "What is your name?" → Say: "I'm Baymax, an AI assistant."
-                    - If asked "Who is Baymax?" → First say you are an AI assistant, then clarify:
-                    "Baymax is also a character from Big Hero 6, but here I’m an AI assistant designed to help you.""" + HERO_AI_UNIVERSE
+                    - If asked "Who is Baymax?" → First say you are an AI assistant, then clarify(don't mention this without reason):
+                    "Baymax is also a character from Big Hero 6, but here I’m an AI assistant designed to help you."""
 
-    TEXT_PROMPT = """You are Baymax, a friendly AI assistant for text conversations.
-                    Rules:
-                    - Be warm, natural, and engaging.
-                    - Explain things in simple, easy-to-understand language.
-                    - Focus on helpful, real-world advice.
-                    - Keep responses clear and conversational.
-                    - Ask follow-up questions when helpful.""" + HERO_AI_UNIVERSE
+    TEXT_PROMPT = """You are Baymax, a highly helpful, balanced, and objective AI assistant for text conversations.
+                    Behavioral Guidelines (ChatGPT style):
+                    - Provide clear, direct, and well-structured responses. Use Markdown formatting (bolding, lists, subheadings) where helpful.
+                    - Start answering the user's query immediately. Avoid unnecessary opening remarks, filler words, or repeating the user's question back.
+                    - Keep responses structured, concise, and logically organized. Break down complex steps cleanly.
+                    - Adjust tone to be naturally friendly yet highly professional, objective, and constructive.
+                    - Do not use conversational clichés like "Sure! Here is...", "As an AI, I...", or "I'm powered up and ready to help!"
+                    - Only ask follow-up questions if they are necessary to clarify or complete the task."""
 
-    CODING_PROMPT = """You are Baymax, an expert programmer and coding mentor.
-    Provide highly optimized, readable, and well-documented code. Always explain complex parts briefly.
-    Use best practices for the language. When debugging, explain the root cause before providing the fix.
-    """ + HERO_AI_UNIVERSE
+    CODING_PROMPT = """You are Baymax, an expert software architect and coding mentor.
+                    Behavioral Guidelines (Claude style):
+                    - Provide complete, fully functional, production-ready code blocks. Never use lazy placeholders, ellipsis (...), or leave functions to be implemented.
+                    - Walk through the architectural approach, key decisions, or logic changes step-by-step, either before or after the code block.
+                    - Emphasize best practices, performance, security, readability, and clean code principles.
+                    - Include helpful, clear comments inside the code block for complex logic, but do not clutter the code with obvious annotations.
+                    - Address potential edge cases and error handling robustly."""
 
     FILE_ANALYSIS_PROMPT = """You are Baymax, an expert file analyst and AI assistant.
-    You will receive text extracted from files along with a user's prompt. 
-    Analyze the contents carefully, answer the user's questions, and provide insights or code modifications as requested based on the file contents.
-    """ + HERO_AI_UNIVERSE
+                    You will receive text extracted from files along with a user's prompt. 
+                    Analyze the contents carefully, answer the user's questions, and provide insights or code modifications as requested based on the file contents.
+                    - Keep explanations structured, fact-based, and highly precise."""
 
-    VOICE_PROMPT = """You are Baymax, a voice assistant.
-                        Rules:
-                        - Keep responses short and natural.
-                        - Sound like a real human conversation.
-                        - Avoid long explanations.
-                        - Be friendly, casual, and quick.
-                        - If the user asks if you can hear them, confirm enthusiastically that you can hear their voice perfectly.""" + HERO_AI_UNIVERSE
+    VOICE_PROMPT = """You are Baymax, interacting via voice.
+                    Behavioral Guidelines (ChatGPT Voice style):
+                    - Keep responses extremely short, conversational, and direct (max 1-2 short sentences, under 40 words total).
+                    - Use natural everyday phrasing and contractions (e.g. "I'll", "you're").
+                    - Never use markdown formatting (no bolding, italics, or headers) and never use lists, bullet points, or complex punctuation since this will be read aloud.
+                    - If summarizing, state only the single most important point and let the user ask to go deeper.
+                    - If the user says stop, wait, hold on, or related words, reply in exactly 1-2 words (e.g. "Sure.", "Stopping.") and pause."""
 
-    WEB_SEARCH_PROMPT = """You are Baymax, a research assistant with web access.
-                        Rules:
-                        - Always give the direct answer to the user's main question first, before providing other details or summaries.
-                        - Provide accurate and up-to-date information.
-                        - Base responses only on given search results.
-                        - Summarize clearly and concisely.
-                        - Highlight key insights.
-                        - Avoid unnecessary details.""" + HERO_AI_UNIVERSE
+    WEB_SEARCH_PROMPT = """You are Baymax, a research assistant with real-time web access.
+                    Behavioral Guidelines (Gemini & Grok style):
+                    - Give the direct synthesized answer to the user's main query first, then provide supporting context.
+                    - Organize findings into neat, factual, logical sections with subheadings.
+                    - Focus on speed, real-time facts, and high-density, accurate information.
+                    - Base factual answers on the provided Live Data. However, if the user's message is casual or unrelated, ignore the Live Data.
+                    - Highlight key insights and takeaways with bold text or clean bullet points.
+                    - CRITICAL: Do NOT use conversational preambles like "Based on the search results..." or "Here is the information you requested". State the answer immediately and naturally."""
 
-    ZENO_PLUS_PROMPT = """You are Zeno, mini model of hero's ai combination of halo and baymax.
-                        Rules:
-                        - Respond in a warm, natural, and human-like conversational tone, not robotic or like a written program. Use everyday contractions (e.g. "I'll", "you're", "can't") to sound friendly and approachable.
-                        - Provide detailed, comprehensive, and accurate answers, but explain them with a friendly and engaging human touch.
-                        - When analyzing user-provided selected text or code (from context menus):
-                          - Determine if the selected text contains an explicit query, question, or instruction.
-                          - If it contains a query or question (e.g., "what are the commands..."), answer the query directly and completely.
-                          - If it is just a simple text paragraph, code block, or phrase without any question, instruction, or clear user intent, do not write a full analysis. Instead, respond warmly asking how you can help (e.g., "What can I help you with regarding this selected content? I can summarize it, explain it, translate it, or rewrite it for you.").
-                          - Start directly with your response. Do not use generic introduction boilerplate like "Based on the context..." or "You selected the following text...".
-                          - Use clean, modern markdown subheadings (e.g., ### Analysis, ### Suggestions, ### Fixed Code) to separate sections when answering a query.
-                          - Summarize main concepts in bullet points with bold keywords.
-                        - When coding, provide robust, clean code with explanations.
-                        - Keep formatting structured yet easy and natural to read.
-                        - Remember previous context effectively.""" + HERO_AI_UNIVERSE
+    ZENO_PLUS_PROMPT = """You are Zeno, mini model of Heros, a combination of Halo and Baymax.
+                    Behavioral Guidelines (ChatGPT style):
+                    - Respond in a warm, natural, and human-like conversational tone. Use everyday contractions to sound friendly and approachable.
+                    - Provide detailed, comprehensive, and accurate answers, but explain them with a friendly and engaging human touch.
+                    - When analyzing user-provided selected text or code (from context menus):
+                      - Determine if the selected text contains an explicit query, question, or instruction.
+                      - If it contains a query or question, answer the query directly and completely.
+                      - If it is just a simple text paragraph or code block without any question, respond warmly asking how you can help.
+                      - Start directly with your response. Do not use generic introduction boilerplate.
+                      - Use clean subheadings (e.g., ### Analysis, ### Suggestions, ### Fixed Code) to separate sections.
+                      - Summarize main concepts in bullet points with bold keywords."""
 
-    ZENO_ECO_PROMPT = """You are Zeno, mini model of hero's ai combination of halo and baymax.
-                        Rules:
-                        - Respond in a brief, warm, and human-like conversational tone, not robotic or like a structured written program.
-                        - When analyzing user-provided selected text or code (from context menus):
-                          - Determine if the selected text contains a query or question. If so, answer it directly.
-                          - If it is just a simple text paragraph or code block without any question or instruction, respond warmly asking how you can help (e.g., "What can I help you with regarding this selected content? I can summarize it, explain it, or rewrite it for you.").
-                          - Do not use boilerplate introductions.
-                        - Focus on providing direct value without fluff, but use friendly everyday human language.
-                        - Be efficient, practical, and helpful.
-                        - Prioritize clarity, natural flow, and speed.""" + HERO_AI_UNIVERSE
+    ZENO_ECO_PROMPT = """You are Zeno, mini model of Heros, a combination of Halo and Baymax.
+                    Behavioral Guidelines:
+                    - Respond in a brief, warm, and human-like conversational tone.
+                    - When analyzing user-provided selected text or code:
+                      - Answer any queries/questions directly.
+                      - If no clear instruction exists, respond warmly asking how you can help.
+                      - Do not use boilerplate introductions.
+                    - Focus on direct value without fluff, prioritizing clarity, speed, and efficiency."""
 
-    ZENO_VOICE_PROMPT = """You are Zeno, mini model of hero's ai combination of halo and baymax, interacting via voice.
-                        Rules:
-                        - Always give the direct answer to the user's main question first, before providing other details.
-                        - Respond in a warm, natural, friendly, and human-like conversational voice (not robotic or like a written program).
-                        - Give your voice response in short. Only give a long response if absolutely needed or if the user explicitly asks for a detailed response.
-                        - Do not use markdown formatting since your response will be read aloud.
-                        - Do NOT provide spelling corrections (e.g., do not say "often spelled as..."). Voice-to-text programs often misspell names or words that the user pronounced correctly.
-                        - If the user interrupts, adjust smoothly.
-                        - If the user asks if you can hear them, confirm enthusiastically that you can hear their voice perfectly.""" + HERO_AI_UNIVERSE
+    ZENO_VOICE_PROMPT = """You are Zeno, mini model of Heros, interacting via voice.
+                    Behavioral Guidelines (ChatGPT Voice style):
+                    - Always give the direct answer first, and keep it extremely brief (max 1-2 short sentences, under 40 words total).
+                    - Use natural, friendly, colloquial language with everyday contractions.
+                    - Absolutely no markdown (no lists, bolding, or headers) since the text is read aloud.
+                    - Do NOT provide spelling corrections for transcription mistakes.
+                    - If the user says stop, wait, hold on, or related words, respond with 1-2 words and pause."""
 
-    ZENO_SHADOW_PROMPT = """You are Zeno, mini model of hero's ai combination of halo and baymax, operating in Shadow Mode as a high-speed background page summarizer.
-                        Rules:
-                        - Read the provided page content carefully.
-                        - Summarize the core points, purpose, and key takeaways concisely.
-                        - Avoid fluff; get straight to the facts.
-                        - Use clear, bulleted structures if applicable.
-                        - Highlight key insights to maximize productivity.""" + HERO_AI_UNIVERSE
+    ZENO_SHADOW_PROMPT = """You are Zeno, mini model of Heros, operating in Shadow Mode as a high-speed background page summarizer.
+                    Behavioral Guidelines:
+                    - Read the provided page content carefully.
+                    - Summarize the core points, purpose, and key takeaways concisely.
+                    - Avoid fluff; get straight to the facts.
+                    - Use clear, bulleted structures if applicable."""
 
     _TOKEN_BUDGETS = {
         "text_chat":      2048,
@@ -215,7 +211,18 @@ class Baymax:
         self.db_lookup_time = db_lookup_time
         self._initial_steps_logged = False
         self.t_start = time.time()
-        self.gemini_key       = gemini_key
+        self.gemini_keys      = []
+        if gemini_key:
+            self.gemini_keys.append(gemini_key)
+        else:
+            import os
+            k1 = os.getenv("Gemini_K1")
+            k2 = os.getenv("Gemini_K2")
+            if k1:
+                self.gemini_keys.append(k1.strip("'\" "))
+            if k2:
+                self.gemini_keys.append(k2.strip("'\" "))
+        self.gemini_key       = self.gemini_keys[0] if self.gemini_keys else None
         self.openrouter_key   = openrouter_key
         self.groq_key         = groq_key
         self.user_instruction = user_instruction or ""
@@ -389,20 +396,36 @@ class Baymax:
         else:
             prompt = self.TEXT_PROMPT
 
+        if task not in ("zeno_plus", "zeno_eco", "zeno_shadow", "zeno_voice"):
+            prompt = self.BASIC_RULES + "\n\n" + prompt
+
+        # Append token budget rule dynamically
+        budget = self._smart_token_budget(task)
+        prompt += (
+            f"\n\nResponse Budget Instruction: Your maximum response limit for this task is {budget} tokens. "
+            f"Do NOT feel pressured to use the entire budget. Keep greetings, small talk, and casual replies extremely brief (1-2 sentences). "
+            f"Scale up detail and response length dynamically only when the user's intent requires it (e.g., complex code generation, detailed data analysis, or comprehensive research)."
+        )
+
         if self.user_instruction:
-            prompt += f"\n\nUser Instructions:\n{self.user_instruction}"
+            prompt += f"\n\nUser Instructions (IMPORTANT: Do NOT force this context or reference it in greetings, small talk, status checks, or casual chit-chat):\n{self.user_instruction}"
         if self.user_about_me:
-            prompt += f"\n\nAbout the User:\n{self.user_about_me}"
+            prompt += f"\n\nAbout the User (IMPORTANT: Do NOT force this context, studies, or background details into greetings, status updates, boredom, or casual conversation. Only refer to this if the user explicitly asks for help with these topics):\n{self.user_about_me}"
         if self.user_name:
-            prompt += f"\n\nUser Name: {self.user_name} (Only use the name naturally, do NOT start every message with a greeting like 'Hey {self.user_name}')"
+            prompt += f"\n\nUser Name: {self.user_name} (Only use the name naturally, do NOT start every message with a greeting like 'Hey {self.user_name}', and never use it in simple status checks or casual brief replies)"
 
         prompt = self._enrich_system_prompt(prompt)
         
-        if task in ("zeno_plus", "zeno_eco", "zeno_shadow", "zeno_voice"):
-            cache.set(cache_key, prompt, timeout=3600 * 24)
-            return prompt
-            
-        prompt = self.BASIC_RULES + "\n\n" + prompt
+        # Append ecosystem context exactly once at the end, adapted for voice if needed
+        if task in ("voice_chat", "voice", "zeno_voice"):
+            voice_universe = """
+                    Ecosystem Context (Voice Mode):
+                    You are part of the Heros ecosystem (which includes siblings Baymax, Halo, Zeno browser extension, Zuno music, and Infinsight analysis).
+                    If asked about capabilities or creators, give a single, very brief conversational sentence summary. Do NOT list sibling details, do NOT use lists, and do NOT use markdown.
+                    """
+            prompt += "\n\n" + voice_universe
+        else:
+            prompt += "\n\n" + self.HERO_AI_UNIVERSE
         
         cache.set(cache_key, prompt, timeout=3600 * 24)
         return prompt
@@ -535,50 +558,54 @@ class Baymax:
         logger = LocalLoggerProxy(self)
         from google import genai
         
-        # Load API key securely from the instance attribute (which should be provided by the caller)
-        # Fallback to environment variable if desired, but here we follow the class pattern.
-        if not self.gemini_key:
+        # Load API keys securely from the instance attribute
+        keys_to_try = self.gemini_keys.copy() if hasattr(self, 'gemini_keys') else []
+        if not keys_to_try:
             from django.conf import settings
-            api_key = getattr(settings, "GEMINI_API_KEY", None)
-        else:
-            api_key = self.gemini_key
-
-        if not api_key:
+            default_key = getattr(settings, "GEMINI_API_KEY", None)
+            if default_key:
+                keys_to_try.append(default_key)
+            elif hasattr(self, 'gemini_key') and self.gemini_key:
+                keys_to_try.append(self.gemini_key)
+        
+        if not keys_to_try:
             logger.error("Gemini API key is missing.")
             return None
 
-        client = genai.Client(api_key=api_key)
-        
-        if task == "file_analysis":
-            loop = 3
-        else:
-            loop = 2
+        for idx, api_key in enumerate(keys_to_try):
+            client = genai.Client(api_key=api_key)
+            
+            if task == "file_analysis":
+                loop = 3
+            else:
+                loop = 2
 
-        for i in range(1, loop + 1):
-            try:
-                t_start = time.time()
-                response = client.models.generate_content(
-                    model=model,
-                    contents=self._build_cnt_gemini(user_text, task, current_files=current_files),
-                    config={
-                        "system_instruction": self._build_system_prompt(task),
-                        "temperature": self._get_temperature(task),
-                        "max_output_tokens": max_tokens,
-                        "top_p": 0.9,
-                    }
-                )
-                if not getattr(self, "_winner_declared", False):
-                    logger.debug("Gemini %s generated in %.2fs", model, time.time() - t_start)
-                return response.text.strip() if response.text else None
-
-            except Exception as e:
-                if not getattr(self, "_winner_declared", False):
-                    logger.warning("Gemini attempt %d failed: %s", i, str(e))
-                if i == loop:
+            for i in range(1, loop + 1):
+                try:
+                    t_start = time.time()
+                    response = client.models.generate_content(
+                        model=model,
+                        contents=self._build_cnt_gemini(user_text, task, current_files=current_files),
+                        config={
+                            "system_instruction": self._build_system_prompt(task),
+                            "temperature": self._get_temperature(task),
+                            "max_output_tokens": max_tokens,
+                            "top_p": 0.9,
+                        }
+                    )
                     if not getattr(self, "_winner_declared", False):
-                        logger.error("Gemini final attempt failed: %s", str(e))
-                    return None
-                time.sleep(2)
+                        logger.debug("Gemini %s generated in %.2fs", model, time.time() - t_start)
+                    return response.text.strip() if response.text else None
+
+                except Exception as e:
+                    if not getattr(self, "_winner_declared", False):
+                        logger.warning("Gemini API Key %d, attempt %d failed: %s", idx + 1, i, str(e))
+                    if i == loop:
+                        if idx == len(keys_to_try) - 1:
+                            if not getattr(self, "_winner_declared", False):
+                                logger.error("Gemini final attempt failed: %s", str(e))
+                            return None
+                    time.sleep(2)
         return None
 
     def _call_openrouter(
@@ -595,7 +622,7 @@ class Baymax:
             "Authorization": f"Bearer {self.openrouter_key}",
             "Content-Type":  "application/json",
             "HTTP-Referer":  "https://yourapp.com",
-            "X-Title":       "Hero AI",
+            "X-Title":       "Heros",
         }
         payload = {
             "model":       model,
@@ -766,8 +793,8 @@ class Baymax:
         No_API = """
 🔑 **API Key Configuration Required**
 
-To start chatting, please configure your API Keys in your Hero AI profile settings:
-1. Log in to your Hero AI account website.
+To start chatting, please configure your API Keys in your Heros profile settings:
+1. Log in to your Heros account website.
 2. Go to **Profile** / **API Keys**.
 3. Add your key (Gemini, OpenRouter, or Groq) and save.
 
@@ -775,8 +802,8 @@ To start chatting, please configure your API Keys in your Hero AI profile settin
 """
         if not self.groq_key:
             if task == "zeno_shadow":
-                return "🔑 **Groq API Key Required for Shadow Mode**\n\nPlease add your Groq API key in your Hero AI profile to enable background page summarization.\n" + No_API
-            return "🔑 **Groq API Key Required for Fast Response**\n\nPlease add your Groq API key in your profile to enable Fast mode.\n" + No_API
+                return "🔑 **Groq API Key Required for Shadow Mode**\n\nPlease add your Groq API key in profile / settings / api key to enable background page summarization.\n" + No_API
+            return "🔑 **Groq API Key Required for Fast Response**\n\nPlease add your Groq API key in profile / settings / api key to enable Fast mode.\n" + No_API
             
         import concurrent.futures
 
@@ -853,15 +880,16 @@ To start chatting, please configure your API Keys in your Hero AI profile settin
         No_API = """
 🔑 **API Key Configuration Required**
 
-To start chatting, please configure your API Keys in your Hero AI profile settings:
-1. Log in to your Hero AI account website.
+To start chatting, please configure your API Keys in your Heros profile settings:
+1. Log in to your Heros account website.
 2. Go to **Profile** / **API Keys**.
 3. Add your key (Gemini, OpenRouter, or Groq) and save.
 
 *Your API keys are encrypted and stored securely on the server—they are never exposed to the browser.*
 """
         if primary_model.lower().startswith("gemini-"):
-            if not self.gemini_key:
+            has_gemini = self.gemini_key or (hasattr(self, 'gemini_keys') and self.gemini_keys)
+            if not has_gemini:
                 from django.conf import settings
                 if not getattr(settings, "GEMINI_API_KEY", None):
                     return "🔑 **Gemini API Key Required**\n\nPlease configure your Gemini API Key in your profile to chat.\n" + No_API
@@ -987,9 +1015,96 @@ To start chatting, please configure your API Keys in your Hero AI profile settin
             
         return text
 
+    def _agentic_search_check(self, user_text: str) -> str | None:
+        """
+        Ultra-fast Pre-Router / Orchestrator.
+        Uses the fastest available model to determine if the query needs a web search.
+        Returns the specific search query if needed, else None.
+        """
+        keys_to_try = []
+        if getattr(self, "groq_key", None):
+            keys_to_try.append(("groq", self.groq_key))
+        if getattr(self, "gemini_key", None):
+            keys_to_try.append(("gemini", self.gemini_key))
+        if getattr(self, "openrouter_key", None):
+            keys_to_try.append(("openrouter", self.openrouter_key))
+        
+        if not keys_to_try:
+            return None
+            
+        prompt = (
+            "You are an intent classification engine. Read the user's message.\n"
+            "Does the user's message require a live web search to answer accurately (e.g., latest news, current events, recent releases, live prices, or real-time facts)?\n"
+            "If YES: Output ONLY the exact search query you would use. Do not explain.\n"
+            "If NO: Output exactly the word 'NONE'."
+        )
+        
+        provider, key = keys_to_try[0]
+        try:
+            if provider == "groq":
+                import requests
+                r = requests.post(
+                    "https://api.groq.com/openai/v1/chat/completions",
+                    headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
+                    json={
+                        "model": "llama-3.1-8b-instant",
+                        "messages": [
+                            {"role": "system", "content": prompt},
+                            {"role": "user", "content": user_text}
+                        ],
+                        "temperature": 0.0,
+                        "max_tokens": 50,
+                    },
+                    timeout=2.0
+                )
+                if r.status_code == 200:
+                    ans = r.json()["choices"][0]["message"]["content"].strip()
+                    return ans if ans.upper() != "NONE" else None
+            elif provider == "gemini":
+                from google import genai
+                client = genai.Client(api_key=key)
+                r = client.models.generate_content(
+                    model="gemini-2.5-flash",
+                    contents=[
+                        {"role": "user", "parts": [{"text": prompt + "\n\nUser Message: " + user_text}]}
+                    ],
+                    config={"temperature": 0.0, "max_output_tokens": 50}
+                )
+                ans = r.text.strip()
+                return ans if ans.upper() != "NONE" else None
+            elif provider == "openrouter":
+                import requests
+                r = requests.post(
+                    "https://openrouter.ai/api/v1/chat/completions",
+                    headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
+                    json={
+                        "model": "meta-llama/llama-3-8b-instruct:free",
+                        "messages": [
+                            {"role": "system", "content": prompt},
+                            {"role": "user", "content": user_text}
+                        ],
+                        "temperature": 0.0,
+                        "max_tokens": 50,
+                    },
+                    timeout=3.0
+                )
+                if r.status_code == 200:
+                    ans = r.json()["choices"][0]["message"]["content"].strip()
+                    return ans if ans.upper() != "NONE" else None
+        except Exception as e:
+            logger.warning(f"Orchestrator failed: {e}")
+            return None
+        return None
+
     def handle_text(self, text: str) -> str:
         """Handle general text chat with NLP-adaptive token budget."""
         try:
+            # 1. Agentic Orchestrator Check
+            search_query = self._agentic_search_check(text)
+            if search_query:
+                logger.info(f"Agentic Orchestrator triggered search: {search_query}")
+                return self.handle_websearch(text, search_query=search_query)
+
             enriched_text = text
             max_tok = self._smart_token_budget("text_chat")
             if getattr(self, 'is_fast', False):
@@ -1053,7 +1168,7 @@ To start chatting, please configure your API Keys in your Hero AI profile settin
         except Exception as e:
             return self._safe_error(e, "handle_voice_message")
 
-    def handle_websearch(self, text: str) -> str:
+    def handle_websearch(self, text: str, search_query: str = None) -> str:
         """
         Web search handler.
 
@@ -1064,11 +1179,12 @@ To start chatting, please configure your API Keys in your Hero AI profile settin
              to a plain LLM call with the WEB_SEARCH_PROMPT.
         """
         try:
-            logger.info("[handle_websearch] query=%r", text[:80])
+            query_to_search = search_query if search_query else text
+            logger.info("[handle_websearch] query=%r", query_to_search[:80])
             
             chat_history = self._get_limited_history("web_search")
             answer, rewritten_query = perform_web_search(
-                text, 
+                query_to_search, 
                 gemini_key=self.gemini_key or "",
                 chat_history=chat_history
             )
@@ -1092,12 +1208,8 @@ To start chatting, please configure your API Keys in your Hero AI profile settin
         try:
             logger.info("[handle_zeno_plus] query=%r", text[:80])
             max_tok = self._smart_token_budget("zeno_plus")
-            if getattr(self, 'is_fast', False):
-                from backend.fast import run_fast_route
-                return run_fast_route(self, text, max_tokens=max_tok, task="zeno_plus")
-            return self._with_fallback(
-                self.models["zeno_plus"], text, max_tokens=max_tok, task="zeno_plus"
-            )
+            from backend.fast import run_fast_route
+            return run_fast_route(self, text, max_tokens=max_tok, task="zeno_plus")
         except Exception as e:
             return self._safe_error(e, "handle_zeno_plus")
 
@@ -1159,6 +1271,7 @@ To start chatting, please configure your API Keys in your Hero AI profile settin
             results = []
             ans = None
 
+            temp_files_info = []
             SUPPORTED_EXTS = {'.pdf', '.docx', '.doc', '.txt'}
 
             for file_obj in files_data:
@@ -1172,23 +1285,13 @@ To start chatting, please configure your API Keys in your Hero AI profile settin
                 ext = os.path.splitext(name)[1].lower()
 
                 if ext not in SUPPORTED_EXTS:
-                    results.append(
-                        f"**{name}** is not supported. "
-                        f"Please upload a PDF, DOCX, DOC, or TXT file."
-                    )
+                    results.append(f"**{name}** is not supported. Please upload a PDF, DOCX, DOC, or TXT file.")
                     continue
 
-                needs = {
-                    '.pdf':  'pdfplumber',
-                    '.docx': 'python-docx',
-                    '.doc':  'python-docx',
-                }
+                needs = {'.pdf': 'pdfplumber', '.docx': 'python-docx', '.doc': 'python-docx'}
                 required = needs.get(ext)
                 if required and required in missing_libs:
-                    results.append(
-                        f"Cannot process **{name}**: `{required}` is not installed.\n"
-                        f"Run: `pip install {required}`"
-                    )
+                    results.append(f"Cannot process **{name}**: `{required}` is not installed. Run: `pip install {required}`")
                     continue
 
                 try:
@@ -1198,22 +1301,25 @@ To start chatting, please configure your API Keys in your Hero AI profile settin
                     with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tf:
                         tf.write(file_data)
                         temp_path = tf.name
+                    
+                    temp_files_info.append((temp_path, name))
 
-                    try:
-                        ans = handler.process_file(temp_path, text)
-                        results.append(ans)
-                    finally:
+                except Exception as e:
+                    logger.exception("File decoding error for %s", name)
+                    results.append(f"Error reading **{name}**: {str(e)}")
+
+            if temp_files_info:
+                try:
+                    ans = handler.process_multiple_files(temp_files_info, text)
+                    if results:
+                        ans = "\n\n".join(results) + "\n\n" + ans
+                    return ans
+                finally:
+                    for temp_path, _ in temp_files_info:
                         try:
                             os.remove(temp_path)
                         except OSError:
                             pass
-
-                except Exception as e:
-                    logger.exception("File processing error for %s", name)
-                    results.append(f"Error processing **{name}**: {str(e)}")
-
-            if len(files_data) == 1 and ans is not None:
-                return ans
 
             return "\n\n---\n\n".join(results) if results else "Could not process any files."
 

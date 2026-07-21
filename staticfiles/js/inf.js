@@ -61,12 +61,10 @@ async function bootstrapAuth() {
     } else {
       state.loggedIn = false;
       renderAuthUI();
-      showAuthModal();
     }
   } catch (e) {
     console.error("Session check failed:", e);
     renderAuthUI();
-    showAuthModal();
   }
 }
 
@@ -633,12 +631,61 @@ function appendMessage(role, content, model = "") {
 
   row.innerHTML = `
     <div class="ins-avatar ${isUser ? 'user' : 'ai'}">${avatarLabel}</div>
-    <div class="ins-msg-content">
-      <div class="ins-sender ${isUser ? 'user' : 'ai'}">${senderLabel}</div>
+    <div class="ins-msg-content ${isUser ? 'user' : 'ai'}">
+      <div class="ins-sender-row">
+        <div class="ins-sender ${isUser ? 'user' : 'ai'}">${senderLabel}</div>
+        <button class="ins-copy-msg-btn" title="Copy" onclick="insCopyMsg(this)"><i class="fa-regular fa-copy"></i></button>
+      </div>
       <div class="ins-bubble">${isUser ? esc(content) : renderMarkdown(content)}</div>
     </div>
   `;
   messagesEl.appendChild(row);
+
+  // Initialize any charts that were just appended
+  const charts = row.querySelectorAll('.ins-auto-chart:not(.initialized)');
+  charts.forEach(canvas => {
+    try {
+      const configStr = decodeURIComponent(canvas.getAttribute('data-chart-config'));
+      const config = JSON.parse(configStr);
+      
+      // Enforce responsive defaults
+      if (!config.options) config.options = {};
+      config.options.responsive = true;
+      config.options.maintainAspectRatio = false;
+      
+      new Chart(canvas, config);
+      canvas.classList.add('initialized');
+    } catch (e) {
+      console.error("Failed to initialize Chart.js:", e);
+    }
+  });
+}
+
+function insCopyMsg(btn) {
+  const bubble = btn.closest('.ins-msg-content')?.querySelector('.ins-bubble');
+  if (!bubble) return;
+  navigator.clipboard.writeText(bubble.innerText || bubble.textContent).then(() => {
+    btn.innerHTML = '<i class="fa-solid fa-check"></i>';
+    btn.style.color = 'var(--ins-success)';
+    setTimeout(() => { btn.innerHTML = '<i class="fa-regular fa-copy"></i>'; btn.style.color = ''; }, 2000);
+  }).catch(err => console.error('Copy failed:', err));
+}
+
+function insCopyCodeBlock(btn) {
+  const code = btn.closest('.ins-code-block')?.querySelector('code');
+  if (!code) return;
+  navigator.clipboard.writeText(code.innerText).then(() => {
+    btn.innerHTML = '<i class="fa-solid fa-check"></i>';
+    btn.style.color = 'var(--ins-success)';
+    setTimeout(() => { btn.innerHTML = '<i class="fa-regular fa-copy"></i>'; btn.style.color = ''; }, 2000);
+  });
+}
+
+function updateTypingStatus(msg) {
+  const statusEl = document.getElementById("insStatusText");
+  if (statusEl) {
+    statusEl.innerText = msg;
+  }
 }
 
 function appendTyping() {
@@ -651,11 +698,18 @@ function appendTyping() {
     <div class="ins-avatar ai"><i class="fa-solid fa-chart-line" style="font-size:0.7rem"></i></div>
     <div class="ins-msg-content">
       <div class="ins-sender ai">Infinsight</div>
-      <div class="ins-typing">
-        <span class="ins-typing-label">Analyzing</span>
-        <div class="ins-tb-wrap">
-          <div class="ins-tb"></div><div class="ins-tb"></div><div class="ins-tb"></div>
-        </div>
+      <div class="ins-typing" style="align-items: center; justify-content: flex-start; gap: 10px;">
+        <svg class="pl" viewBox="0 0 128 128" width="1.5em" height="1.5em" xmlns="http://www.w3.org/2000/svg">
+          <g fill="none" stroke-linecap="round" stroke-width="8" stroke="var(--ins-accent2)">
+            <circle class="pl__ring1" cx="64" cy="64" r="60" stroke-dasharray="376.237 376.237" />
+            <circle class="pl__ring2" cx="64" cy="64" r="52.4" stroke-dasharray="329.207 329.207" />
+            <circle class="pl__ring3" cx="64" cy="64" r="45.9" stroke-dasharray="288.448 288.448" />
+            <circle class="pl__ring4" cx="64" cy="64" r="40.4" stroke-dasharray="253.960 253.960" />
+            <circle class="pl__ring5" cx="64" cy="64" r="35.9" stroke-dasharray="225.742 225.742" />
+            <circle class="pl__ring6" cx="64" cy="64" r="32.4" stroke-dasharray="203.795 203.795" />
+          </g>
+        </svg>
+        <span class="ins-status-text" id="insStatusText" style="color: var(--text-dim); font-size: 0.85rem; font-style: italic;">Starting analysis...</span>
       </div>
     </div>
   `;
@@ -679,8 +733,32 @@ function renderMarkdown(text) {
   let html = esc(text);
 
   // Code blocks (before inline code)
-  html = html.replace(/```([a-z]*)\n?([\s\S]*?)```/g, (_, lang, code) => {
-    return `<pre><code class="language-${lang}">${code.trim()}</code></pre>`;
+  const unesc = (s) => s.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#039;/g, "'");
+
+  html = html.replace(/```([a-z0-9+# ]*)\n?([\s\S]*?)```/gi, (_, lang, code) => {
+    const language = (lang || '').trim().toLowerCase();
+    
+    // Auto-Graph Chart detection
+    if (language === 'json chart' || language === 'chart') {
+      try {
+        const rawJson = unesc(code.trim());
+        JSON.parse(rawJson); // Validate JSON
+        const encodedJson = encodeURIComponent(rawJson);
+        return `<div class="ins-chart-container"><canvas class="ins-auto-chart" data-chart-config="${encodedJson}"></canvas></div>`;
+      } catch (e) {
+        console.error("Invalid chart JSON:", e);
+        // Fallback to normal rendering if JSON is invalid
+      }
+    }
+
+    return `
+      <div class="ins-code-block">
+        <div class="ins-code-header">
+          <span>${language || 'code'}</span>
+          <button class="ins-copy-msg-btn" onclick="insCopyCodeBlock(this)" title="Copy code"><i class="fa-regular fa-copy"></i></button>
+        </div>
+        <pre><code class="language-${language}">${code.trim()}</code></pre>
+      </div>`;
   });
   // Inline code
   html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
@@ -773,22 +851,59 @@ async function sendInsMessage() {
       credentials: 'include',
       body: JSON.stringify({ session_id: state.currentSessionId, message: msg }),
     });
-    const data = await res.json();
-    removeTyping();
 
-    if (data.status === "success") {
-      appendMessage("ai", data.reply, data.model);
-      // Update message count in sidebar
-      await loadSessions();
-      renderSessionsList();
-    } else {
-      appendMessage("ai", "⚠️ " + (data.message || "Something went wrong."));
+    if (!res.ok) {
+      removeTyping();
+      appendMessage("ai", "⚠️ HTTP Error " + res.status);
+      scrollToBottom();
+      return;
+    }
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      
+      let newlineIdx;
+      while ((newlineIdx = buffer.indexOf("\n\n")) !== -1) {
+        const chunk = buffer.slice(0, newlineIdx);
+        buffer = buffer.slice(newlineIdx + 2);
+        
+        if (chunk.startsWith("data: ")) {
+          try {
+            const data = JSON.parse(chunk.substring(6));
+            if (data.type === "status") {
+              updateTypingStatus(data.message);
+            } else if (data.type === "final") {
+              removeTyping();
+              if (data.error && data.error !== "session_not_ready") {
+                 appendMessage("ai", "⚠️ " + data.reply);
+              } else {
+                 appendMessage("ai", data.reply, data.model);
+              }
+              await loadSessions();
+              renderSessionsList();
+              
+              const rows = document.querySelectorAll('.ins-msg-row');
+              const lastRow = rows[rows.length - 1];
+              const el = document.getElementById("insMessages");
+              if (lastRow && el) el.scrollTo({ top: Math.max(0, lastRow.offsetTop - 20), behavior: 'smooth' });
+            }
+          } catch (e) {
+            console.error("Error parsing SSE chunk:", e);
+          }
+        }
+      }
     }
   } catch (e) {
     removeTyping();
     appendMessage("ai", "⚠️ Network error. Please try again.");
+    scrollToBottom();
   }
-  scrollToBottom();
 }
 
 function handleInsKey(e) {

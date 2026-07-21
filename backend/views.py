@@ -1,6 +1,6 @@
 from django_ratelimit.decorators import ratelimit
 """
-views.py — Hero AI Django views
+views.py — Heros Django views
 backend/view.py
 
 Changes from original:
@@ -262,7 +262,7 @@ def privacy_view(request):
     <!DOCTYPE html>
     <html>
     <head>
-        <title>Privacy Policy - Hero AI</title>
+        <title>Privacy Policy - Heros</title>
         <link rel="icon" type="image/png" href="/static/images/Hero_ai.png">
     </head>
     <body style="font-family: sans-serif; max-width: 800px; margin: 40px auto; line-height: 1.6;">
@@ -270,7 +270,7 @@ def privacy_view(request):
         <p><strong>Effective Date:</strong> July 2026</p>
         
         <h2>Zeno Extension</h2>
-        <p>The Zeno browser extension acts as a mini AI assistant powered by Hero AI. To provide its core functionality, the extension requires access to certain data:</p>
+        <p>The Zeno browser extension acts as a mini AI assistant powered by Heros. To provide its core functionality, the extension requires access to certain data:</p>
         <ul>
             <li><strong>Website Content:</strong> When you use the "Ask Zeno Plus" right-click context menu, the text you have highlighted on the page is temporarily collected and sent to our servers to generate an AI response.</li>
             <li><strong>Personal Communications:</strong> Chat messages you type into the Zeno popup are transmitted to our servers to communicate with the AI.</li>
@@ -589,8 +589,9 @@ def save_api_keys(request):
     gemini     = d.get('gemini', '').strip()
     openrouter = d.get('openrouter', '').strip()
     groq       = d.get('groq', '').strip()
+    huggingface = d.get('huggingface', '').strip()
 
-    if not any([gemini, openrouter, groq]):
+    if not any([gemini, openrouter, groq, huggingface]):
         return JsonResponse({"status": "fail", "message": "Please enter at least one API key"}, status=400)
     try:
         for name, val in [('Gemini', gemini), ('OpenRouter', openrouter)]:
@@ -607,6 +608,14 @@ def save_api_keys(request):
         elif 'groq' in d:
             Api.objects.filter(user=request.user_obj, model_name='Groq').delete()
             
+        if huggingface:
+            Api.objects.update_or_create(
+                user=request.user_obj, model_name='HuggingFace',
+                defaults={'api_key_encrypted': encrypt_api_key(huggingface), 'is_mandatory': False},
+            )
+        elif 'huggingface' in d:
+            Api.objects.filter(user=request.user_obj, model_name='HuggingFace').delete()
+            
         cache.delete(f"api_keys_{request.user_obj.user_id}")
         
         return JsonResponse({"status": "success", "message": "API keys saved"})
@@ -616,12 +625,13 @@ def save_api_keys(request):
 def check_api_keys(request):
     keys = {
         n: Api.objects.filter(user=request.user_obj, model_name=n).exists()
-        for n in ['Gemini', 'OpenRouter', 'Groq']
+        for n in ['Gemini', 'OpenRouter', 'Groq', 'HuggingFace']
     }
     return JsonResponse({
         "status":      "success",
         "has_api_keys": keys['Gemini'] or keys['OpenRouter'],
         "has_groq_key": keys['Groq'],
+        "has_hf_key":   keys['HuggingFace'],
         "keys":         {k.lower(): v for k, v in keys.items()},
     })
 
@@ -667,25 +677,27 @@ def chat_api(request):
     if not getattr(request, 'user_obj', None):
         temporary_chat = True
         
-        if mode in ['zeno_plus', 'zeno_voice']:
+        if mode == 'zeno_plus':
             return JsonResponse({
                 "status": "success",
-                "reply": "⚠️ **Login Required**\n\nPlease log in to your Hero AI account and configure your API keys to use this feature.",
+                "reply": "⚠️ **Login Required**\n\nPlease log in to your Heros account and configure your Groq API key to use Zeno Plus.",
                 "session_id": session_id_str,
                 "is_new_chat": False,
                 "temporary": True
             })
             
-        model = 'Halo'
-
-    if mode.startswith('zeno_'):
-        if mode in ['zeno_plus', 'zeno_voice']:
-            model = 'Baymax'
-        else:
+        if model not in ['Halo', 'Baymax']:
             model = 'Halo'
 
-    if not raw_message:
+    if mode.startswith('zeno_'):
+        model = 'Baymax'
+
+    files = d.get('files', [])
+    if not raw_message and not files:
         return JsonResponse({"status": "fail", "message": "Message required"}, status=400)
+        
+    if not raw_message and files:
+        raw_message = "Read and wait for user Query about the file"
 
 
     try:
@@ -744,7 +756,7 @@ def chat_api(request):
             })
 
         # ── NLP pre-processing ────────────────────────────────────────────────
-        if mode in ['coding', 'websearch', 'Voice Chat', 'voice_message', 'zeno_shadow', 'search_code', 'search_file', 'code_file', 'search_code_file']:
+        if mode in ['coding', 'websearch', 'Voice Chat', 'voice_message', 'zeno_shadow', 'search_code', 'search_file', 'code_file', 'search_code_file', 'voice_search', 'voice_search_file', 'voice_code', 'voice_code_file', 'voice_search_code', 'voice_search_code_file']:
             nlp_result = {"clean_text": raw_message, "intent": "direct", "metadata": {}}
         else:
             nlp_result = preprocess(raw_message, source=mode)
@@ -755,7 +767,6 @@ def chat_api(request):
 
         if nlp_intent == "play_song":
             try:
-                import re
                 from ytmusicapi import YTMusic
                 
                 # Extract the query
@@ -813,39 +824,125 @@ def chat_api(request):
             user_settings = {}
             chat_session, is_new_session = None, True
 
+        if mode == 'zeno_plus' and not groq_key:
+            return JsonResponse({
+                "status": "success",
+                "reply": "⚠️ **Groq API Key Required**\n\nPlease configure your Groq API Key in account settings to use Zeno Plus.",
+                "session_id": session_id_str,
+                "is_new_chat": False,
+                "temporary": True
+            })
+
         # ── Session history ───────────────────────────────────────────────────
         if temporary_chat:
             # Temporary chats have no persisted history — use whatever the
             # frontend sent in this request (in-memory context only).
             chat_history = send_history
         else:
-            # Determine history turn limit based on task type (1 turn = 2 messages: User + AI)
-            # Text: 3 turns (6) | Coding/Voice: 2 turns (4) | File/WebSearch: 1 turn (2)
+            # Determine base history turn limit (1 turn = 2 messages: User + AI)
+            # Base limits doubled (x2): Text = 6 turns (12 msgs), Coding/Voice = 4 turns (8 msgs)
             history_limits = {
-                'text':           3,
-                'coding':         2,
-                'Voice Chat':     2,
-                'voice_message':  2,
-                'file_handle':    1,
-                'websearch':      2,
-                'zeno_eco':       2,
-                'zeno_plus':      4,
-                'zeno_voice':     2,
-                'zeno_shadow':    0,
+                'text':                   6,
+                'coding':                 4,
+                'Voice Chat':             4,
+                'voice_message':          4,
+                'file_handle':            2,
+                'websearch':              4,
+                'zeno_eco':               4,
+                'zeno_plus':              8,
+                'zeno_voice':             4,
+                'zeno_shadow':            0,
+                'voice_search':           4,
+                'voice_search_file':      2,
+                'voice_code':             4,
+                'voice_code_file':        2,
+                'voice_search_code':      4,
+                'voice_search_code_file': 2,
             }
-            turn_limit = history_limits.get(mode, 5)
-            
-            chat_history = (
-                send_history
-                if send_history
-                else get_session_history(session_id_str, request.user_obj, turn_limit)
-            )
+            base_turn_limit = history_limits.get(mode, 4)
+
+            # Check for remember_history setting or file reference NLP detection
+            remember_hist = d.get('remember_history', False)
+            if not remember_hist and request.user_obj:
+                try:
+                    user_setting = Setting.objects.get(user=request.user_obj)
+                    remember_hist = user_setting.remember_history
+                except Exception:
+                    pass
+
+            file_keywords = r'\b(file|document|pdf|attachment|uploaded|textfile|image|csv|codefile|datafile|file_handle|attached)\b'
+            has_file_ref = bool(re.search(file_keywords, raw_message, re.IGNORECASE))
+            if not has_file_ref and send_history:
+                for msg in send_history:
+                    c = str(msg.get('content', ''))
+                    m = str(msg.get('mode', ''))
+                    if msg.get('files') or 'file' in m.lower() or re.search(file_keywords, c, re.IGNORECASE):
+                        has_file_ref = True
+                        break
+
+            if remember_hist or has_file_ref:
+                # x3 history length multiplier if remember_history enabled or referencing a file
+                turn_limit = int(base_turn_limit * 3)
+            else:
+                # Default x2 base turn limit
+                turn_limit = base_turn_limit
+
+            if send_history and isinstance(send_history, list):
+                max_msgs = turn_limit * 2
+                chat_history = send_history[-max_msgs:] if len(send_history) > max_msgs else send_history
+            else:
+                chat_history = get_session_history(session_id_str, request.user_obj, turn_limit)
 
         db_lookup_time = time.time() - t0
         logger.debug("DB lookup: %.2fs", db_lookup_time)
 
         try:
             if model == 'Halo':
+                from .usage_tracker import get_halo_usage, increment_halo_usage, HALO_MAX_LIMIT
+                
+                has_hf_key = False
+                hf_key = None
+                if request.user_obj:
+                    try:
+                        api_obj = Api.objects.get(user=request.user_obj, model_name='HuggingFace')
+                        hf_key = decrypt_api_key(api_obj.api_key_encrypted)
+                        has_hf_key = True
+                    except Api.DoesNotExist:
+                        pass
+                
+                if request.user_obj:
+                    user_key = f"user_{request.user_obj.user_id}"
+                else:
+                    if not request.session.session_key:
+                        request.session.create()
+                    user_key = f"anon_{request.session.session_key}" if request.session.session_key else "anon_default"
+                
+                # Block coding and file handling tasks for Halo if user has no Hugging Face API key
+                coding_and_file_modes = {
+                    'coding', 'file_handle', 'search_code', 'search_file', 
+                    'code_file', 'search_code_file', 'voice_file'
+                }
+                if mode in coding_and_file_modes and not has_hf_key:
+                    return JsonResponse({
+                        "status": "success",
+                        "reply": "⚠️ **Access Restricted**\n\nTo use coding or file handling features in Halo, please log in and add your Hugging Face API key in settings.",
+                        "session_id": session_id_str,
+                        "is_new_chat": False,
+                        "temporary": True
+                    })
+                
+                if not has_hf_key:
+                    current_usage = get_halo_usage(user_key)
+                    if current_usage >= HALO_MAX_LIMIT:
+                        return JsonResponse({
+                            "status": "success",
+                            "reply": "⚠️ **Limit Reached**\n\nYou have reached the maximum message limit for Halo. To continue using Halo, please log in and add your Hugging Face API key in settings. You can also log in and configure a Gemini API key to get access to Baymax, our flagship reasoning model.",
+                            "session_id": session_id_str,
+                            "is_new_chat": False,
+                            "temporary": True
+                        })
+                    increment_halo_usage(user_key)
+
                 from .halo import Halo
                 baymax = Halo(
                     chat_history=chat_history,
@@ -853,8 +950,34 @@ def chat_api(request):
                     is_superuser=is_superuser,
                     is_fast=is_fast,
                     db_lookup_time=db_lookup_time,
+                    hf_key=hf_key,
                 )
             else:
+                has_user_keys = bool(gemini_key or openrouter_key or groq_key)
+                if not has_user_keys:
+                    from .usage_tracker import get_baymax_usage, increment_baymax_usage, BAYMAX_MAX_LIMIT
+                    if request.user_obj:
+                        user_key = f"user_{request.user_obj.user_id}"
+                    else:
+                        if not request.session.session_key:
+                            request.session.create()
+                        user_key = f"anon_{request.session.session_key}" if request.session.session_key else "anon_default"
+                    
+                    current_usage = get_baymax_usage(user_key)
+                    if current_usage >= BAYMAX_MAX_LIMIT:
+                        if mode.startswith('zeno_'):
+                            limit_msg = "⚠️ **Limit Reached**\n\nYou have reached the maximum message limit for Zeno. To continue, please log in and configure your own API keys (Gemini and Groq) in account."
+                        else:
+                            limit_msg = "⚠️ **Limit Reached**\n\nYou have reached the maximum message limit for Baymax. To continue, please log in and configure your own API keys (Gemini, OpenRouter, or Groq) in settings."
+                        return JsonResponse({
+                            "status": "success",
+                            "reply": limit_msg,
+                            "session_id": session_id_str,
+                            "is_new_chat": False,
+                            "temporary": True
+                        })
+                    increment_baymax_usage(user_key)
+
                 baymax = Baymax(
                     gemini_key=gemini_key,
                     openrouter_key=openrouter_key,
@@ -910,6 +1033,12 @@ def chat_api(request):
                 'code_file':     lambda: mt.handle_code_file(message, d.get('files', [])),
                 'search_code_file': lambda: mt.handle_search_code_file(message, d.get('files', [])),
                 'voice_file':    lambda: mt.handle_voice_file(message, d.get('files', [])),
+                'voice_search':  lambda: mt.handle_voice_search(message),
+                'voice_search_file': lambda: mt.handle_voice_search_file(message, d.get('files', [])),
+                'voice_code':    lambda: baymax.handle_coding(message),
+                'voice_code_file': lambda: mt.handle_code_file(message, d.get('files', [])),
+                'voice_search_code': lambda: mt.handle_search_code(message),
+                'voice_search_code_file': lambda: mt.handle_search_code_file(message, d.get('files', [])),
             }
             reply = handlers.get(mode, lambda: baymax.handle_text(message))()
         except ImportError as e:
@@ -1141,6 +1270,55 @@ def delete_chat(request, chat_id):
         return JsonResponse({"status": "fail", "message": "Chat not found"}, status=404)
     except Exception as e:
         return safe_error_response(request, logger, "delete_chat", e)
+
+# =============================================================================
+# Edge TTS API View
+# =============================================================================
+async def _generate_tts_audio(text, voice="en-US-AriaNeural"):
+    import edge_tts
+    communicate = edge_tts.Communicate(text, voice)
+    audio_data = bytearray()
+    async for chunk in communicate.stream():
+        if chunk["type"] == "audio":
+            audio_data.extend(chunk["data"])
+    return bytes(audio_data)
+
+@csrf_exempt
+def tts_api(request):
+    if request.method not in ["GET", "POST"]:
+        return JsonResponse({"status": "fail", "message": "Method not allowed"}, status=405)
+    
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body.decode('utf-8'))
+            text = data.get("text", "")
+            voice = data.get("voice", "en-US-AriaNeural")
+        except Exception:
+            text = request.POST.get("text", "")
+            voice = request.POST.get("voice", "en-US-AriaNeural")
+    else:
+        text = request.GET.get("text", "")
+        voice = request.GET.get("voice", "en-US-AriaNeural")
+        
+    text = (text or "").strip()
+    if not text:
+        return JsonResponse({"status": "fail", "message": "No text provided"}, status=400)
+    
+    text = text[:1500]
+    
+    try:
+        import asyncio
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            audio_bytes = loop.run_until_complete(_generate_tts_audio(text, voice))
+        finally:
+            loop.close()
+            
+        return HttpResponse(audio_bytes, content_type="audio/mpeg")
+    except Exception as e:
+        logger.error(f"TTS generation error: {e}", exc_info=True)
+        return JsonResponse({"status": "error", "message": str(e)}, status=500)
 
 # =============================================================================
 # Custom 404 Error Handler

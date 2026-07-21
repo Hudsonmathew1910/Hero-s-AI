@@ -10,6 +10,43 @@ class FileHandler:
         """Initialize with an optional Baymax AI model instance."""
         self.ai_model = ai_model
 
+    def process_multiple_files(self, files_info: list[tuple[str, str]], user_query: str) -> str:
+        """Process multiple files in a single LLM request. files_info is a list of (file_path, file_name)."""
+        combined_text = []
+        try:
+            for file_path, file_name in files_info:
+                if not os.path.exists(file_path):
+                    combined_text.append(f"Error: File {file_name} does not exist.")
+                    continue
+
+                file_type = self._get_file_type(file_path)
+                if not file_type:
+                    combined_text.append(f"Error: Unsupported file format for {file_name}.")
+                    continue
+
+                raw_text = self._extract_text(file_path, file_type)
+                if not raw_text or not raw_text.strip():
+                    combined_text.append(f"Error: Could not extract readable text from {file_name}.")
+                    continue
+
+                cleaned_text = self._clean_text(raw_text)
+                combined_text.append(f"--- DOCUMENT: {file_name} ---\n{cleaned_text}\n--- END OF {file_name} ---")
+
+            if not combined_text:
+                return "Error: Could not extract text from any of the provided files."
+
+            final_text = "\n\n".join(combined_text)
+
+            from backend.Nlp import preprocess
+            nlp_result = preprocess(user_query, source="file_handle")
+            intent = nlp_result.get("intent", "file_analysis")
+
+            return self._route_to_model(final_text, user_query, intent)
+
+        except Exception as e:
+            traceback.print_exc()
+            return f"Error during multi-file processing: {str(e)}"
+
     def process_file(self, file_path: str, user_query: str) -> str:
         """Main pipeline: detect type → extract → clean → NLP → model."""
         try:
@@ -117,7 +154,7 @@ class FileHandler:
             return "Error: No AI model provided to process the extracted text."
 
         combined_prompt = (
-            f"Here is the content of the uploaded document:\n\n"
+            f"Here is the content of the uploaded document(s):\n\n"
             f"--- DOCUMENT START ---\n"
             f"{file_content}\n"
             f"--- DOCUMENT END ---\n\n"
@@ -128,7 +165,7 @@ class FileHandler:
             f"- Keep response structured\n"
             f"- Avoid unnecessary long explanation\n"
             f"- Do NOT stop early\n"
-            f"- Cover ALL sections of the document\n"
+            f"- Cover ALL sections of the document(s)\n"
             f"- Continue until full analysis is done\n"
         )
 

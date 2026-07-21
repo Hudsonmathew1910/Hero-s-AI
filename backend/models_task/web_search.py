@@ -133,7 +133,7 @@ def _summarise_with_gemini(
         f"INSTRUCTIONS:\n"
         f"1. **Analyze & Extract**: Scrutinize the search results above to identify the most accurate and relevant information for the user's query.\n"
         f"2. **Accuracy & Relevance**: Prioritize factual correctness and direct relevance.\n"
-        f"3. **Structure**: Provide a clear, concise, and complete answer. Include supporting details or context only where necessary.\n"
+        f"3. **Direct Output**: Do NOT use preambles like 'Based on the search results...' or 'Here is the answer'. Start your answer immediately.\n"
         f"4. **Citations**: At the end of your response, list the URLs or titles of the sources you used.\n\n"
         f"Deliver a professional and helpful response that directly addresses the user's intent.\n"
         f"{Baymax.HERO_AI_UNIVERSE}"
@@ -188,6 +188,7 @@ def _summarise_with_hf(query: str, ddg_results: list[dict], wiki_summary: str) -
         f"1. Analyze the search results to find the precise answer to the user's query.\n"
         f"2. Ignore irrelevant results or hallucinations.\n"
         f"3. Provide a clear, concise, and factual answer.\n"
+        f"4. Do NOT use any preambles like 'Based on the search results...' or 'Here is the answer...'. Start the factual answer immediately.\n"
     )
 
     import os

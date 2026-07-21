@@ -22,9 +22,13 @@ def rewrite_query_for_search(query: str, chat_history: list, gemini_key: str = N
     
     history_text = "\n".join(history_lines)
 
+    import datetime
+    current_date = datetime.datetime.now().strftime("%A, %B %d, %Y")
+
     prompt = f"""You are an intelligent search query rewriter. 
+Today's Date: {current_date}
 Your task is to rewrite the latest user query into a standalone, concise web search query.
-Resolve any pronouns or vague references (e.g. "that movie", "he") using the recent chat history.
+Resolve any pronouns or vague references (e.g. "that movie", "he", "it") using the recent chat history.
 If the query is already clear and self-contained, return it exactly as is. 
 Do not answer the query, ONLY return the rewritten query. Keep it short and search-friendly.
 
@@ -35,7 +39,7 @@ Latest user query: {query}
 
 Rewritten search query:"""
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key={gemini_key}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key={gemini_key}"
     
     if gemini_key:
         try:

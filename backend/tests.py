@@ -182,3 +182,120 @@ class HeroModelFastRoutingTests(TestCase):
         self.assertEqual(response, "Hello from second Groq model!")
         self.assertEqual(mock_call_groq.call_count, 2)  # First failed, second succeeded
         self.assertFalse(mock_fallback.called)  # No need for fallback
+
+
+class HaloUsageLimitTests(TestCase):
+    def setUp(self):
+        from backend.usage_tracker import STATS_FILE
+        self.stats_file = STATS_FILE
+        if os.path.exists(self.stats_file):
+            try:
+                os.remove(self.stats_file)
+            except Exception:
+                pass
+
+    def tearDown(self):
+        if os.path.exists(self.stats_file):
+            try:
+                os.remove(self.stats_file)
+            except Exception:
+                pass
+
+    def test_increment_and_check_usage(self):
+        from backend.usage_tracker import get_halo_usage, increment_halo_usage
+        user_key = "test_user_key"
+        self.assertEqual(get_halo_usage(user_key), 0)
+        
+        increment_halo_usage(user_key)
+        self.assertEqual(get_halo_usage(user_key), 1)
+        
+        increment_halo_usage(user_key)
+        self.assertEqual(get_halo_usage(user_key), 2)
+
+    @patch('backend.halo.InferenceClient')
+    def test_chat_api_halo_limit_enforced(self, mock_client_class):
+        from django.test import Client
+        from backend.usage_tracker import HALO_MAX_LIMIT, increment_halo_usage
+        
+        client = Client()
+        
+        # Initialize session to obtain session_key
+        session = client.session
+        session.save()
+        session_key = session.session_key
+        user_key = f"anon_{session_key}"
+        
+        # Increment to max limit
+        for _ in range(HALO_MAX_LIMIT):
+            increment_halo_usage(user_key)
+            
+        # Send query to chat_api
+        response = client.post(
+            '/api/chat',
+            data=json.dumps({
+                'message': 'Hello Halo',
+                'model': 'Halo',
+                'mode': 'text',
+                'session_id': 'test_session',
+            }),
+            content_type='application/json',
+            HTTP_X_SESSION_ID='test_session'
+        )
+        
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIn("maximum message limit for Halo", data.get("reply", ""))
+
+    def test_chat_api_halo_blocked_features(self):
+        from django.test import Client
+        client = Client()
+        
+        # Request coding mode which should be blocked immediately
+        response = client.post(
+            '/api/chat',
+            data=json.dumps({
+                'message': 'Write python code to compute fibonacci',
+                'model': 'Halo',
+                'mode': 'coding',
+                'session_id': 'test_session_coding',
+            }),
+            content_type='application/json',
+            HTTP_X_SESSION_ID='test_session_coding'
+        )
+        
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIn("Access Restricted", data.get("reply", ""))
+        self.assertIn("coding or file handling features in Halo", data.get("reply", ""))
+
+    def test_baymax_limit_enforced(self):
+        from django.test import Client
+        from backend.usage_tracker import BAYMAX_MAX_LIMIT, increment_baymax_usage
+        
+        client = Client()
+        session = client.session
+        session.save()
+        session_key = session.session_key
+        user_key = f"anon_{session_key}"
+        
+        # Increment Baymax usage to maximum limit
+        for _ in range(BAYMAX_MAX_LIMIT):
+            increment_baymax_usage(user_key)
+            
+        # Send query to chat_api for Baymax
+        response = client.post(
+            '/api/chat',
+            data=json.dumps({
+                'message': 'Hello Baymax',
+                'model': 'Baymax',
+                'mode': 'text',
+                'session_id': 'test_session_baymax',
+            }),
+            content_type='application/json',
+            HTTP_X_SESSION_ID='test_session_baymax'
+        )
+        
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIn("maximum message limit for Baymax", data.get("reply", ""))
+

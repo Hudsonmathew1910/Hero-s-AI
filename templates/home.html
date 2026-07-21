@@ -2,6 +2,12 @@
 <!doctype html>
 <html lang="en" data-theme="light">
   <head>
+    <script>
+      (function () {
+        const saved = localStorage.getItem('hero-theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', saved);
+      })();
+    </script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Heros</title>
@@ -20,6 +26,7 @@
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
     />
     <link rel="stylesheet" href="{% static 'css/style.css' %}" />
+    <link rel="stylesheet" href="{% static 'css/style_m.css' %}" />
 
     <style>
       /* â”€â”€ Welcome screen — clean, no animations â”€â”€ */
@@ -102,6 +109,14 @@
       }
     </style>
     <meta name="csrf-token" content="{{ csrf_token }}" />
+    <!-- KaTeX for math rendering -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
+      onload="window._katexReady = true;"></script>
+    <!-- Highlight.js for code syntax highlighting -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
   </head>
   <body>
     {% csrf_token %}
@@ -321,6 +336,8 @@
      MAIN WRAPPER
 â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
     <div class="main-wrapper">
+      <!-- SIDEBAR BACKDROP (tap-to-close on mobile) -->
+      <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="toggleSidebar()"></div>
       <!-- SIDEBAR -->
       <aside class="sidebar" id="sidebar">
         <button class="new-chat-btn" onclick="newChat()">
@@ -380,12 +397,49 @@
 
         <!-- Welcome screen -->
         <div class="welcome" id="welcomeScreen">
-          <div class="welcome-icon">
-            <img src="{% static 'images/Hero_ai.png' %}" alt="Heros" />
-          </div>
           <div style="position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center;">
-            <h1>What can I help with?</h1>
-            <p>Ask anything — code, research, writing, or just a question.</p>
+            <!-- Logo image container -->
+            <div class="intro-logo-wrap" style="margin-bottom: 8px;">
+              <img
+                src="{% static 'images/Hero_ai.png' %}"
+                alt="Heros"
+                class="intro-logo-img"
+              />
+            </div>
+
+            <!-- "Heros Powered" text -->
+            <span class="intro-logo-text" style="margin-bottom: 12px;">Heros Powered</span>
+
+            <!-- Animated Heros letters -->
+            <div class="hero-intro-loader" style="margin-bottom: 24px;">
+              <svg height="0" width="0" viewBox="0 0 64 64" style="position: absolute; overflow: hidden">
+                <defs></defs>
+              </svg>
+
+              <!-- H -->
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 64 64" height="56" width="56">
+                <path class="intro-letter intro-l-h" stroke-linejoin="round" stroke-linecap="round" d="M 10 6 L 10 58 M 10 32 L 54 32 M 54 6 L 54 58" pathLength="360" />
+              </svg>
+              <!-- E -->
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 64 64" height="56" width="56">
+                <path class="intro-letter intro-l-e" stroke-linejoin="round" stroke-linecap="round" d="M 54 6 L 10 6 L 10 58 L 54 58 M 10 32 L 48 32" pathLength="360" />
+              </svg>
+              <!-- R -->
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 64 64" height="56" width="56">
+                <path class="intro-letter intro-l-r" stroke-linejoin="round" stroke-linecap="round" d="M 10 6 L 10 58 M 10 6 Q 54 6 54 24 Q 54 36 10 36 M 30 36 L 54 58" pathLength="360" />
+              </svg>
+              <div style="width: 6px; display: inline-block; flex-shrink: 0"></div>
+              <!-- O -->
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 64 64" height="56" width="56">
+                <path class="intro-letter-o intro-l-o" stroke-linejoin="round" stroke-linecap="round" d="M 32 32 m 0 -24 a 24 24 0 1 1 0 48 a 24 24 0 1 1 0 -48" pathLength="360" />
+              </svg>
+              <div style="width: 6px; display: inline-block; flex-shrink: 0"></div>
+              <!-- S -->
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 64 64" height="56" width="56">
+                <path class="intro-letter intro-l-s" stroke-linejoin="round" stroke-linecap="round" d="M 52 16 Q 52 6 32 6 Q 12 6 12 20 Q 12 32 32 32 Q 52 32 52 46 Q 52 58 32 58 Q 12 58 12 48" pathLength="360" />
+              </svg>
+            </div>
+
             <div class="suggestion-chips">
               <div class="chip" onclick="setModeCodingAndPrompt()">
                 <i class="fa-solid fa-code"></i> Code
@@ -498,7 +552,7 @@
                 <div class="input-row-2" style="display: flex; width: 100%; align-items: center; justify-content: space-between; padding-top: 2px;">
                   <div id="searchCodeTalkWrap" style="display: flex; align-items: center; gap: 6px;">
                     <!-- Search button -->
-                    <button id="searchToggleBtn" onclick="toggleSearchMode()">
+                    <button id="searchToggleBtn" onclick="toggleSearchMode()" class="active">
                       <i class="fa-solid fa-magnifying-glass" style="font-size: 0.72rem;"></i> Search
                     </button>
 
@@ -514,6 +568,11 @@
                       <span class="text" id="talkText"><i class="fa-solid fa-microphone-lines"></i> Talk</span>
                       <span id="voiceModelName">Halo 3.6</span>
                     </div>
+
+                    <!-- Main Wait Button (Shown only while AI is speaking in voice mode) -->
+                    <button id="mainWaitBtn" onclick="handleWaitButtonClick(event)" disabled class="wait-pill-btn" style="display: none;" title="Stop AI & Listen (Spacebar)">
+                      <i class="fa-solid fa-hand"></i> Wait
+                    </button>
                   </div>
 
                   <!-- Model Switcher -->
@@ -754,6 +813,15 @@
             <i class="fa-solid fa-microphone"></i> Speak
           </button>
           <button
+            class="v-btn wait-v"
+            id="waitVoiceBtn"
+            onclick="handleWaitButtonClick()"
+            disabled
+            title="Stop AI speech & start listening (Spacebar)"
+          >
+            <i class="fa-solid fa-hand"></i> Wait
+          </button>
+          <button
             class="v-btn pause-v"
             id="pauseVoiceBtn"
             onclick="pauseVoiceReply()"
@@ -817,6 +885,7 @@
               type="password"
               id="geminiApiKey"
               placeholder="Enter your Gemini API key"
+              autocomplete="new-password"
               style="width: 100%"
             />
             <div class="field-hint">
@@ -839,6 +908,7 @@
               type="password"
               id="openrouterApiKey"
               placeholder="Enter your OpenRouter API key"
+              autocomplete="new-password"
               style="width: 100%"
             />
             <div class="field-hint">
@@ -862,6 +932,7 @@
               type="password"
               id="groqApiKey"
               placeholder="Enter your Groq API key for better performance (optional for fast experience)"
+              autocomplete="new-password"
               style="width: 100%"
             />
             <div class="field-hint">
@@ -876,6 +947,29 @@
                 >Note: Groq is used as a fallback model for enhanced
                 reliability.<br />Currently in development status</em
               > {% endcomment %}
+            </div>
+          </div>
+          <div class="modal-section">
+            <div class="modal-section-label">
+              <i class="fa-solid fa-face-smile"></i> Hugging Face API Key
+              <span class="optional-badge">Optional</span>
+            </div>
+            <input
+              class="auth-input"
+              type="password"
+              id="huggingfaceApiKey"
+              placeholder="Enter your Hugging Face API key (optional for Halo model)"
+              autocomplete="new-password"
+              style="width: 100%"
+            />
+            <div class="field-hint">
+              <i class="fa-solid fa-circle-info"></i> Get your Hugging Face token:
+              <a
+                href="https://huggingface.co/settings/tokens"
+                target="_blank"
+                style="color: var(--accent)"
+                >Hugging Face Settings</a
+              >
             </div>
           </div>
           <div class="api-info-box">
@@ -1002,7 +1096,7 @@
               <div class="modal-section-label"><i class="fa-solid fa-display"></i> Display</div>
               <div class="toggle-row">
                 <span class="toggle-label">Auto-read AI responses aloud</span>
-                <button class="toggle on" data-setting="autoReadResponses" onclick="toggleSetting('autoReadResponses')"></button>
+                <button class="toggle" data-setting="autoReadResponses" onclick="toggleSetting('autoReadResponses')"></button>
               </div>
               <div class="toggle-row">
                 <span class="toggle-label">Compact message layout</span>
@@ -1017,7 +1111,7 @@
               <div class="modal-section-label"><i class="fa-solid fa-comments"></i> Chat</div>
               <div class="toggle-row">
                 <span class="toggle-label">Remember conversation history</span>
-                <button class="toggle on" data-setting="rememberHistory" onclick="toggleSetting('rememberHistory')"></button>
+                <button class="toggle" data-setting="rememberHistory" onclick="toggleSetting('rememberHistory')"></button>
               </div>
               <div class="toggle-row">
                 <span class="toggle-label">Enable developer model option</span>
@@ -1162,6 +1256,28 @@
               > {% endcomment %}
             </div>
           </div>
+          <div class="modal-section">
+            <div class="modal-section-label">
+              <i class="fa-solid fa-face-smile"></i> Hugging Face API Key
+              <span class="optional-badge">Optional</span>
+            </div>
+            <input
+              class="auth-input"
+              type="password"
+              id="huggingfaceApiKey"
+              placeholder="Enter your Hugging Face API key (optional for Halo model)"
+              style="width: 100%"
+            />
+            <div class="field-hint">
+              <i class="fa-solid fa-circle-info"></i> Get your Hugging Face token:
+              <a
+                href="https://huggingface.co/settings/tokens"
+                target="_blank"
+                style="color: var(--accent)"
+                >Hugging Face Settings</a
+              >
+            </div>
+          </div>
           <div class="api-info-box">
             <i class="fa-solid fa-shield-halved"></i>
             <div>
@@ -1182,7 +1298,7 @@
     </div>
 
     <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-     ABOUT HERO'S MODAL
+     ABOUT Heros MODAL
 â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
     <div class="modal-overlay" id="aboutHerosModal">
       <div class="about-card">
@@ -1317,144 +1433,7 @@
       </div>
     </div>
 
-    <!-- INTRO SCREEN — FIXED VERSION WITH IMAGE -->
-    <div id="introScreen">
-      <!-- Logo image container — 60px size -->
-      <div class="intro-logo-wrap">
-        <img
-          src="{% static 'images/Hero_ai.png' %}"
-          alt="Heros"
-          class="intro-logo-img"
-        />
-      </div>
-
-      <!-- "Heros Powered" text -->
-      <span class="intro-logo-text">Heros Powered</span>
-
-      <!-- Animated HERO'S letters -->
-      <div class="hero-intro-loader">
-        <svg
-          height="0"
-          width="0"
-          viewBox="0 0 64 64"
-          style="position: absolute; overflow: hidden"
-        >
-          <defs></defs>
-        </svg>
-
-        <!-- H -->
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 64 64"
-          height="56"
-          width="56"
-        >
-          <path
-            class="intro-letter intro-l-h"
-            stroke-linejoin="round"
-            stroke-linecap="round"
-            d="M 10 6 L 10 58 M 10 32 L 54 32 M 54 6 L 54 58"
-            pathLength="360"
-          />
-        </svg>
-        <!-- E -->
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 64 64"
-          height="56"
-          width="56"
-        >
-          <path
-            class="intro-letter intro-l-e"
-            stroke-linejoin="round"
-            stroke-linecap="round"
-            d="M 54 6 L 10 6 L 10 58 L 54 58 M 10 32 L 48 32"
-            pathLength="360"
-          />
-        </svg>
-        <!-- R -->
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 64 64"
-          height="56"
-          width="56"
-        >
-          <path
-            class="intro-letter intro-l-r"
-            stroke-linejoin="round"
-            stroke-linecap="round"
-            d="M 10 6 L 10 58 M 10 6 Q 54 6 54 24 Q 54 36 10 36 M 30 36 L 54 58"
-            pathLength="360"
-          />
-        </svg>
-        <div style="width: 6px; display: inline-block; flex-shrink: 0"></div>
-        <!-- O -->
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 64 64"
-          height="56"
-          width="56"
-        >
-          <path
-            class="intro-letter-o intro-l-o"
-            stroke-linejoin="round"
-            stroke-linecap="round"
-            d="M 32 32 m 0 -24 a 24 24 0 1 1 0 48 a 24 24 0 1 1 0 -48"
-            pathLength="360"
-          />
-        </svg>
-        <div style="width: 6px; display: inline-block; flex-shrink: 0"></div>
-        <!-- S -->
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 64 64"
-          height="56"
-          width="56"
-        >
-          <path
-            class="intro-letter intro-l-s"
-            stroke-linejoin="round"
-            stroke-linecap="round"
-            d="M 52 16 Q 52 6 32 6 Q 12 6 12 20 Q 12 32 32 32 Q 52 32 52 46 Q 52 58 32 58 Q 12 58 12 48"
-            pathLength="360"
-          />
-        </svg>
-      </div>
-
-      <!-- Tagline -->
-      <span class="intro-tagline">Your intelligent assistant</span>
-
-      <!-- Accent line -->
-      <div class="intro-accent-line"></div>
-    </div>
-
     <script>
-      (function () {
-        var EXIT_AT = 4600;
-        var start = Date.now();
-        function doExit() {
-          var el = document.getElementById("introScreen");
-          if (!el) return;
-          var wait = Math.max(0, EXIT_AT - (Date.now() - start));
-          setTimeout(function () {
-            el.style.animation = "introExit 0.55s ease forwards";
-            setTimeout(function () {
-              el.style.display = "none";
-            }, 550);
-          }, wait);
-        }
-        if (document.readyState === "loading") {
-          document.addEventListener("DOMContentLoaded", doExit);
-        } else {
-          doExit();
-        }
-      })();
-      
       // Inline Voice Chat UI Toggle
       function toggleInlineVoiceChat() {
         const inputBox = document.querySelector('.input-box');
@@ -1488,7 +1467,6 @@
           if (fastModeBtn) fastModeBtn.style.display = 'none';
           if (muteBtn) muteBtn.style.display = 'none';
           if (sendMicBtn) sendMicBtn.style.display = 'none';
-          if (searchToggleBtn) searchToggleBtn.style.display = 'none';
           if (codeToggleBtn) codeToggleBtn.style.display = 'none';
           if (modelSelectGroup) modelSelectGroup.style.display = 'none';
           

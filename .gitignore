@@ -68,3 +68,7 @@ dmypy.json
 scratch/
 *.tmp
 *.bak
+
+# ── App Data & Auto-generated ───────────────────────────────────────────────
+halo_usage_stats.json
+brain/

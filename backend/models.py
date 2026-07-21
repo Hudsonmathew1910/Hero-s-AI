@@ -93,3 +93,12 @@ class Setting(models.Model):
 
     def __str__(self):
         return f"Settings - {self.user.name}"
+
+# Anonymous/Free Usage Tracking table
+class AnonymousUsage(models.Model):
+    user_key = models.CharField(max_length=255, unique=True, primary_key=True)
+    message_count = models.IntegerField(default=0)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.user_key}: {self.message_count}"

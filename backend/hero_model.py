@@ -249,7 +249,7 @@ class Baymax:
             'coding':          'gemini-3.5-flash',
             'live_screen':     'gemini-3.5-flash',
             'task_automation': 'nvidia/nemotron-3-super-120b-a12b:free',
-            'web_search':      'nvidia/nemotron-3-nano-30b-a3b:free',
+            'web_search':      'gemini-3.1-flash-lite',
             'web_search_preprocessor':      'gemini-3.1-flash-lite',
             'zeno_plus':       'gemini-3.1-flash-lite',
             'zeno_eco':        'gemini-3.1-flash-lite',
@@ -371,7 +371,7 @@ class Baymax:
         import hashlib
         
         config_str = f"{task}_{self.user_instruction}_{self.user_about_me}_{self.user_name}_{self.nlp_result.get('intent', '')}"
-        cache_key = "sysprompt_" + hashlib.md5(config_str.encode('utf-8')).hexdigest()
+        cache_key = "sysprompt_v3_" + hashlib.md5(config_str.encode('utf-8')).hexdigest()
         
         cached_prompt = cache.get(cache_key)
         if cached_prompt:
@@ -1190,16 +1190,18 @@ To start chatting, please configure your API Keys in your Heros profile settings
             )
 
             if answer and not answer.startswith("No results"):
-                return answer
+                logger.info("[handle_websearch] Web search successfully retrieved context")
+                enriched_text = f"Web Search Results:\n{answer}\n\nUser Query: {rewritten_query}"
+            else:
+                logger.info("[handle_websearch] Web search returned no results")
+                enriched_text = rewritten_query
 
-            # Fallback: plain LLM with web-search system prompt
-            logger.info("[handle_websearch] falling back to LLM-only")
             max_tok = self._smart_token_budget("web_search")
             if getattr(self, 'is_fast', False):
                 from backend.fast import run_fast_route
-                return run_fast_route(self, rewritten_query, max_tokens=max_tok, task="web_search")
+                return run_fast_route(self, enriched_text, max_tokens=max_tok, task="web_search")
             return self._with_fallback(
-                self.models["web_search"], rewritten_query, max_tokens=max_tok, task="web_search"
+                self.models["web_search"], enriched_text, max_tokens=max_tok, task="web_search"
             )
         except Exception as e:
             return self._safe_error(e, "handle_websearch")

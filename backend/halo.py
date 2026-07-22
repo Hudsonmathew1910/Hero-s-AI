@@ -429,6 +429,10 @@ class Halo:
         """
         Ultra-fast Pre-Router / Orchestrator for Halo using Hugging Face.
         """
+        from backend.utils import is_greeting_or_smalltalk
+        if is_greeting_or_smalltalk(user_text):
+            return None
+
         if not getattr(self, "clients", None) or not self.clients:
             return None
             
@@ -503,8 +507,8 @@ class Halo:
             query_to_search = search_query if search_query else text
             
             from backend.utils import is_greeting_or_smalltalk
-            if is_greeting_or_smalltalk(query_to_search):
-                logger.info("[handle_websearch] query is conversational greeting/small talk. Bypassing search.")
+            if search_query is not None and is_greeting_or_smalltalk(query_to_search):
+                logger.info("[handle_websearch] query is conversational greeting/small talk. Bypassing background search.")
                 return self._execute_query(text, system_prompt_override=self.TEXT_PROMPT, task="text_chat")
 
             # 4. Web search started

@@ -1021,6 +1021,10 @@ To start chatting, please configure your API Keys in your Heros profile settings
         Uses the fastest available model to determine if the query needs a web search.
         Returns the specific search query if needed, else None.
         """
+        from backend.utils import is_greeting_or_smalltalk
+        if is_greeting_or_smalltalk(user_text):
+            return None
+
         keys_to_try = []
         if getattr(self, "groq_key", None):
             keys_to_try.append(("groq", self.groq_key))
@@ -1183,8 +1187,8 @@ To start chatting, please configure your API Keys in your Heros profile settings
             logger.info("[handle_websearch] query=%r", query_to_search[:80])
             
             from backend.utils import is_greeting_or_smalltalk
-            if is_greeting_or_smalltalk(query_to_search):
-                logger.info("[handle_websearch] query is conversational greeting/small talk. Bypassing search.")
+            if search_query is not None and is_greeting_or_smalltalk(query_to_search):
+                logger.info("[handle_websearch] query is conversational greeting/small talk. Bypassing background search.")
                 max_tok = self._smart_token_budget("text_chat")
                 if getattr(self, 'is_fast', False):
                     from backend.fast import run_fast_route

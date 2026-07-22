@@ -1320,6 +1320,73 @@ def tts_api(request):
         logger.error(f"TTS generation error: {e}", exc_info=True)
         return JsonResponse({"status": "error", "message": str(e)}, status=500)
 
+
+# =============================================================================
+# Audio Transcription View (Whisper)
+# =============================================================================
+@csrf_exempt
+def transcribe_audio(request):
+    """
+    Transcribes audio using Groq's Whisper-large-v3 API.
+    Bypasses standard Web Speech API limits/blocks (e.g. on Brave).
+    """
+    import os
+    import requests
+    from backend.utils import decrypt_api_key
+    from backend.models import Api
+
+    if request.method != 'POST':
+        return JsonResponse({"status": "fail", "message": "POST required"}, status=400)
+    
+    if 'file' not in request.FILES:
+        return JsonResponse({"status": "fail", "message": "No file uploaded"}, status=400)
+        
+    audio_file = request.FILES['file']
+    
+    # Retrieve Groq key
+    groq_key = None
+    if hasattr(request, 'user_obj') and request.user_obj:
+        try:
+            api_obj = Api.objects.get(user=request.user_obj, model_name='Groq')
+            groq_key = decrypt_api_key(api_obj.api_key_encrypted)
+        except Api.DoesNotExist:
+            pass
+            
+    if not groq_key:
+        groq_key = os.getenv("GROQ_API_KEY")
+        
+    if not groq_key:
+        return JsonResponse({"status": "fail", "message": "No transcription key available"}, status=500)
+        
+    try:
+        files = {
+            'file': (audio_file.name or 'audio.webm', audio_file.read(), audio_file.content_type or 'audio/webm')
+        }
+        data = {
+            'model': 'whisper-large-v3',
+            'response_format': 'json'
+        }
+        headers = {
+            "Authorization": f"Bearer {groq_key}"
+        }
+        
+        response = requests.post(
+            "https://api.groq.com/openai/v1/audio/transcriptions",
+            headers=headers,
+            files=files,
+            data=data,
+            timeout=30
+        )
+        
+        if response.status_code == 200:
+            text = response.json().get('text', '').strip()
+            return JsonResponse({"status": "success", "text": text})
+        else:
+            return JsonResponse({"status": "fail", "message": response.text}, status=response.status_code)
+    except Exception as e:
+        logger.error(f"Whisper transcription error: {e}", exc_info=True)
+        return JsonResponse({"status": "fail", "message": str(e)}, status=500)
+
 # =============================================================================
 # Custom 404 Error Handler
 # =============================================================================

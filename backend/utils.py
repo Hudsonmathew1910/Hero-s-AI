@@ -49,3 +49,21 @@ def safe_error_response(request, logger, context, exception, status=500):
         message = "Something went wrong. Please try again later."
 
     return JsonResponse({"status": "fail", "message": message}, status=status)
+
+
+def is_greeting_or_smalltalk(text: str) -> bool:
+    """
+    Returns True if the query is a simple greeting or short small talk
+    to prevent fetching search results for simple conversational words.
+    """
+    if not text:
+        return True
+    clean = text.strip().lower().rstrip('?!.')
+    greetings = {
+        'hey', 'hello', 'hi', 'yo', 'sup', 'hola', 'hey buddy', 'hey bro', 'hey there',
+        'hi there', 'hello there', 'good morning', 'good afternoon', 'good evening',
+        'hows it going', 'how are you', 'whats up', 'what up', 'greetings', 'test',
+        'hey baymax', 'hey halo', 'hey hero', 'hi baymax', 'hi halo', 'hello baymax',
+        'hello halo', 'ok', 'okay', 'hey heros', 'hey buddy heros', 'heros', 'susila'
+    }
+    return clean in greetings

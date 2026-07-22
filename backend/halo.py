@@ -502,6 +502,11 @@ class Halo:
             
             query_to_search = search_query if search_query else text
             
+            from backend.utils import is_greeting_or_smalltalk
+            if is_greeting_or_smalltalk(query_to_search):
+                logger.info("[handle_websearch] query is conversational greeting/small talk. Bypassing search.")
+                return self._execute_query(text, system_prompt_override=self.TEXT_PROMPT, task="text_chat")
+
             # 4. Web search started
             logger.info("Web search started for: %r", query_to_search[:80])
             

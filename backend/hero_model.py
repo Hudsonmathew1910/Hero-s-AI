@@ -1182,6 +1182,17 @@ To start chatting, please configure your API Keys in your Heros profile settings
             query_to_search = search_query if search_query else text
             logger.info("[handle_websearch] query=%r", query_to_search[:80])
             
+            from backend.utils import is_greeting_or_smalltalk
+            if is_greeting_or_smalltalk(query_to_search):
+                logger.info("[handle_websearch] query is conversational greeting/small talk. Bypassing search.")
+                max_tok = self._smart_token_budget("text_chat")
+                if getattr(self, 'is_fast', False):
+                    from backend.fast import run_fast_route
+                    return run_fast_route(self, text, max_tokens=max_tok, task="text_chat")
+                return self._with_fallback(
+                    self.models["text_chat"], text, max_tokens=max_tok, task="text_chat"
+                )
+
             chat_history = self._get_limited_history("web_search")
             answer, rewritten_query = perform_web_search(
                 query_to_search, 

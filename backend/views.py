@@ -1323,13 +1323,33 @@ def tts_api(request):
 
 @csrf_exempt
 def transcribe_audio(request):
+    logger.info("Transcribe audio endpoint hit. Method: %s, Content-Type: %s", request.method, request.content_type)
+    
     if request.method != 'POST':
         return JsonResponse({'status': 'fail', 'message': 'Only POST method is allowed'}, status=405)
-    
-    if 'audio' not in request.FILES:
-        return JsonResponse({'status': 'fail', 'message': 'No audio file provided'}, status=400)
         
-    audio_file = request.FILES['audio']
+    try:
+        if request.content_type == 'application/json':
+            import json
+            import base64
+            from django.core.files.uploadedfile import SimpleUploadedFile
+            
+            data = json.loads(request.body.decode('utf-8'))
+            audio_base64 = data.get('audio')
+            if not audio_base64:
+                logger.warning("No audio key found in JSON body")
+                return JsonResponse({'status': 'fail', 'message': 'No audio data provided'}, status=400)
+                
+            audio_bytes = base64.b64decode(audio_base64)
+            audio_file = SimpleUploadedFile("voice.webm", audio_bytes, content_type="audio/webm")
+        else:
+            if 'audio' not in request.FILES:
+                logger.warning("No audio key found in request.FILES")
+                return JsonResponse({'status': 'fail', 'message': 'No audio file provided'}, status=400)
+            audio_file = request.FILES['audio']
+    except Exception as e:
+        logger.error(f"Transcribe request parsing failed: {e}")
+        return JsonResponse({'status': 'fail', 'message': f"Request parsing failed: {str(e)}"}, status=400)
     
     gemini_key = None
     groq_key = None

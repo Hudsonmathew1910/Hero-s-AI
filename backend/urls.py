@@ -23,9 +23,10 @@ urlpatterns = [
     path('api/keys/save', views.save_api_keys, name='save_api_keys'),
     path('api/keys/check', views.check_api_keys, name='check_api_keys'),
     
-    # Chat & TTS
+    # Chat & TTS & STT
     path('api/chat', views.chat_api, name='chat_api'),
     path('api/tts', views.tts_api, name='tts_api'),
+    path('api/transcribe', views.transcribe_audio, name='transcribe_audio'),
     path('api/chat/history', views.get_chat_history, name='get_chat_history'),
     path('api/chat/history/<uuid:chat_id>', views.get_chat_messages, name='get_chat_messages'),
     path('api/chat/history/<uuid:chat_id>/delete', views.delete_chat, name='delete_chat'),

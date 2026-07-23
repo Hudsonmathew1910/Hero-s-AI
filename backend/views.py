@@ -1320,6 +1320,97 @@ def tts_api(request):
         logger.error(f"TTS generation error: {e}", exc_info=True)
         return JsonResponse({"status": "error", "message": str(e)}, status=500)
 
+
+@csrf_exempt
+def transcribe_audio(request):
+    if request.method != 'POST':
+        return JsonResponse({'status': 'fail', 'message': 'Only POST method is allowed'}, status=405)
+    
+    if 'audio' not in request.FILES:
+        return JsonResponse({'status': 'fail', 'message': 'No audio file provided'}, status=400)
+        
+    audio_file = request.FILES['audio']
+    
+    gemini_key = None
+    groq_key = None
+    
+    # Try fetching keys from the authenticated user
+    if request.user.is_authenticated:
+        try:
+            api_obj = Api.objects.get(user=request.user, model_name='Groq')
+            groq_key = decrypt_api_key(api_obj.api_key_encrypted)
+        except Api.DoesNotExist:
+            pass
+        try:
+            api_obj = Api.objects.get(user=request.user, model_name='Gemini')
+            gemini_key = decrypt_api_key(api_obj.api_key_encrypted)
+        except Api.DoesNotExist:
+            pass
+
+    # If anonymous or missing keys, fall back to setting defaults
+    from django.conf import settings
+    if not groq_key:
+        groq_key = getattr(settings, "GROQ_API_KEY", None)
+    if not gemini_key:
+        gemini_key = getattr(settings, "GEMINI_API_KEY", None)
+        
+    if groq_key:
+        try:
+            import requests
+            url = "https://api.groq.com/openai/v1/audio/transcriptions"
+            headers = {
+                "Authorization": f"Bearer {groq_key}"
+            }
+            files = {
+                "file": (audio_file.name, audio_file.read(), audio_file.content_type or "audio/webm")
+            }
+            data = {
+                "model": "whisper-large-v3"
+            }
+            r = requests.post(url, headers=headers, files=files, data=data)
+            if r.status_code == 200:
+                res_data = r.json()
+                return JsonResponse({'status': 'success', 'text': res_data.get('text', '')})
+            else:
+                return JsonResponse({'status': 'fail', 'message': f"Groq transcription failed: {r.text}"}, status=r.status_code)
+        except Exception as e:
+            return JsonResponse({'status': 'fail', 'message': f"Error calling Groq Whisper: {str(e)}"}, status=500)
+            
+    elif gemini_key:
+        try:
+            import google.generativeai as genai
+            genai.configure(api_key=gemini_key)
+            model = genai.GenerativeModel("gemini-1.5-flash")
+            
+            import tempfile
+            import os
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".webm") as temp_file:
+                for chunk in audio_file.chunks():
+                    temp_file.write(chunk)
+                temp_path = temp_file.name
+                
+            try:
+                with open(temp_path, "rb") as f:
+                    audio_bytes = f.read()
+                    
+                response = model.generate_content([
+                    {
+                        "mime_type": "audio/webm",
+                        "data": audio_bytes
+                    },
+                    "Provide a highly accurate transcription of this audio. Output only the transcription, nothing else."
+                ])
+                return JsonResponse({'status': 'success', 'text': response.text.strip()})
+            finally:
+                if os.path.exists(temp_path):
+                    os.remove(temp_path)
+        except Exception as e:
+            return JsonResponse({'status': 'fail', 'message': f"Error calling Gemini audio: {str(e)}"}, status=500)
+            
+    else:
+        return JsonResponse({'status': 'fail', 'message': 'No API key configured for speech-to-text transcription'}, status=400)
+
+
 # =============================================================================
 # Custom 404 Error Handler
 # =============================================================================

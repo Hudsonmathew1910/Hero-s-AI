@@ -1347,6 +1347,8 @@ def transcribe_audio(request):
                 logger.warning("No audio key found in request.FILES")
                 return JsonResponse({'status': 'fail', 'message': 'No audio file provided'}, status=400)
             audio_file = request.FILES['audio']
+            
+        audio_file.seek(0)
     except Exception as e:
         logger.error(f"Transcribe request parsing failed: {e}")
         return JsonResponse({'status': 'fail', 'message': f"Request parsing failed: {str(e)}"}, status=400)
@@ -1390,10 +1392,13 @@ def transcribe_audio(request):
             r = requests.post(url, headers=headers, files=files, data=data)
             if r.status_code == 200:
                 res_data = r.json()
+                logger.info("Groq transcription success: %s", res_data.get('text', ''))
                 return JsonResponse({'status': 'success', 'text': res_data.get('text', '')})
             else:
+                logger.warning("Groq transcription failed with status %s: %s", r.status_code, r.text)
                 return JsonResponse({'status': 'fail', 'message': f"Groq transcription failed: {r.text}"}, status=r.status_code)
         except Exception as e:
+            logger.error("Error calling Groq Whisper: %s", e, exc_info=True)
             return JsonResponse({'status': 'fail', 'message': f"Error calling Groq Whisper: {str(e)}"}, status=500)
             
     elif gemini_key:
@@ -1420,14 +1425,17 @@ def transcribe_audio(request):
                     },
                     "Provide a highly accurate transcription of this audio. Output only the transcription, nothing else."
                 ])
+                logger.info("Gemini transcription success: %s", response.text.strip())
                 return JsonResponse({'status': 'success', 'text': response.text.strip()})
             finally:
                 if os.path.exists(temp_path):
                     os.remove(temp_path)
         except Exception as e:
+            logger.error("Error calling Gemini audio: %s", e, exc_info=True)
             return JsonResponse({'status': 'fail', 'message': f"Error calling Gemini audio: {str(e)}"}, status=500)
             
     else:
+        logger.warning("No API key configured for speech-to-text transcription")
         return JsonResponse({'status': 'fail', 'message': 'No API key configured for speech-to-text transcription'}, status=400)
 
 

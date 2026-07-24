@@ -1322,6 +1322,7 @@ def tts_api(request):
 
 
 @csrf_exempt
+@optional_login_json
 def transcribe_audio(request):
     logger.info("Transcribe audio endpoint hit. Method: %s, Content-Type: %s", request.method, request.content_type)
     
@@ -1356,15 +1357,16 @@ def transcribe_audio(request):
     gemini_key = None
     groq_key = None
     
-    # Try fetching keys from the authenticated user
-    if request.user.is_authenticated:
+    # Try fetching keys from the authenticated user (via session cookies or X-Session-Id header)
+    user = getattr(request, 'user_obj', None) or (request.user if request.user.is_authenticated else None)
+    if user:
         try:
-            api_obj = Api.objects.get(user=request.user, model_name='Groq')
+            api_obj = Api.objects.get(user=user, model_name='Groq')
             groq_key = decrypt_api_key(api_obj.api_key_encrypted)
         except Api.DoesNotExist:
             pass
         try:
-            api_obj = Api.objects.get(user=request.user, model_name='Gemini')
+            api_obj = Api.objects.get(user=user, model_name='Gemini')
             gemini_key = decrypt_api_key(api_obj.api_key_encrypted)
         except Api.DoesNotExist:
             pass

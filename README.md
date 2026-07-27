@@ -1,4 +1,4 @@
-# Hero's AI 🤖
+# Heros 🤖
 
 **A production-grade, Django-powered AI assistant platform** featuring intelligent multi-model routing, voice capabilities, RAG analytics, and enterprise-grade security.
 
@@ -6,9 +6,38 @@ Baymax (the core AI dispatcher) intelligently routes requests across **3-tier mo
 
 ---
 
+## 🚀 Latest Release: Heros 4th Gen | Baymax 4 | Halo 3.6 | Zeno Pro 3.0
+
+**Released:** July 27, 2026  
+**Status:** ✅ Stable Production Release
+
+### 🌟 What's New in 4th Gen
+
+#### 🤖 **Baymax 4 & Halo 3.6 Engine**
+- **Baymax 4**: Faster query processing with higher precision and next-generation inference
+- **Halo 3.6**: Intelligent parallel task orchestration and advanced coordination across distributed processing
+
+#### 🎯 **Zeno Pro 3.0 Browser Extension**
+- **Non-Blocking UI Engine** — Continue typing while Zeno thinks
+- **Universal Privacy Voice Support** — Bypass browser privacy shields with native backend endpoint
+- **Shadow Mode Upgrades** — Instant webpage reading and summarization
+- **Zero-Downtime Smart Routing** — Fast, cost-efficient models with minimal latency
+- **Unbreakable Key Rotation** — Robust sequential failover system (User Key → Gemini_K1 → Gemini_K2 → Groq)
+- **Multiple Task Coordinator** — Parallel analysis task execution
+- **Advanced Intent Classification** — Distinguish real-time vs. static queries
+- **Frictionless Anonymous Access** — Premium features without login
+
+#### ⚙️ **Search & Data Fidelity**
+- **Strict Search Result Fidelity** — Exact fact summaries from DuckDuckGo/Wikipedia
+- **Dynamic Date Anchoring** — Current date/time injected into system prompts
+- **Wikipedia Scraper Fixes** — Custom User-Agent prevents data retrieval blocking
+- **Terminal & Log Optimization** — Reduced memory overhead for large documents
+
+---
+
 ## ✨ Key Features
 
-- 🧠 **Baymax AI Dispatcher** — Intent-aware routing with 3-tier fallback (Gemini → OpenRouter → Groq)
+- 🧠 **Baymax 4 AI Dispatcher** — Intent-aware routing with 3-tier fallback (Gemini → OpenRouter → Groq)
 - 💬 **Multi-Model Chat** — Auto-switching between primary and fallback models
 - 🎙️ **Voice Chat** — Speech-to-text input with intelligent intent routing  
 - 🔍 **Web Search** — LLM-powered query rewriting and real-time answer synthesis
@@ -18,6 +47,7 @@ Baymax (the core AI dispatcher) intelligently routes requests across **3-tier mo
 - 💾 **Persistent Chat History** — Per-session conversation context with optional temporary chats
 - 📊 **Infinsight RAG Analytics** — Dataset-aware retrieval-augmented generation for analytics
 - 🎯 **Intent Detection** — NLP-powered routing for optimal task handling
+- 🌐 **Zeno Browser Extension** — Cross-browser support (Chrome, Edge, Brave)
 
 ---
 
@@ -30,7 +60,8 @@ Baymax (the core AI dispatcher) intelligently routes requests across **3-tier mo
 | **AI/LLM** | Google Gemini API, OpenRouter (multi-model), Groq |
 | **NLP** | Intent detection & routing engine |
 | **OCR** | Tesseract via pytesseract |
-| **Frontend** | JavaScript (36.7%), CSS (21.9%), HTML (16.3%) |
+| **Frontend** | JavaScript (28.4%), CSS (26.2%), HTML (18.8%) |
+| **Browser Extension** | Zeno Pro 3.0 (Chrome, Edge, Brave) |
 | **Security** | Cryptography (Fernet), django-cryptography |
 | **Deployment** | Gunicorn, WhiteNoise, Procfile support |
 
@@ -47,17 +78,10 @@ Baymax (the core AI dispatcher) intelligently routes requests across **3-tier mo
 
 ### Installation
 
-<<<<<<< HEAD
 ```bash
 # 1. Clone repository
 git clone https://github.com/Hudsonmathew1910/Hero-s-AI.git
 cd Hero-s-AI/hero_ai
-=======
-````bash
-# 1. Clone the repository
-git clone https://github.com/Hudsonmathew1910/hero-ai.git
-cd hero-ai/hero_ai
->>>>>>> e8bef80 (Hero's AI - V2.6 - Plus - [ Add message encryption ])
 
 # 2. Create virtual environment
 python -m venv .venv
@@ -104,7 +128,6 @@ Copy `.env.example` to `.env` and configure:
 
 **Generate keys:**
 ```bash
-<<<<<<< HEAD
 # Django secret key
 python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
 
@@ -113,26 +136,11 @@ python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().d
 ```
 
 ---
-=======
-# Start Gunicorn in production
-gunicorn hero_ai.wsgi:application --workers 3 --bind 0.0.0.0:8000
-````
-
-### Deployment Configuration
-
-- **Procfile**: Included for easy deployment to Railway, Render, or Heroku.
-- **Static Files**: Remember to run `python manage.py collectstatic` as part of your deployment pipeline.
-- **Environment**: Set `DEBUG=False` in your production environment variables.
-
-```
->>>>>>> e8bef80 (Hero's AI - V2.6 - Plus - [ Add message encryption ])
 
 ## 📁 Project Structure
 
 ```
-
 hero_ai/
-<<<<<<< HEAD
 ├── backend/                    # Django application
 │   ├── hero_model.py          # Baymax AI dispatcher & 3-tier fallback
 │   ├── Nlp.py                 # Intent detection & routing
@@ -155,33 +163,19 @@ hero_ai/
 ├── requirements.txt           # Python dependencies
 ├── manage.py                  # Django management
 └── Procfile                   # Production deployment config
-=======
-├── backend/ # Django app — models, views, AI logic
-│ ├── hero_model.py # Baymax AI dispatcher + model fallback
-│ ├── views.py # API endpoints
-│ ├── Nlp.py # Intent detection (NLP routing)
-│ ├── handle_file.py # File upload & OCR handling
-│ └── models_task/ # Specialized task handlers (web search, etc.)
-├── hero_ai/ # Django project settings
-├── static/ # CSS, JS, images
-├── templates/ # HTML templates
-├── logs/ # Application logs (gitignored)
-└── manage.py
-
->>>>>>> e8bef80 (Hero's AI - V2.6 - Plus - [ Add message encryption ])
 ```
 
 ---
 
 ## 🔧 Core Components
 
-### Baymax AI Dispatcher (`hero_model.py`)
+### Baymax 4 AI Dispatcher (`hero_model.py`)
 - **3-Tier Fallback**: Gemini → OpenRouter → Groq
 - **Dynamic Prompts**: Different system prompts for text/coding/voice/web-search
 - **Token Management**: Intelligent token budgeting per model
 - **Session Awareness**: Maintains conversation context
+- **High-Performance Inference**: Next-generation model routing
 
-<<<<<<< HEAD
 ```python
 # Example usage
 baymax = Baymax()
@@ -201,6 +195,11 @@ Routes requests to appropriate handlers:
 - `voice` — Voice-to-text responses
 - `websearch` — Real-time web information
 - `file_analysis` — Document & image processing
+
+### Halo 3.6 Orchestrator
+- **Parallel Task Coordination** — Manages multiple simultaneous operations
+- **Advanced Routing** — Intelligent task distribution across processing framework
+- **Zero-Downtime** — Seamless failover without conversation drops
 
 ---
 
@@ -248,6 +247,7 @@ python manage.py collectstatic --noinput
 - ✅ **HTTPS only** — Set `SESSION_COOKIE_SECURE=True` in production
 - ✅ **Rate limiting** — Django rate limit middleware included
 - ✅ **CORS protection** — Configured per deployment
+- ✅ **Privacy Voice Support** — Bypass browser ad-blockers and privacy shields
 
 ### API Key Encryption
 
@@ -289,6 +289,7 @@ Tests cover:
 - Model fallback behavior
 - API key encryption/decryption
 - File parsing & OCR
+- Parallel task execution
 
 ---
 
@@ -296,10 +297,20 @@ Tests cover:
 
 | Language | Percentage |
 |----------|-----------|
-| JavaScript | 36.7% |
-| Python | 25.1% |
-| CSS | 21.9% |
-| HTML | 16.3% |
+| JavaScript | 28.4% |
+| Python | 26.6% |
+| CSS | 26.2% |
+| HTML | 18.8% |
+
+---
+
+## 📋 Release History
+
+- **Heros 4th Gen** (July 27, 2026) — Baymax 4, Halo 3.6, Zeno Pro 3.0
+- **Heros V2.8** (July 9, 2026) — Zeno V2.1 Pro with Zuno Music Assistant
+- **Heros V2.6 Plus** (July 3, 2026) — Zeno Extension launch
+- **Infinsight V2.8** (May 6, 2026) — Complete RAG analytics platform
+- **Heros V1.0** (April 12, 2026) — Initial Django prototype
 
 ---
 
@@ -328,7 +339,3 @@ For issues, feature requests, or questions:
 ---
 
 **Built with ❤️ by Hudson Mathew**
-=======
-MIT
-```
->>>>>>> e8bef80 (Hero's AI - V2.6 - Plus - [ Add message encryption ])

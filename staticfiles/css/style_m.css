@@ -1,0 +1,1002 @@
+/* ════════════════════════════════════════════════════════════════════════════
+   STYLE_M.CSS — Mobile-Responsive Overrides for Hero AI Home Page
+   Load AFTER style.css:  <link rel="stylesheet" href="style_m.css">
+   ════════════════════════════════════════════════════════════════════════════ */
+
+/* ═══════ 1. CSS CUSTOM PROPERTIES — centralised scale tokens ═══════ */
+:root {
+  --font-body-size:    0.9rem;
+  --content-padding:   20px;
+  --bubble-max-w:      min(75vw, 520px);
+  --msg-row-max-w:     760px;
+  --header-icon-size:  32px;
+  --input-icon-size:   36px;
+  --modal-side-gap:    24px;
+}
+
+/* ═══════ 2. SIDEBAR BACKDROP OVERLAY ═══════ */
+.sidebar-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 199;               /* sits just below sidebar z-index: 200 */
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
+  transition: opacity 0.3s ease;
+  opacity: 0;
+}
+.sidebar-backdrop.visible {
+  display: block;
+  opacity: 1;
+}
+
+/* ═══════ 3. 100dvh NORMALISATION ═══════
+   Only apply to fixed-position overlays that need full coverage.
+   body already uses height:100dvh and .main-wrapper uses flex:1
+   in style.css — adding min-height here would exceed the viewport. */
+.voice-overlay,
+.auth-screen,
+.modal-overlay {
+  min-height: 100dvh;
+}
+
+
+/* ═══════ 9. SAFE AREA INSETS — notched/pill phones ═══════ */
+@supports (padding-top: env(safe-area-inset-top)) {
+  header {
+    padding-top:    env(safe-area-inset-top);
+    padding-left:   max(18px, env(safe-area-inset-left));
+    padding-right:  max(18px, env(safe-area-inset-right));
+  }
+  .input-wrap {
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+    padding-left:   max(20px, env(safe-area-inset-left));
+    padding-right:  max(20px, env(safe-area-inset-right));
+  }
+  .modal-overlay,
+  .auth-screen {
+    padding-top:    env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .sidebar {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════════
+   BREAKPOINT TIER 1 — TABLET (768px – 1023px)
+   Sidebar as collapsible overlay, keep bubble widths close to desktop
+   ══════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 1023px) {
+  :root {
+    --font-body-size:    0.88rem;
+    --content-padding:   16px;
+    --header-icon-size:  36px;
+  }
+
+  /* --- Sidebar overlay mode (same as existing 768px but triggered earlier) --- */
+  .sidebar {
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    z-index: 200;
+    transform: translateX(-100%);
+    will-change: transform;
+  }
+  .sidebar.open {
+    transform: translateX(0);
+    box-shadow: 6px 0 30px rgba(0, 0, 0, 0.5);
+  }
+  .menu-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Ensure chat area takes full width — no leftover margin */
+  .chat-area {
+    width: 100%;
+    margin-left: 0;
+    flex: 1;
+  }
+
+  /* Header icons — ensure 40×40 touch targets */
+  .hdr-temp-btn {
+    min-width: 40px;
+    min-height: 40px;
+  }
+  .header-model-pill {
+    min-height: 40px;
+    padding: 6px 12px;
+  }
+
+  /* Model select group — tablet keeps text visible */
+  .model-select-group {
+    min-height: 32px;
+  }
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════════
+   BREAKPOINT TIER 2 — PHONE (≤767px)
+   Single-column everything, sidebar full drawer, compact UI
+   ══════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 767px) {
+  :root {
+    --font-body-size:    0.85rem;
+    --content-padding:   12px;
+    --bubble-max-w:      min(85vw, 520px);
+    --msg-row-max-w:     100%;
+    --header-icon-size:  40px;
+    --input-icon-size:   36px;
+    --modal-side-gap:    16px;
+  }
+
+  /* --- Header --- */
+  header {
+    padding: 0 var(--content-padding);
+    height: auto;
+    min-height: var(--header-h);
+  }
+  .header-right {
+    gap: 4px;
+  }
+  .hdr-temp-btn {
+    width: var(--header-icon-size);
+    height: var(--header-icon-size);
+    min-width: 40px;
+    min-height: 40px;
+    font-size: 0.82rem;
+  }
+  .header-model-pill {
+    min-height: 40px;
+    min-width: 40px;
+    padding: 6px 10px;
+    font-size: 0.74rem;
+  }
+  .logo {
+    font-size: 1.05rem;
+  }
+
+  /* --- Sidebar drawer --- */
+  .sidebar {
+    width: 280px;
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    z-index: 200;
+    transform: translateX(-100%);
+  }
+  .sidebar.open {
+    transform: translateX(0);
+    box-shadow: 6px 0 30px rgba(0, 0, 0, 0.5);
+  }
+  .chat-area {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  /* --- Messages & bubbles --- */
+  .msg-row {
+    max-width: var(--msg-row-max-w);
+    padding: 5px var(--content-padding);
+  }
+  .msg-content {
+    font-size: var(--font-body-size);
+  }
+  .msg-content.user .bubble {
+    max-width: var(--bubble-max-w);
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+  /* Code blocks — horizontal scroll, never overflow viewport */
+  .msg-content .bubble pre,
+  .code-block pre {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    max-width: calc(100vw - 2 * var(--content-padding) - 60px);
+    font-size: 0.78rem;
+    padding: 10px 12px;
+  }
+  .code-block {
+    max-width: calc(100vw - 2 * var(--content-padding) - 60px);
+  }
+  .code-card {
+    max-width: calc(100vw - 2 * var(--content-padding) - 40px);
+  }
+
+  /* --- Input bar --- */
+  .input-wrap {
+    padding: 6px var(--content-padding) 10px;
+  }
+  .input-row-outer {
+    gap: 4px;
+  }
+  .input-box {
+    padding: 8px;
+    gap: 4px;
+    border-radius: 12px;
+  }
+  #chatInput {
+    font-size: var(--font-body-size);
+  }
+  .plus-btn,
+  .mic-btn,
+  .mute-btn,
+  .send-btn {
+    width: var(--input-icon-size);
+    height: var(--input-icon-size);
+    min-width: 36px;
+    min-height: 36px;
+  }
+  #sendMicBtn {
+    min-width: 36px;
+    min-height: 36px;
+  }
+  .inline-model-select {
+    display: none;
+  }
+
+  /* Input Row 2 — mode toggles wrap if needed */
+  .input-row-2 {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  #searchToggleBtn,
+  #codeToggleBtn,
+  #fastModeBtn {
+    font-size: 0.72rem;
+    padding: 3px 8px;
+    height: 26px;
+  }
+  .tooltip-container {
+    height: 26px;
+    width: 62px;
+    font-size: 0.72rem;
+  }
+
+  /* Talk button — hide text on phone */
+  .cssbuttons-io-button span {
+    display: none;
+  }
+  .cssbuttons-io-button {
+    padding: 0.35em 2.4em 0.35em 0.6em;
+    font-size: 11px;
+    height: 2.2em;
+  }
+  .cssbuttons-io-button .icon {
+    height: 1.6em;
+    width: 1.6em;
+  }
+
+  /* Voice canvas — compact on phones */
+  .voice-canvas-area {
+    width: 40px;
+    height: 40px;
+  }
+  .voice-canvas-area canvas {
+    width: 40px !important;
+    height: 40px !important;
+  }
+  .inline-voice-container {
+    min-height: 48px;
+    padding: 6px 10px;
+    gap: 10px;
+  }
+  .voice-transcript-area {
+    font-size: 0.88rem;
+  }
+
+  /* Scroll input into view when keyboard opens */
+  .input-wrap:focus-within {
+    scroll-margin-bottom: 20px;
+  }
+
+  /* --- Welcome screen --- */
+  .welcome {
+    padding: 30px var(--content-padding);
+  }
+  .welcome h1 {
+    font-size: 1.25rem;
+  }
+  .welcome p {
+    font-size: 0.84rem;
+    max-width: 300px;
+  }
+  .intro-logo-wrap img {
+    width: 120px;
+    height: 90px;
+  }
+  .hero-intro-loader svg {
+    height: 40px;
+    width: 40px;
+  }
+  .suggestion-chips {
+    gap: 6px;
+    margin-top: 18px;
+  }
+  .chip {
+    padding: 6px 12px;
+    font-size: 0.76rem;
+  }
+
+  /* --- Modals — never touch screen edges --- */
+  .modal-card {
+    max-width: calc(100% - 2 * var(--modal-side-gap));
+    width: calc(100% - 2 * var(--modal-side-gap));
+    margin: 0 auto;
+    border-radius: 18px;
+  }
+  .modal-overlay {
+    padding: var(--modal-side-gap);
+  }
+  .help-card {
+    max-width: calc(100% - 2 * var(--modal-side-gap));
+    width: calc(100% - 2 * var(--modal-side-gap));
+    padding: 24px 20px;
+    border-radius: 18px;
+  }
+  .about-card {
+    max-width: calc(100% - 2 * var(--modal-side-gap));
+    width: calc(100% - 2 * var(--modal-side-gap));
+    padding: 28px 20px;
+    border-radius: 18px;
+  }
+  .help-item {
+    gap: 10px;
+  }
+  .help-desc {
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+
+  /* Auth card */
+  .auth-screen {
+    padding: var(--modal-side-gap);
+  }
+  .auth-card {
+    padding: 28px 20px 24px;
+    max-width: calc(100% - 2 * var(--modal-side-gap));
+    width: 100%;
+    border-radius: 18px;
+  }
+  .auth-tabs {
+    gap: 2px;
+    padding: 3px;
+  }
+  .auth-tab {
+    padding: 8px;
+    font-size: 0.82rem;
+  }
+  .auth-google-btn {
+    font-size: 0.84rem;
+    padding: 10px;
+  }
+  .auth-google-btn svg {
+    flex-shrink: 0;
+  }
+
+  /* Settings modal — collapse two-pane into single-column */
+  .settings-card {
+    flex-direction: column;
+    max-width: calc(100% - 2 * var(--modal-side-gap));
+    width: calc(100% - 2 * var(--modal-side-gap));
+    height: auto;
+    max-height: 85vh;
+  }
+  .settings-nav {
+    width: 100%;
+    flex-direction: row;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    padding: 10px 8px;
+    gap: 4px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .settings-nav::-webkit-scrollbar {
+    display: none;
+  }
+  .settings-nav-section-label {
+    display: none;
+  }
+  .settings-nav-item {
+    white-space: nowrap;
+    padding: 7px 12px;
+    font-size: 0.78rem;
+    border-radius: 20px;
+    gap: 6px;
+  }
+  .settings-panel {
+    padding: 20px;
+  }
+
+  /* Theme buttons in settings */
+  .theme-switcher {
+    gap: 8px;
+  }
+  .theme-btn {
+    padding: 8px 6px;
+    font-size: 0.7rem;
+    gap: 4px;
+  }
+  .theme-preview {
+    width: 36px;
+    height: 24px;
+  }
+
+  /* --- Notifications — centre on mobile --- */
+  .custom-notification {
+    right: auto;
+    left: 50%;
+    transform: translateX(-50%) translateY(-120%);
+    max-width: calc(100vw - 32px);
+    width: calc(100vw - 32px);
+    top: 16px;
+    border-radius: 12px;
+  }
+  .custom-notification.show {
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* Confirm dialog */
+  .custom-confirm {
+    max-width: calc(100% - 32px);
+  }
+
+  /* Voice overlay — compact layout */
+  .voice-overlay .voice-modal {
+    padding: 30px 20px;
+  }
+  .voice-title {
+    font-size: 1.25rem;
+  }
+  .voice-sub {
+    font-size: 0.82rem;
+    margin-bottom: 28px;
+  }
+  .ball-container {
+    width: 160px;
+    height: 160px;
+    margin-bottom: 30px;
+  }
+  #voiceCanvas {
+    width: 160px;
+    height: 160px;
+  }
+  .voice-controls {
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .v-btn {
+    padding: 10px 20px;
+    font-size: 0.82rem;
+  }
+  .voice-transcript {
+    max-width: calc(100vw - 40px);
+    font-size: 0.82rem;
+    padding: 10px 14px;
+    max-height: 180px;
+  }
+
+  /* History items */
+  .history-item {
+    padding: 10px 12px;
+  }
+  .history-delete-btn {
+    opacity: 0.7;          /* always visible on touch — no hover */
+  }
+
+  /* Temp banner */
+  .temp-banner {
+    font-size: 0.74rem;
+    padding: 6px var(--content-padding);
+  }
+
+  /* Modal tabs */
+  .p-tab {
+    font-size: 0.75rem;
+    padding: 7px 10px;
+  }
+
+  /* Table scrolls horizontally */
+  .msg-table-wrap {
+    max-width: calc(100vw - 2 * var(--content-padding) - 60px);
+  }
+
+  /* Typing indicator */
+  .loader {
+    font-size: 0.82rem;
+  }
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════════
+   BREAKPOINT TIER 3 — SMALL PHONES (≤380px)
+   Extra shrink pass for very tight screens
+   ══════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 380px) {
+  :root {
+    --font-body-size:    0.82rem;
+    --content-padding:   8px;
+    --modal-side-gap:    10px;
+    --input-icon-size:   34px;
+  }
+
+  /* Header — tighter */
+  header {
+    padding: 0 8px;
+  }
+  .hdr-temp-btn {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    min-height: 36px;
+    font-size: 0.72rem;
+    padding: 0;
+  }
+  .header-right {
+    gap: 3px;
+  }
+  .logo {
+    font-size: 0.95rem;
+    gap: 5px;
+  }
+  .logo-dot {
+    width: 6px;
+    height: 6px;
+  }
+
+  /* Model pill — icon-only on very small screens */
+  .header-model-pill {
+    padding: 4px 8px;
+    min-width: 36px;
+    min-height: 36px;
+    font-size: 0;                 /* hide text */
+    gap: 0;
+  }
+  .header-model-pill i,
+  .header-model-pill svg {
+    font-size: 0.8rem;
+  }
+  /* Restore icon visibility when text is hidden */
+  .header-model-pill::before {
+    font-size: 0.8rem;
+  }
+
+  /* Model select in input row 2 — shrink */
+  .model-select-group {
+    max-width: 90px;
+    overflow: hidden;
+  }
+  .model-select-group select {
+    font-size: 0.68rem !important;
+    padding-right: 16px !important;
+  }
+
+  /* Input toggles — icon only */
+  #searchToggleBtn,
+  #codeToggleBtn {
+    font-size: 0;                 /* hide text */
+    padding: 4px 8px;
+    width: 30px;
+    height: 24px;
+    justify-content: center;
+  }
+  #searchToggleBtn i,
+  #codeToggleBtn i {
+    font-size: 0.72rem !important;
+    margin: 0;
+  }
+  /* Tooltip / Talk button — smaller */
+  .tooltip-container {
+    width: 30px;
+    height: 24px;
+    font-size: 0;
+  }
+  .tooltip-container .text i {
+    font-size: 0.72rem;
+  }
+  .tooltip-container .text {
+    font-size: 0;
+    gap: 0;
+  }
+
+  /* Fast mode button */
+  #fastModeBtn {
+    width: 26px;
+    height: 24px;
+    padding: 2px;
+    font-size: 0;
+    justify-content: center;
+  }
+  #fastModeBtn i {
+    font-size: 0.68rem !important;
+  }
+
+  /* Input icons */
+  .plus-btn,
+  .mic-btn,
+  .mute-btn,
+  .send-btn,
+  #sendMicBtn {
+    width: var(--input-icon-size);
+    height: var(--input-icon-size);
+    min-width: 34px;
+    min-height: 34px;
+    font-size: 0.8rem;
+  }
+  .input-box {
+    padding: 6px;
+    gap: 3px;
+    border-radius: 10px;
+  }
+  #chatInput {
+    font-size: 0.82rem;
+  }
+
+  /* Messages — tighter padding */
+  .msg-row {
+    padding: 4px var(--content-padding);
+    gap: 8px;
+  }
+  .msg-avatar {
+    width: 26px;
+    height: 26px;
+  }
+  .msg-avatar.ai img {
+    width: 26px;
+    height: 26px;
+  }
+  .msg-content {
+    font-size: var(--font-body-size);
+    line-height: 1.65;
+  }
+  .msg-content.user .bubble {
+    padding: 8px 12px;
+    border-radius: 12px 12px 3px 12px;
+    font-size: var(--font-body-size);
+  }
+
+  /* Welcome screen — compact */
+  .welcome h1 {
+    font-size: 1.1rem;
+  }
+  .welcome p {
+    font-size: 0.78rem;
+    max-width: 260px;
+  }
+  .intro-logo-wrap img {
+    width: 100px;
+    height: 75px;
+  }
+  .hero-intro-loader svg {
+    height: 32px;
+    width: 32px;
+  }
+  .chip {
+    padding: 5px 10px;
+    font-size: 0.72rem;
+  }
+
+  /* Auth card — extra compact */
+  .auth-card {
+    padding: 22px 16px 20px;
+    border-radius: 16px;
+  }
+  .auth-logo {
+    font-size: 1.15rem;
+    margin-bottom: 20px;
+  }
+  .auth-input {
+    padding: 10px 12px;
+    font-size: 0.84rem;
+  }
+  .auth-btn {
+    padding: 10px;
+    font-size: 0.88rem;
+  }
+
+  /* Modal cards */
+  .modal-card,
+  .help-card,
+  .about-card {
+    border-radius: 14px;
+  }
+  .modal-header {
+    padding: 18px 16px 0;
+  }
+  .modal-title {
+    font-size: 1rem;
+  }
+  .modal-body {
+    padding: 16px;
+  }
+  .modal-footer {
+    padding: 12px 16px 16px;
+  }
+  .help-card {
+    padding: 20px 16px;
+  }
+  .help-icon {
+    width: 30px;
+    height: 30px;
+    font-size: 0.8rem;
+  }
+  .help-title {
+    font-size: 0.82rem;
+  }
+  .help-desc {
+    font-size: 0.76rem;
+  }
+
+  /* Settings — ultra compact */
+  .settings-nav-item {
+    padding: 5px 8px;
+    font-size: 0.72rem;
+  }
+  .settings-panel {
+    padding: 16px 14px;
+  }
+  .settings-panel-title {
+    font-size: 0.95rem;
+  }
+
+  /* Voice overlay */
+  .ball-container {
+    width: 120px;
+    height: 120px;
+    margin-bottom: 20px;
+  }
+  #voiceCanvas {
+    width: 120px;
+    height: 120px;
+  }
+  .voice-title {
+    font-size: 1.1rem;
+  }
+  .voice-sub {
+    font-size: 0.78rem;
+    margin-bottom: 20px;
+  }
+  .v-btn {
+    padding: 8px 16px;
+    font-size: 0.78rem;
+    border-radius: 10px;
+  }
+  .voice-transcript {
+    max-height: 140px;
+    font-size: 0.78rem;
+    padding: 8px 12px;
+  }
+
+  /* Notification — tight but visible */
+  .custom-notification {
+    top: 10px;
+    max-width: calc(100vw - 20px);
+    width: calc(100vw - 20px);
+    padding: 10px 14px;
+    font-size: 0.82rem;
+    border-radius: 10px;
+  }
+
+  /* Input hint */
+  .input-hint {
+    font-size: 0.65rem;
+    margin-top: 4px;
+  }
+
+  /* Code blocks — extra compact */
+  .code-block code {
+    font-size: 0.78rem;
+  }
+  .code-lang {
+    font-size: 0.65rem;
+  }
+  .code-copy-btn {
+    font-size: 0.7rem;
+    padding: 2px 4px;
+  }
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════════
+   8. TOUCH & INTERACTION — hover fallbacks for touch devices
+   ══════════════════════════════════════════════════════════════════════════ */
+@media (hover: none) and (pointer: coarse) {
+  /* Provide :active tap feedback since :hover doesn't work on touch */
+  .hdr-temp-btn:active {
+    background: var(--surface3);
+    color: var(--text);
+    transform: scale(0.95);
+  }
+  .theme-btn:active {
+    border-color: rgba(25, 195, 125, 0.4);
+    color: var(--text);
+  }
+  .history-item:active {
+    background: var(--surface2);
+    color: var(--text);
+  }
+  .user-menu-item:active {
+    background: var(--surface2);
+    color: var(--text);
+  }
+  .plus-btn:active {
+    background: var(--surface3);
+    color: var(--text);
+  }
+  .plus-menu-item:active {
+    background: var(--surface2);
+    color: var(--text);
+  }
+  .chip:active {
+    background: var(--surface2);
+    color: var(--text);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+  .new-chat-btn:active {
+    background: var(--surface2);
+    color: var(--text);
+  }
+  .sidebar-infinsight-btn:active {
+    background: var(--surface2);
+    color: var(--text);
+  }
+  .send-btn:active {
+    opacity: 0.8;
+    transform: scale(0.95);
+  }
+  .mic-btn:active {
+    background: var(--surface2);
+    color: var(--text);
+  }
+  .mute-btn:active {
+    background: var(--surface2);
+    color: var(--accent);
+  }
+  .copy-msg-btn:active {
+    color: var(--text);
+    background: var(--surface2);
+  }
+  .modal-close:active {
+    background: var(--surface3);
+    color: var(--text);
+  }
+  .modal-save-btn:active {
+    opacity: 0.85;
+  }
+  .auth-btn:active {
+    opacity: 0.85;
+    transform: translateY(0);
+  }
+  .auth-google-btn:active {
+    background: var(--surface3);
+  }
+  .v-btn:active {
+    opacity: 0.8;
+    transform: scale(0.97);
+  }
+  .settings-nav-item:active {
+    background: var(--surface2);
+    color: var(--text);
+  }
+  .confirm-btn:active {
+    opacity: 0.85;
+    transform: scale(0.98);
+  }
+  #searchToggleBtn:active,
+  #codeToggleBtn:active,
+  #fastModeBtn:active {
+    opacity: 0.8;
+  }
+  .cssbuttons-io-button:active {
+    opacity: 0.9;
+    transform: scale(0.97);
+  }
+  .wait-pill-btn:active:not(:disabled) {
+    background: rgba(235, 87, 87, 0.22);
+    transform: scale(0.97);
+  }
+
+  /* History delete button — always visible on touch */
+  .history-delete-btn {
+    opacity: 0.6;
+  }
+
+  /* Disable tooltip expand animation on touch — just show icon */
+  .tooltip-container:hover {
+    width: auto;
+    border-color: var(--border);
+  }
+  .tooltip-container:hover span:last-child {
+    transform: scale(0);
+  }
+  .tooltip-container:hover .text {
+    opacity: 1;
+    transform: scale(1);
+    left: 0;
+    top: 0;
+  }
+  .tooltip-container:hover .tooltip {
+    display: none;
+  }
+
+  /* Disable [data-tip] tooltip hover on touch — tap-only */
+  [data-tip]:hover::after {
+    display: none;
+  }
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════════
+   LANDSCAPE PHONE — prevent header/input squeeze
+   ══════════════════════════════════════════════════════════════════════════ */
+@media (max-height: 500px) and (orientation: landscape) {
+  header {
+    height: 44px;
+    min-height: 44px;
+  }
+  .welcome {
+    padding: 16px var(--content-padding);
+  }
+  .welcome h1 {
+    font-size: 1.1rem;
+    margin-bottom: 4px;
+  }
+  .intro-logo-wrap img {
+    width: 80px;
+    height: 60px;
+  }
+  .hero-intro-loader svg {
+    height: 28px;
+    width: 28px;
+  }
+  .suggestion-chips {
+    margin-top: 10px;
+  }
+  .input-wrap {
+    padding: 4px var(--content-padding) 6px;
+  }
+  .input-box {
+    padding: 6px;
+  }
+  /* Voice overlay — horizontal layout */
+  .voice-overlay .voice-modal {
+    padding: 16px 24px;
+  }
+  .ball-container {
+    width: 100px;
+    height: 100px;
+    margin-bottom: 16px;
+  }
+  #voiceCanvas {
+    width: 100px;
+    height: 100px;
+  }
+  .voice-title {
+    font-size: 1rem;
+    margin-bottom: 4px;
+  }
+  .voice-sub {
+    font-size: 0.76rem;
+    margin-bottom: 16px;
+  }
+  .voice-transcript {
+    max-height: 100px;
+  }
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════════
+   ACCESSIBILITY — keyboard focus visible on all interactive elements
+   ══════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 767px) {
+  *:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+}

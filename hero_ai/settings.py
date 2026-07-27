@@ -283,6 +283,18 @@ LOGGING = {
             "level":     "DEBUG",
             "propagate": False,
         },
+        # Hero AI query rewriter logger
+        "hero_ai.query_rewriter": {
+            "handlers":  ["console", "file"],
+            "level":     "DEBUG",
+            "propagate": False,
+        },
+        # Hero AI web search logger
+        "hero_ai.web_search": {
+            "handlers":  ["console", "file"],
+            "level":     "DEBUG",
+            "propagate": False,
+        },
         # Infinsight app loggers
         "infinsight": {
             "handlers":  ["console", "file"],

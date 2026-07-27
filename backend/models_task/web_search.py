@@ -82,6 +82,7 @@ def _search_wikipedia(query: str, sentences: int = 5) -> str:
     try:
         import wikipedia
         wikipedia.set_lang("en")
+        wikipedia.set_user_agent("HerosAI/1.0 (hudson@heros.ai)")
         return wikipedia.summary(query, sentences=sentences, auto_suggest=True)
     except wikipedia.exceptions.DisambiguationError as e:
         # When Wikipedia returns a disambiguation page, try the first option
@@ -104,7 +105,7 @@ def _summarise_with_gemini(
     ddg_results: list[dict],
     wiki_summary: str,
     gemini_key: str,
-) -> str:
+) -> str | None:
     """Feed raw search data into Gemini and return a clean answer."""
     from backend.hero_model import Baymax
 
@@ -131,44 +132,67 @@ def _summarise_with_gemini(
         f"User Query: \"{query}\"\n\n"
         f"SEARCH RESULTS:\n{context}\n\n"
         f"INSTRUCTIONS:\n"
-        f"1. **Conversational vs Search Discrimination**: Check if the User Query is a greeting (e.g. 'Hey buddy', 'Hello', 'hi'), small talk, or a general conversational query that does NOT need search data. If so, completely IGNORE the SEARCH RESULTS above and respond naturally, warmly, and conversationally. Do NOT cite any search URLs or mention that you performed a search.\n"
-        f"2. **Analyze & Extract**: If the query actually requires live/real-time facts, scrutinize the search results above to identify the most accurate and relevant information.\n"
-        f"3. **Accuracy & Relevance**: Prioritize factual correctness and direct relevance.\n"
-        f"4. **Direct Output**: Do NOT use preambles like 'Based on the search results...' or 'Here is the answer'. Start your answer immediately.\n"
-        f"5. **Citations**: If and only if you used the search results, list the URLs or titles of the sources you used at the very end.\n\n"
-        f"Deliver a professional and helpful response that directly addresses the user's intent.\n"
+        f"1. **Strict Search Result Fidelity**: Base your answer ONLY and DIRECTLY on the provided SEARCH RESULTS above. Do not use your own training data or general knowledge for facts. If the search results contain the answer, summarize it accurately.\n"
+        f"2. **Handle Conflicts**: If there are conflicting facts in the search results, present the most recent and reliable source (e.g. incumbent status or dates).\n"
+        f"3. **Direct Output**: Do NOT use conversational preambles like 'Based on the search results...' or 'Here is the answer'. Start your answer immediately and naturally.\n"
+        f"4. **Citations**: Always list the URLs or titles of the sources you used from the SEARCH RESULTS at the very end of your response.\n\n"
+        f"Deliver a professional response that directly answers the user query using only the provided search results.\n"
         f"{Baymax.HERO_AI_UNIVERSE}"
     )
 
-    url = (
-        "https://generativelanguage.googleapis.com/v1beta/models/"
-        f"gemini-2.0-flash:generateContent?key={gemini_key}"
-    )
+    import os
+    gemini_keys = []
+    if gemini_key:
+        gemini_keys.append(gemini_key.strip("'\" "))
+    
+    gk1 = os.environ.get("Gemini_K1")
+    gk2 = os.environ.get("Gemini_K2")
+    if gk1:
+        gemini_keys.append(gk1.strip("'\" "))
+    if gk2:
+        gemini_keys.append(gk2.strip("'\" "))
 
-    try:
-        r = requests.post(
-            url,
-            headers={"Content-Type": "application/json"},
-            json={
-                "contents": [{"role": "user", "parts": [{"text": prompt}]}],
-                "generationConfig": {
-                    "temperature": 0.4,
-                    "maxOutputTokens": 1024,
-                    "topP": 0.9,
-                },
-            },
-            timeout=15,
+    for idx, gk in enumerate(gemini_keys):
+        if not gk:
+            continue
+        
+        url = (
+            "https://generativelanguage.googleapis.com/v1beta/models/"
+            f"gemini-2.0-flash:generateContent?key={gk}"
         )
-        if r.status_code == 200:
-            text = r.json()["candidates"][0]["content"]["parts"][0]["text"]
-            return text.strip()
-    except Exception as e:
-        logger.error(f"[web_search] Gemini summarization error: {e}")
 
-    return _summarise_with_hf(query, ddg_results, wiki_summary)
+        try:
+            logger.info(f"[web_search] Attempting Gemini summarization with key index {idx}")
+            r = requests.post(
+                url,
+                headers={"Content-Type": "application/json"},
+                json={
+                    "contents": [{"role": "user", "parts": [{"text": prompt}]}],
+                    "generationConfig": {
+                        "temperature": 0.4,
+                        "maxOutputTokens": 1024,
+                        "topP": 0.9,
+                    },
+                },
+                timeout=15,
+            )
+            if r.status_code == 200:
+                text = r.json()["candidates"][0]["content"]["parts"][0]["text"]
+                return text.strip()
+            else:
+                logger.error(f"[web_search] Gemini summarization key index {idx} failed with status {r.status_code}")
+        except Exception as e:
+            logger.error(f"[web_search] Gemini summarization error with key index {idx}: {e}")
 
-def _summarise_with_hf(query: str, ddg_results: list[dict], wiki_summary: str) -> str:
-    """Fallback summarizer using HuggingFace when Gemini is unavailable."""
+    return None
+
+def _summarise_with_groq(
+    query: str,
+    ddg_results: list[dict],
+    wiki_summary: str,
+    groq_key: str = "",
+) -> str | None:
+    """Fallback summarizer using Groq when Gemini is unavailable."""
     context_parts = []
     if wiki_summary:
         context_parts.append(f"=== Wikipedia ===\n{wiki_summary}")
@@ -178,61 +202,72 @@ def _summarise_with_hf(query: str, ddg_results: list[dict], wiki_summary: str) -
             lines.append(f"{i}. {r['title']}\n   {r['snippet']}\n   Source: {r['url']}")
         context_parts.append("=== Web Results ===\n" + "\n\n".join(lines))
     if not context_parts:
-        return "No search results were found for your query."
+        return None
 
     context = "\n\n".join(context_parts)
+    from backend.hero_model import Baymax
     prompt = (
-        f"You are an expert research assistant.\n\n"
+        f"You are Baymax, an expert research assistant specializing in information synthesis.\n\n"
         f"User Query: \"{query}\"\n\n"
         f"SEARCH RESULTS:\n{context}\n\n"
         f"INSTRUCTIONS:\n"
-        f"1. Check if the User Query is a greeting (e.g. 'Hey buddy', 'Hello', 'hi'), small talk, or a general conversational query that does NOT need search data. If so, completely IGNORE the SEARCH RESULTS above and respond naturally, warmly, and conversationally.\n"
-        f"2. Otherwise, analyze the search results to find the precise answer to the user's query.\n"
-        f"3. Ignore irrelevant results or hallucinations.\n"
-        f"4. Provide a clear, concise, and factual answer.\n"
-        f"5. Do NOT use any preambles like 'Based on the search results...' or 'Here is the answer...'. Start the factual answer immediately.\n"
+        f"1. **Strict Search Result Fidelity**: Base your answer ONLY and DIRECTLY on the provided SEARCH RESULTS above. Do not use your own training data or general knowledge for facts. If the search results contain the answer, summarize it accurately.\n"
+        f"2. **Handle Conflicts**: If there are conflicting facts in the search results, present the most recent and reliable source (e.g. incumbent status or dates).\n"
+        f"3. **Direct Output**: Do NOT use preambles like 'Based on the search results...' or 'Here is the answer'. Start your answer immediately and naturally.\n"
+        f"4. **Citations**: Always list the URLs or titles of the sources you used from the SEARCH RESULTS at the very end of your response.\n\n"
+        f"Deliver a professional response that directly answers the user query using only the provided search results.\n"
+        f"{Baymax.HERO_AI_UNIVERSE}"
     )
 
     import os
-    hf_token = (
-        os.environ.get("HUGGINGFACE_TOKEN_1") or 
-        os.environ.get("HUGGINGFACE_TOKEN_2") or 
-        os.environ.get("HUGGINGFACE_TOKEN_3") or
-        os.environ.get("HF_TOKEN_1") or
-        os.environ.get("HF_TOKEN_2") or
-        os.environ.get("HF_TOKEN_3")
-    )
-    if hf_token:
+    groq_keys = []
+    if groq_key:
+        groq_keys.append(groq_key.strip("'\" "))
+    
+    g1 = os.environ.get("Groq_1")
+    g2 = os.environ.get("Groq_2")
+    g_default = os.environ.get("GROQ_API_KEY")
+    
+    if g1:
+        groq_keys.append(g1.strip("'\" "))
+    if g2:
+        groq_keys.append(g2.strip("'\" "))
+    if g_default:
+        groq_keys.append(g_default.strip("'\" "))
+
+    for i, gk in enumerate(groq_keys):
+        if not gk:
+            continue
         try:
+            logger.info(f"[web_search] Attempting Groq summarization with key index {i}")
             r = requests.post(
-                "https://router.huggingface.co/v1/chat/completions",
+                "https://api.groq.com/openai/v1/chat/completions",
                 headers={
-                    "Authorization": f"Bearer {hf_token}",
+                    "Authorization": f"Bearer {gk}",
                     "Content-Type": "application/json"
                 },
                 json={
-                    "model": "meta-llama/Llama-3.3-70B-Instruct",
+                    "model": "llama-3.1-8b-instant",
                     "messages": [{"role": "user", "content": prompt}],
                     "max_tokens": 1024,
-                    "temperature": 0.1
+                    "temperature": 0.4
                 },
                 timeout=15,
             )
             if r.status_code == 200:
                 text = r.json().get("choices", [{}])[0].get("message", {}).get("content", "").strip()
                 if text:
+                    logger.info(f"[web_search] Groq summarization successful with key index {i}")
                     return text
             else:
-                logger.error(f"[web_search] HF summarization failed with status {r.status_code}")
+                logger.error(f"[web_search] Groq summarization key index {i} failed: {r.status_code}")
         except Exception as e:
-            logger.error(f"[web_search] HF summarization error: {e}")
+            logger.error(f"[web_search] Groq summarization error with key index {i}: {e}")
 
-    return _plain_summary(query, ddg_results, wiki_summary)
-
-
+    return None
 
 def _plain_summary(query: str, ddg_results: list[dict], wiki_summary: str) -> str:
-    """Fallback plain-text answer when Gemini is unavailable."""
+    """Fallback plain-text answer when Gemini and Groq are unavailable."""
     parts = [f"Here is what I found for: {query}\n"]
     if wiki_summary:
         parts.append(f"Wikipedia:\n{wiki_summary}\n")
@@ -240,35 +275,40 @@ def _plain_summary(query: str, ddg_results: list[dict], wiki_summary: str) -> st
         parts.append(f"• {r['title']}\n  {r['snippet']}\n  {r['url']}")
     return "\n".join(parts) if len(parts) > 1 else "No results found."
 
-
-# ── Public entry point ────────────────────────────────────────────────────────
-
 def perform_web_search(
     query: str,
     gemini_key: str = "",
     chat_history: list = None,
+    groq_key: str = "",
 ) -> tuple:
     """
-    Search DuckDuckGo + Wikipedia, then summarise with Gemini.
-    Returns (answer, rewritten_query).
+    Search DuckDuckGo + Wikipedia, then summarise with Gemini or Groq.
+    Returns (answer, rewritten_query). If search is not needed, answer is None.
     """
+    need_live_data = True
     rewritten_query = query
     
-    # Attempt query rewriting if context exists
-    if chat_history:
-        try:
-            logger.info(f"[web_search] Attempting query rewrite: {query!r}")
-            rewritten_query = rewrite_query_for_search(
-                query=query, 
-                chat_history=chat_history, 
-                gemini_key=gemini_key
-            )
-        except Exception as e:
-            logger.error(f"[web_search] Query rewrite failed: {e}")
-            # Fallback to original query on error
-            rewritten_query = query
-    
-    logger.info(f"[web_search] Final Search Query: {rewritten_query}")
+    try:
+        log_query = query.split('\n')[0]
+        if len(log_query) > 100:
+            log_query = log_query[:100] + "..."
+        logger.info(f"[web_search] Analyzing and rewriting query: {log_query!r}")
+        need_live_data, rewritten_query = rewrite_query_for_search(
+            query=query, 
+            chat_history=chat_history, 
+            gemini_key=gemini_key,
+            groq_key=groq_key
+        )
+    except Exception as e:
+        logger.error(f"[web_search] Query analysis/rewrite failed: {e}")
+        need_live_data = True
+        rewritten_query = query
+
+    if not need_live_data:
+        logger.info(f"[web_search] Query does not require live data. Bypassing search task.")
+        return None, rewritten_query
+
+    logger.info(f"[web_search] Query requires live data. Executing search for: {rewritten_query!r}")
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
         future_ddg = executor.submit(_search_duckduckgo, rewritten_query, 5)
@@ -286,9 +326,22 @@ def perform_web_search(
             logger.error("[web_search] Concurrent Wiki search failed: %s", e)
             wiki_summary = ""
 
+    answer = None
     if gemini_key:
-        answer = _summarise_with_gemini(rewritten_query, ddg_results, wiki_summary, gemini_key)
-    else:
+        try:
+            answer = _summarise_with_gemini(rewritten_query, ddg_results, wiki_summary, gemini_key)
+        except Exception as e:
+            logger.error(f"[web_search] Gemini summarization failed: {e}")
+            answer = None
+
+    if not answer:
+        try:
+            answer = _summarise_with_groq(rewritten_query, ddg_results, wiki_summary, groq_key)
+        except Exception as e:
+            logger.error(f"[web_search] Groq summarization fallback failed: {e}")
+            answer = None
+
+    if not answer:
         answer = _plain_summary(rewritten_query, ddg_results, wiki_summary)
     
     return answer, rewritten_query

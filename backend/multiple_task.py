@@ -20,34 +20,42 @@ class MultipleTask:
         # 2. Get web search context
         get_hist = getattr(self.baymax, "_get_limited_history", lambda x: self.baymax.chat_history)
         chat_history = get_hist("web_search")
-        search_result, _ = perform_web_search(
+        search_result, rewritten = perform_web_search(
             message,
             gemini_key=getattr(self.baymax, "gemini_key", "") or "",
-            chat_history=chat_history
+            chat_history=chat_history,
+            groq_key=getattr(self.baymax, "groq_key", "") or ""
         )
         
-        prompt = (
-            f"{message}\n\n"
-            f"[Search Result]\n{search_result}\n\n"
-            f"Important: use search result also."
-        )
+        if search_result:
+            prompt = (
+                f"{rewritten}\n\n"
+                f"[Search Result]\n{search_result}\n\n"
+                f"Important: use search result also."
+            )
+        else:
+            prompt = rewritten
         return self.baymax.handle_coding(prompt)
 
     def handle_search_file(self, message: str, files_data: list) -> str:
         """search and send result to LLM with file handling task"""
         get_hist = getattr(self.baymax, "_get_limited_history", lambda x: getattr(self.baymax, "chat_history", []))
         chat_history = get_hist("web_search")
-        search_result, _ = perform_web_search(
+        search_result, rewritten = perform_web_search(
             message,
             gemini_key=getattr(self.baymax, "gemini_key", "") or "",
-            chat_history=chat_history
+            chat_history=chat_history,
+            groq_key=getattr(self.baymax, "groq_key", "") or ""
         )
         
-        prompt = (
-            f"{message}\n\n"
-            f"[Search Result]\n{search_result}\n\n"
-            f"Important: use search result also."
-        )
+        if search_result:
+            prompt = (
+                f"{rewritten}\n\n"
+                f"[Search Result]\n{search_result}\n\n"
+                f"Important: use search result also."
+            )
+        else:
+            prompt = rewritten
         return self.baymax.handle_file(prompt, files_data)
 
     def handle_code_file(self, message: str, files_data: list) -> str:
@@ -62,17 +70,24 @@ class MultipleTask:
         """search + file preprocessing and send result to LLM with new prompt file handling with coding and search result prompt."""
         get_hist = getattr(self.baymax, "_get_limited_history", lambda x: getattr(self.baymax, "chat_history", []))
         chat_history = get_hist("web_search")
-        search_result, _ = perform_web_search(
+        search_result, rewritten = perform_web_search(
             message,
             gemini_key=getattr(self.baymax, "gemini_key", "") or "",
-            chat_history=chat_history
+            chat_history=chat_history,
+            groq_key=getattr(self.baymax, "groq_key", "") or ""
         )
         
-        prompt = (
-            f"{message}\n\n"
-            f"[Search Result]\n{search_result}\n\n"
-            f"Important: use search result also and act as a coding assistant while handling these files."
-        )
+        if search_result:
+            prompt = (
+                f"{rewritten}\n\n"
+                f"[Search Result]\n{search_result}\n\n"
+                f"Important: use search result also and act as a coding assistant while handling these files."
+            )
+        else:
+            prompt = (
+                f"{rewritten}\n\n"
+                f"Important: act as a coding assistant while handling these files."
+            )
         return self.baymax.handle_file(prompt, files_data)
 
     def handle_voice_file(self, message: str, files_data: list) -> str:
@@ -100,17 +115,24 @@ class MultipleTask:
         """search and send result to LLM with voice chat response constraints"""
         get_hist = getattr(self.baymax, "_get_limited_history", lambda x: getattr(self.baymax, "chat_history", []))
         chat_history = get_hist("web_search")
-        search_result, _ = perform_web_search(
+        search_result, rewritten = perform_web_search(
             message,
             gemini_key=getattr(self.baymax, "gemini_key", "") or "",
-            chat_history=chat_history
+            chat_history=chat_history,
+            groq_key=getattr(self.baymax, "groq_key", "") or ""
         )
         
-        prompt = (
-            f"User message: {message}\n\n"
-            f"[Search Result]\n{search_result}\n\n"
-            f"Important: Answer the user query using the search results. Keep your response extremely brief, casual, and natural (max 2-3 short sentences, under 60 words total) since this is a voice chat. Do not output lists or bullets."
-        )
+        if search_result:
+            prompt = (
+                f"User message: {rewritten}\n\n"
+                f"[Search Result]\n{search_result}\n\n"
+                f"Important: Answer the user query using the search results. Keep your response extremely brief, casual, and natural (max 2-3 short sentences, under 60 words total) since this is a voice chat. Do not output lists or bullets."
+            )
+        else:
+            prompt = (
+                f"User message: {rewritten}\n\n"
+                f"Important: Keep your response extremely brief, casual, and natural (max 2-3 short sentences, under 60 words total) since this is a voice chat. Do not output lists or bullets."
+            )
         
         primary = self.baymax.models.get("voice_chat", "gemini-3.1-flash-lite")
         max_tok = self.baymax._TOKEN_BUDGETS.get("voice", 256)
@@ -130,17 +152,24 @@ class MultipleTask:
         """search + file preprocessing and send result to LLM with voice chat constraints"""
         get_hist = getattr(self.baymax, "_get_limited_history", lambda x: getattr(self.baymax, "chat_history", []))
         chat_history = get_hist("web_search")
-        search_result, _ = perform_web_search(
+        search_result, rewritten = perform_web_search(
             message,
             gemini_key=getattr(self.baymax, "gemini_key", "") or "",
-            chat_history=chat_history
+            chat_history=chat_history,
+            groq_key=getattr(self.baymax, "groq_key", "") or ""
         )
         
-        prompt = (
-            f"User message: {message}\n\n"
-            f"[Search Result]\n{search_result}\n\n"
-            f"Important: The user has attached files. Answer the user query using the search results and files. Keep your response extremely brief, casual, and natural (max 2-3 short sentences, under 60 words total) since this is a voice chat. Do not output lists or bullets."
-        )
+        if search_result:
+            prompt = (
+                f"User message: {rewritten}\n\n"
+                f"[Search Result]\n{search_result}\n\n"
+                f"Important: The user has attached files. Answer the user query using the search results and files. Keep your response extremely brief, casual, and natural (max 2-3 short sentences, under 60 words total) since this is a voice chat. Do not output lists or bullets."
+            )
+        else:
+            prompt = (
+                f"User message: {rewritten}\n\n"
+                f"Important: The user has attached files. Answer the user query using the files. Keep your response extremely brief, casual, and natural (max 2-3 short sentences, under 60 words total) since this is a voice chat. Do not output lists or bullets."
+            )
         
         primary = self.baymax.models.get("voice_chat", "gemini-3.1-flash-lite")
         max_tok = self.baymax._TOKEN_BUDGETS.get("voice", 256)

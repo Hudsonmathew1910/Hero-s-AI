@@ -335,7 +335,10 @@ class Halo:
             prompt += "\n\n" + voice_universe
         else:
             prompt += "\n\n" + self.HERO_AI_UNIVERSE
-        return prompt
+
+        import datetime
+        current_date_str = datetime.datetime.now().strftime("%A, %B %d, %Y")
+        return f"Today's Date: {current_date_str}\n\n{prompt}"
 
     def _execute_query(
         self,
@@ -522,7 +525,7 @@ class Halo:
                 enriched_text = f"Web Search Results:\n{answer}\n\nUser Query: {rewritten_query}"
             else:
                 logger.info("Web search returned no results.")
-                enriched_text = text
+                enriched_text = rewritten_query
                 
             return self._execute_query(enriched_text, system_prompt_override=self.WEB_SEARCH_PROMPT, task="web_search")
         except Exception as e:
@@ -532,7 +535,23 @@ class Halo:
     def handle_zeno_plus(self, text: str) -> str:
         """Processes premium float overlay extension queries."""
         try:
-            return self._execute_query(text, system_prompt_override=self.ZENO_PROMPT, task="zeno_plus")
+            from backend.models_task.web_search import perform_web_search
+            from backend.utils import is_greeting_or_smalltalk
+            
+            if is_greeting_or_smalltalk(text):
+                logger.info("[handle_zeno_plus] query is greeting/small talk. Bypassing search.")
+                enriched_text = text
+            else:
+                logger.info("[handle_zeno_plus] Executing web search task internally...")
+                answer, rewritten_query = perform_web_search(text, gemini_key="", chat_history=self.chat_history)
+                if answer and not answer.startswith("No results"):
+                    logger.info("[handle_zeno_plus] Web search successfully retrieved context")
+                    enriched_text = f"Web Search Results:\n{answer}\n\nUser Query: {rewritten_query}"
+                else:
+                    logger.info("[handle_zeno_plus] Web search returned no results")
+                    enriched_text = rewritten_query
+                    
+            return self._execute_query(enriched_text, system_prompt_override=self.ZENO_PROMPT, task="zeno_plus")
         except Exception as e:
             logger.error("Exception in Halo handle_zeno_plus: %s", e)
             return "An error occurred in Zeno Plus routing."
@@ -540,7 +559,23 @@ class Halo:
     def handle_zeno_eco(self, text: str) -> str:
         """Processes eco-friendly/light extension routing queries."""
         try:
-            return self._execute_query(text, system_prompt_override=self.ZENO_PROMPT, max_tokens=512, task="zeno_eco")
+            from backend.models_task.web_search import perform_web_search
+            from backend.utils import is_greeting_or_smalltalk
+            
+            if is_greeting_or_smalltalk(text):
+                logger.info("[handle_zeno_eco] query is greeting/small talk. Bypassing search.")
+                enriched_text = text
+            else:
+                logger.info("[handle_zeno_eco] Executing web search task internally...")
+                answer, rewritten_query = perform_web_search(text, gemini_key="", chat_history=self.chat_history)
+                if answer and not answer.startswith("No results"):
+                    logger.info("[handle_zeno_eco] Web search successfully retrieved context")
+                    enriched_text = f"Web Search Results:\n{answer}\n\nUser Query: {rewritten_query}"
+                else:
+                    logger.info("[handle_zeno_eco] Web search returned no results")
+                    enriched_text = rewritten_query
+                    
+            return self._execute_query(enriched_text, system_prompt_override=self.ZENO_PROMPT, max_tokens=512, task="zeno_eco")
         except Exception as e:
             logger.error("Exception in Halo handle_zeno_eco: %s", e)
             return "An error occurred in Zeno Eco routing."

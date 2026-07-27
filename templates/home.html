@@ -1460,7 +1460,7 @@
         const voiceStatus = document.getElementById('voiceStatus');
 
         if (isInlineActive) {
-          inputBox.style.height = inputBox.getBoundingClientRect().height + 'px';
+          inputBox.style.minHeight = inputBox.getBoundingClientRect().height + 'px';
           inputBox.style.width = inputBox.getBoundingClientRect().width + 'px';
           
           if (chatInputWrap) chatInputWrap.style.display = 'none';
@@ -1503,6 +1503,7 @@
             }
           }
         } else {
+          inputBox.style.minHeight = '';
           inputBox.style.height = '';
           inputBox.style.width = '';
           

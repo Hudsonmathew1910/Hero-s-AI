@@ -369,13 +369,15 @@ class Baymax:
         """Select and build the system prompt for the given task."""
         from django.core.cache import cache
         import hashlib
+        import datetime
         
         config_str = f"{task}_{self.user_instruction}_{self.user_about_me}_{self.user_name}_{self.nlp_result.get('intent', '')}"
         cache_key = "sysprompt_v3_" + hashlib.md5(config_str.encode('utf-8')).hexdigest()
         
         cached_prompt = cache.get(cache_key)
         if cached_prompt:
-            return cached_prompt
+            current_date_str = datetime.datetime.now().strftime("%A, %B %d, %Y")
+            return f"Today's Date: {current_date_str}\n\n{cached_prompt}"
 
         if task == "coding":
             prompt = self.CODING_PROMPT
@@ -428,7 +430,8 @@ class Baymax:
             prompt += "\n\n" + self.HERO_AI_UNIVERSE
         
         cache.set(cache_key, prompt, timeout=3600 * 24)
-        return prompt
+        current_date_str = datetime.datetime.now().strftime("%A, %B %d, %Y")
+        return f"Today's Date: {current_date_str}\n\n{prompt}"
 
     def _get_limited_history(self, task: str) -> list:
         """Return the chat history truncated based on the task type to reduce token size."""
@@ -1201,7 +1204,8 @@ To start chatting, please configure your API Keys in your Heros profile settings
             answer, rewritten_query = perform_web_search(
                 query_to_search, 
                 gemini_key=self.gemini_key or "",
-                chat_history=chat_history
+                chat_history=chat_history,
+                groq_key=self.groq_key or ""
             )
 
             if answer and not answer.startswith("No results"):
@@ -1224,21 +1228,71 @@ To start chatting, please configure your API Keys in your Heros profile settings
     def handle_zeno_plus(self, text: str) -> str:
         try:
             logger.info("[handle_zeno_plus] query=%r", text[:80])
+            
+            from backend.utils import is_greeting_or_smalltalk
+            if is_greeting_or_smalltalk(text):
+                logger.info("[handle_zeno_plus] query is greeting/small talk. Bypassing search.")
+                enriched_text = text
+            else:
+                logger.info("[handle_zeno_plus] Executing web search task internally...")
+                chat_history = self._get_limited_history("web_search")
+                answer, rewritten_query = perform_web_search(
+                    text, 
+                    gemini_key=self.gemini_key or "",
+                    chat_history=chat_history,
+                    groq_key=self.groq_key or ""
+                )
+                if answer and not answer.startswith("No results"):
+                    logger.info("[handle_zeno_plus] Web search successfully retrieved context")
+                    enriched_text = f"Web Search Results:\n{answer}\n\nUser Query: {rewritten_query}"
+                else:
+                    logger.info("[handle_zeno_plus] Web search returned no results")
+                    enriched_text = rewritten_query
+
             max_tok = self._smart_token_budget("zeno_plus")
+            
+            # Detect selected text or page/shadow context
+            is_selected_text = "---\nSelected Text:\n" in text or "Selected Text:\n" in text
+            is_page_context = "---\nWeb Page Content:\n" in text or "Web Page Content:\n" in text
+            
+            if is_selected_text or is_page_context:
+                logger.info("[handle_zeno_plus] Selected text or page context detected. Using basic Baymax backend.")
+                return self._with_fallback(
+                    self.models["zeno_plus"], enriched_text, max_tokens=max_tok, task="zeno_plus"
+                )
+                
             from backend.fast import run_fast_route
-            return run_fast_route(self, text, max_tokens=max_tok, task="zeno_plus")
+            return run_fast_route(self, enriched_text, max_tokens=max_tok, task="zeno_plus")
         except Exception as e:
             return self._safe_error(e, "handle_zeno_plus")
 
     def handle_zeno_eco(self, text: str) -> str:
         try:
             logger.info("[handle_zeno_eco] query=%r", text[:80])
+            
+            from backend.utils import is_greeting_or_smalltalk
+            if is_greeting_or_smalltalk(text):
+                logger.info("[handle_zeno_eco] query is greeting/small talk. Bypassing search.")
+                enriched_text = text
+            else:
+                logger.info("[handle_zeno_eco] Executing web search task internally...")
+                chat_history = self._get_limited_history("web_search")
+                answer, rewritten_query = perform_web_search(
+                    text, 
+                    gemini_key=self.gemini_key or "",
+                    chat_history=chat_history,
+                    groq_key=self.groq_key or ""
+                )
+                if answer and not answer.startswith("No results"):
+                    logger.info("[handle_zeno_eco] Web search successfully retrieved context")
+                    enriched_text = f"Web Search Results:\n{answer}\n\nUser Query: {rewritten_query}"
+                else:
+                    logger.info("[handle_zeno_eco] Web search returned no results")
+                    enriched_text = rewritten_query
+
             max_tok = self._smart_token_budget("zeno_eco")
-            if getattr(self, 'is_fast', False):
-                from backend.fast import run_fast_route
-                return run_fast_route(self, text, max_tokens=max_tok, task="zeno_eco")
             return self._with_fallback(
-                self.models["zeno_eco"], text, max_tokens=max_tok, task="zeno_eco"
+                self.models["zeno_eco"], enriched_text, max_tokens=max_tok, task="zeno_eco"
             )
         except Exception as e:
             return self._safe_error(e, "handle_zeno_eco")
@@ -1259,10 +1313,30 @@ To start chatting, please configure your API Keys in your Heros profile settings
     def handle_zeno_shadow(self, text: str) -> str:
         try:
             logger.info("[handle_zeno_shadow] query=%r", text[:80])
+            
+            from backend.utils import is_greeting_or_smalltalk
+            if is_greeting_or_smalltalk(text):
+                logger.info("[handle_zeno_shadow] query is greeting/small talk. Bypassing search.")
+                enriched_text = text
+            else:
+                logger.info("[handle_zeno_shadow] Executing web search task internally...")
+                chat_history = self._get_limited_history("web_search")
+                answer, rewritten_query = perform_web_search(
+                    text, 
+                    gemini_key=self.gemini_key or "",
+                    chat_history=chat_history,
+                    groq_key=self.groq_key or ""
+                )
+                if answer and not answer.startswith("No results"):
+                    logger.info("[handle_zeno_shadow] Web search successfully retrieved context")
+                    enriched_text = f"Web Search Results:\n{answer}\n\nUser Query: {rewritten_query}"
+                else:
+                    logger.info("[handle_zeno_shadow] Web search returned no results")
+                    enriched_text = rewritten_query
+
             max_tok = self._smart_token_budget("zeno_shadow")
-            # Always force concurrent fallback / fast for shadow mode
-            return self._with_concurrent_fallback(
-                self.models["zeno_shadow"], text, max_tokens=max_tok, task="zeno_shadow"
+            return self._with_fallback(
+                self.models["zeno_shadow"], enriched_text, max_tokens=max_tok, task="zeno_shadow"
             )
         except Exception as e:
             return self._safe_error(e, "handle_zeno_shadow")

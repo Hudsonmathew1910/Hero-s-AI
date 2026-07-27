@@ -83,9 +83,9 @@ let voiceInterimText = '';
 let ignoreVoiceUntil = 0;
 let currentAITextClean = '';
 
-/* 1-second silence timer before sending to AI (fast response) */
+/* 3-second silence timer before sending to AI (natural response) */
 let silenceTimer = null;
-const SILENCE_DELAY_MS = 1000;
+const SILENCE_DELAY_MS = 3000;
 
 /* API Keys State */
 let hasExistingApiKeys = false;

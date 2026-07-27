@@ -19,7 +19,7 @@ Baymax (the core AI dispatcher) intelligently routes requests across **3-tier mo
 
 #### 🎯 **Zeno Pro 3.0 Browser Extension**
 - **Non-Blocking UI Engine** — Continue typing while Zeno thinks
-- **Universal Privacy Voice Support** — Bypass browser privacy shields with native backend endpoint
+- **Universal Privacy Voice Support** — Secure backend endpoint for voice processing
 - **Shadow Mode Upgrades** — Instant webpage reading and summarization
 - **Zero-Downtime Smart Routing** — Fast, cost-efficient models with minimal latency
 - **Unbreakable Key Rotation** — Robust sequential failover system (User Key → Gemini_K1 → Gemini_K2 → Groq)
@@ -47,7 +47,7 @@ Baymax (the core AI dispatcher) intelligently routes requests across **3-tier mo
 - 💾 **Persistent Chat History** — Per-session conversation context with optional temporary chats
 - 📊 **Infinsight RAG Analytics** — Dataset-aware retrieval-augmented generation for analytics
 - 🎯 **Intent Detection** — NLP-powered routing for optimal task handling
-- 🌐 **Zeno Browser Extension** — Cross-browser support (Chrome, Edge, Brave)
+- 🌐 **Zeno Browser Extension** — Chrome & Edge support
 
 ---
 
@@ -61,7 +61,7 @@ Baymax (the core AI dispatcher) intelligently routes requests across **3-tier mo
 | **NLP** | Intent detection & routing engine |
 | **OCR** | Tesseract via pytesseract |
 | **Frontend** | JavaScript (28.4%), CSS (26.2%), HTML (18.8%) |
-| **Browser Extension** | Zeno Pro 3.0 (Chrome, Edge, Brave) |
+| **Browser Extension** | Zeno Pro 3.0 (Chrome, Edge) |
 | **Security** | Cryptography (Fernet), django-cryptography |
 | **Deployment** | Gunicorn, WhiteNoise, Procfile support |
 
@@ -247,7 +247,7 @@ python manage.py collectstatic --noinput
 - ✅ **HTTPS only** — Set `SESSION_COOKIE_SECURE=True` in production
 - ✅ **Rate limiting** — Django rate limit middleware included
 - ✅ **CORS protection** — Configured per deployment
-- ✅ **Privacy Voice Support** — Bypass browser ad-blockers and privacy shields
+- ✅ **Secure Voice Processing** — Native backend endpoint for privacy
 
 ### API Key Encryption
 

@@ -88,10 +88,10 @@ def process_audio(request):
         ) + Baymax.HERO_AI_UNIVERSE
 
         models_to_try = [
-            "llama-3.1-8b-instant",
-            "llama-3.3-70b-versatile",
-            "mixtral-8x7b-32768",
-            "gemma2-9b-it",
+            "allam-2-7b",
+            "openai/gpt-oss-20b",
+            "qwen/qwen3.8-27b",
+            "openai/gpt-oss-120b",
         ]
 
         response_content = None
@@ -125,7 +125,7 @@ def process_audio(request):
         if not intent or not query:
             return JsonResponse({"error": "Failed to parse intent or query."}, status=500)
 
-        source = data.get('source', '')
+        platform = data.get('platform', 'yt_music')
 
         # 2. Action Execution
         if intent == "play_song":
@@ -137,21 +137,29 @@ def process_audio(request):
                 if results and len(results) > 0:
                     video_id = results[0].get("videoId")
                     if video_id:
-                        url = f"https://www.youtube.com/watch?v={video_id}"
+                        if platform == "youtube":
+                            url = f"https://www.youtube.com/watch?v={video_id}"
+                        else:
+                            url = f"https://music.youtube.com/watch?v={video_id}"
+                            
                         return JsonResponse({
                             "status": "play_extension",
                             "url": url,
                             "intent": "play_song",
-                            "message": f"Playing '{results[0].get('title', query)}' on YouTube."
+                            "message": f"Playing '{results[0].get('title', query)}' on {'YouTube' if platform == 'youtube' else 'YouTube Music'}."
                         })
 
                 # Fallback if ytmusic fails to find a videoId
-                fallback_url = f"https://www.youtube.com/results?search_query={query}+official+audio"
+                if platform == "youtube":
+                    fallback_url = f"https://www.youtube.com/results?search_query={query}+official+audio"
+                else:
+                    fallback_url = f"https://music.youtube.com/search?q={query}"
+                    
                 return JsonResponse({
                     "status": "play_extension",
                     "url": fallback_url,
                     "intent": "play_song",
-                    "message": f"Playing '{query}' on YouTube."
+                    "message": f"Playing '{query}' on {'YouTube' if platform == 'youtube' else 'YouTube Music'}."
                 })
             except Exception as e:
                 return JsonResponse({"error": f"Failed to play on YouTube: {str(e)}"}, status=500)

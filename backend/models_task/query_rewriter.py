@@ -128,7 +128,7 @@ Latest user query: {query}
             continue
         try:
             logger.info(f"[query_rewriter] Attempting Gemini rewrite with key index {idx}")
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={gk}"
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key={gk}"
             r = requests.post(
                 url,
                 headers={"Content-Type": "application/json"},
@@ -183,7 +183,7 @@ Latest user query: {query}
                     "Content-Type": "application/json"
                 },
                 json={
-                    "model": "llama-3.1-8b-instant",
+                    "model": "openai/gpt-oss-20b",
                     "messages": [{"role": "user", "content": prompt}],
                     "max_tokens": 100,
                     "temperature": 0.1

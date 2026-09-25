@@ -100,7 +100,7 @@ class MultipleTask:
         )
         
         # Directly use native inline_data for voice files to prevent LLM hallucination and speed up response
-        primary = self.baymax.models.get("voice_chat", "gemini-3.1-flash-lite")
+        primary = self.baymax.models.get("voice_chat", "gemini-3.5-flash-lite")
         max_tok = self.baymax._TOKEN_BUDGETS.get("voice", 256)
         
         return self.baymax._with_fallback(
@@ -134,7 +134,7 @@ class MultipleTask:
                 f"Important: Keep your response extremely brief, casual, and natural (max 2-3 short sentences, under 60 words total) since this is a voice chat. Do not output lists or bullets."
             )
         
-        primary = self.baymax.models.get("voice_chat", "gemini-3.1-flash-lite")
+        primary = self.baymax.models.get("voice_chat", "gemini-3.5-flash-lite")
         max_tok = self.baymax._TOKEN_BUDGETS.get("voice", 256)
         
         if getattr(self.baymax, 'is_fast', False):
@@ -171,7 +171,7 @@ class MultipleTask:
                 f"Important: The user has attached files. Answer the user query using the files. Keep your response extremely brief, casual, and natural (max 2-3 short sentences, under 60 words total) since this is a voice chat. Do not output lists or bullets."
             )
         
-        primary = self.baymax.models.get("voice_chat", "gemini-3.1-flash-lite")
+        primary = self.baymax.models.get("voice_chat", "gemini-3.5-flash-lite")
         max_tok = self.baymax._TOKEN_BUDGETS.get("voice", 256)
         
         if getattr(self.baymax, 'is_fast', False):

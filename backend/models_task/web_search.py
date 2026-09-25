@@ -158,7 +158,7 @@ def _summarise_with_gemini(
         
         url = (
             "https://generativelanguage.googleapis.com/v1beta/models/"
-            f"gemini-2.0-flash:generateContent?key={gk}"
+            f"gemini-3.5-flash-lite:generateContent?key={gk}"
         )
 
         try:
@@ -247,7 +247,7 @@ def _summarise_with_groq(
                     "Content-Type": "application/json"
                 },
                 json={
-                    "model": "llama-3.1-8b-instant",
+                    "model": "openai/gpt-oss-20b",
                     "messages": [{"role": "user", "content": prompt}],
                     "max_tokens": 1024,
                     "temperature": 0.4

@@ -47,7 +47,7 @@ To start chatting, please configure your API Keys in your Heros profile settings
     primary_model = baymax_instance.models.get(task)
     if not primary_model:
         # Fallback default if task isn't specifically mapped
-        primary_model = 'gemini-3.1-flash-lite'
+        primary_model = 'gemini-3.5-flash-lite'
 
     if not groq_models:
         logger.warning("No Groq models configured. Reverting to primary model fallback.")

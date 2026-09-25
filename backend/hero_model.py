@@ -35,15 +35,19 @@ class GroqModelError(Exception):
 class LocalLoggerProxy:
     def __init__(self, inst):
         self.inst = inst
+
     def debug(self, msg, *args, **kwargs):
         if not getattr(self.inst, "_winner_declared", False):
             logger.debug(msg, *args, **kwargs)
+
     def info(self, msg, *args, **kwargs):
         if not getattr(self.inst, "_winner_declared", False):
             logger.info(msg, *args, **kwargs)
+
     def warning(self, msg, *args, **kwargs):
         if not getattr(self.inst, "_winner_declared", False):
             logger.warning(msg, *args, **kwargs)
+
     def error(self, msg, *args, **kwargs):
         if not getattr(self.inst, "_winner_declared", False):
             logger.error(msg, *args, **kwargs)
@@ -211,7 +215,7 @@ class Baymax:
         self.db_lookup_time = db_lookup_time
         self._initial_steps_logged = False
         self.t_start = time.time()
-        self.gemini_keys      = []
+        self.gemini_keys = []
         if gemini_key:
             self.gemini_keys.append(gemini_key)
         else:
@@ -222,61 +226,58 @@ class Baymax:
                 self.gemini_keys.append(k1.strip("'\" "))
             if k2:
                 self.gemini_keys.append(k2.strip("'\" "))
-        self.gemini_key       = self.gemini_keys[0] if self.gemini_keys else None
-        self.openrouter_key   = openrouter_key
-        self.groq_key         = groq_key
+        self.gemini_key = self.gemini_keys[0] if self.gemini_keys else None
+        self.openrouter_key = openrouter_key
+        self.groq_key = groq_key
         self.user_instruction = user_instruction or ""
-        self.user_about_me    = user_about_me    or ""
-        self.user_name        = user_name        or ""
-        self.nlp_result       = nlp_result       or {}
+        self.user_about_me = user_about_me or ""
+        self.user_name = user_name or ""
+        self.nlp_result = nlp_result or {}
 
         # Temporary chat: caller (views.py) must skip persistence after getting the reply.
-        self.temporary        = temporary
-        self.chat_history     = chat_history or []
+        self.temporary = temporary
+        self.chat_history = chat_history or []
 
         # Controls whether _safe_error() reveals internal details
-        self.is_superuser     = is_superuser
-        
-        self.is_fast          = is_fast
+        self.is_superuser = is_superuser
+
+        self.is_fast = is_fast
 
         self.openrouter_url = "https://openrouter.ai/api/v1/chat/completions"
-        self.groq_url       = "https://api.groq.com/openai/v1/chat/completions"
+        self.groq_url = "https://api.groq.com/openai/v1/chat/completions"
 
         self.models = {
-            'text_chat':       'gemini-3.1-flash-lite',
-            'voice_chat':      'gemini-3.1-flash-lite',
-            'file_analysis':   'gemini-3.1-flash-lite',
-            'coding':          'gemini-3.5-flash',
-            'live_screen':     'gemini-3.5-flash',
+            'text_chat':       'gemini-3.5-flash-lite',
+            'voice_chat':      'gemini-3.5-flash-lite',
+            'file_analysis':   'gemini-3.5-flash-lite',
+            'coding':          'gemini-3.6-flash',
+            'live_screen':     'gemini-3.6-flash',
             'task_automation': 'nvidia/nemotron-3-super-120b-a12b:free',
-            'web_search':      'gemini-3.1-flash-lite',
-            'web_search_preprocessor':      'gemini-3.1-flash-lite',
-            'zeno_plus':       'gemini-3.1-flash-lite',
-            'zeno_eco':        'gemini-3.1-flash-lite',
-            'zeno_voice':      'gemini-3.1-flash-lite',
-            'zeno_shadow':     'llama-3.1-8b-instant',
+            'web_search':      'gemini-3.5-flash-lite',
+            'web_search_preprocessor':      'gemini-3.5-flash-lite',
+            'zeno_plus':       'gemini-3.5-flash-lite',
+            'zeno_eco':        'gemini-3.5-flash-lite',
+            'zeno_voice':      'gemini-3.5-flash-lite',
+            'zeno_shadow':     'openai/gpt-oss-20b',
             'fallback': [
-                'nvidia/nemotron-3-nano-30b-a3b:free',
-                'google/gemma-4-26b-a4b-it:free',
-                'meta-llama/llama-3.3-70b-instruct:free',
-                'google/gemma-4-31b-it:free',
-                'nvidia/nemotron-nano-9b-v2:free',
-                'meta-llama/llama-3.2-3b-instruct:free',
-                'meta-llama/llama-3.3-70b:free',
+                'nvidia/nemotron-3-super-120b-a12b:free',
+                'nex-agi/nex-n2.5-mini:free',
+                'liquid/lfm-2.5-2.6b:free',
             ],
             'fallback_with_groq': [
-                "llama-3.1-8b-instant",
-                "openai/gpt-oss-120b",
+                "allam-2-7b",
                 "openai/gpt-oss-20b",
-                "llama-3.3-70b-versatile",
-                "qwen/qwen3.6-27b",
-                "qwen/qwen3-32b",
+                "qwen/qwen3.8-27b",
+                "openai/gpt-oss-120b",
             ],
             'fallback_with_gemini': [
                 'gemini-3.5-flash',
                 'gemini-3.1-flash-lite',
+                'gemini-3.6-flash',
+                'gemini-3.5-flash-lite',
+                'gemini-flash-latest',
             ],
-           
+
         }
 
         logger.debug(
@@ -352,9 +353,11 @@ class Baymax:
         if meta.get("has_question"):
             hints.append("the user is asking a question — answer it directly")
         if meta.get("has_code_block"):
-            hints.append("the user included code — focus on code in your reply")
+            hints.append(
+                "the user included code — focus on code in your reply")
         if meta.get("has_url"):
-            hints.append("the user referenced a URL — acknowledge it in your reply")
+            hints.append(
+                "the user referenced a URL — acknowledge it in your reply")
 
         if hints:
             base_prompt += f"\n\n[Response hint: {'; '.join(hints)}]"
@@ -370,10 +373,11 @@ class Baymax:
         from django.core.cache import cache
         import hashlib
         import datetime
-        
+
         config_str = f"{task}_{self.user_instruction}_{self.user_about_me}_{self.user_name}_{self.nlp_result.get('intent', '')}"
-        cache_key = "sysprompt_v3_" + hashlib.md5(config_str.encode('utf-8')).hexdigest()
-        
+        cache_key = "sysprompt_v3_" + \
+            hashlib.md5(config_str.encode('utf-8')).hexdigest()
+
         cached_prompt = cache.get(cache_key)
         if cached_prompt:
             current_date_str = datetime.datetime.now().strftime("%A, %B %d, %Y")
@@ -417,7 +421,7 @@ class Baymax:
             prompt += f"\n\nUser Name: {self.user_name} (Only use the name naturally, do NOT start every message with a greeting like 'Hey {self.user_name}', and never use it in simple status checks or casual brief replies)"
 
         prompt = self._enrich_system_prompt(prompt)
-        
+
         # Append ecosystem context exactly once at the end, adapted for voice if needed
         if task in ("voice_chat", "voice", "zeno_voice"):
             voice_universe = """
@@ -428,14 +432,14 @@ class Baymax:
             prompt += "\n\n" + voice_universe
         else:
             prompt += "\n\n" + self.HERO_AI_UNIVERSE
-        
+
         cache.set(cache_key, prompt, timeout=3600 * 24)
         current_date_str = datetime.datetime.now().strftime("%A, %B %d, %Y")
         return f"Today's Date: {current_date_str}\n\n{prompt}"
 
     def _get_limited_history(self, task: str) -> list:
         """Return the chat history truncated based on the task type to reduce token size."""
-        # For temporary chats (like Zeno), the frontend already sends exactly 
+        # For temporary chats (like Zeno), the frontend already sends exactly
         # the history it wants to retain (e.g. 8 for Plus, 4 for Eco).
         if getattr(self, 'temporary', False):
             return self.chat_history or []
@@ -454,7 +458,7 @@ class Baymax:
         limit = limits.get(task, 6)
         if not self.chat_history:
             return []
-        
+
         truncated = self.chat_history[-limit:]
         logger.debug(
             "[history_limit] task=%s | limit=%d | active_history=%d",
@@ -464,17 +468,18 @@ class Baymax:
 
     def _build_msg_openrouter(self, user_text: str, task: str = "text_chat") -> list:
         """Build the messages array for OpenRouter / Groq (OpenAI-compatible)."""
-        messages = [{"role": "system", "content": self._build_system_prompt(task)}]
+        messages = [
+            {"role": "system", "content": self._build_system_prompt(task)}]
 
         history = self._get_limited_history(task)
         if history:
             lines = []
-            # We iterate through the limited history. 
+            # We iterate through the limited history.
             # Note: history might start with 'assistant' if limit is odd or history is uneven.
             for msg in history:
                 prefix = "U: " if msg["role"] == "user" else "A: "
                 lines.append(f"{prefix}{msg['content']}")
-            
+
             messages.append({
                 "role":    "system",
                 "content": "Recent conversation:\n" + "\n".join(lines),
@@ -496,12 +501,12 @@ class Baymax:
         rely on the native systemInstruction field.
         """
         contents = []
-        history  = self._get_limited_history(task)
+        history = self._get_limited_history(task)
 
         for msg in history:
             role = "user" if msg["role"] == "user" else "model"
             parts = [{"text": msg["content"]}]
-            
+
             # Inject past files natively into Gemini's context
             for f in msg.get("files", []):
                 data_url = f.get("dataUrl")
@@ -517,7 +522,8 @@ class Baymax:
                             }
                         })
                     except Exception as e:
-                        logger.warning(f"Failed to parse history file {f.get('name')}: {e}")
+                        logger.warning(
+                            f"Failed to parse history file {f.get('name')}: {e}")
 
             contents.append({
                 "role":  role,
@@ -539,7 +545,8 @@ class Baymax:
                             }
                         })
                     except Exception as e:
-                        logger.warning(f"Failed to parse current file {f.get('name')}: {e}")
+                        logger.warning(
+                            f"Failed to parse current file {f.get('name')}: {e}")
 
         contents.append({"role": "user", "parts": current_parts})
         return contents
@@ -553,14 +560,14 @@ class Baymax:
         model:      str,
         user_text:  str,
         max_tokens: int,
-        task:       str   = "text_chat",
+        task:       str = "text_chat",
         timeout:    float = 10.0,
         current_files: list = None,
     ) -> str | None:
         """Send a request to the Gemini API using the official google-genai SDK."""
         logger = LocalLoggerProxy(self)
         from google import genai
-        
+
         # Load API keys securely from the instance attribute
         keys_to_try = self.gemini_keys.copy() if hasattr(self, 'gemini_keys') else []
         if not keys_to_try:
@@ -570,14 +577,14 @@ class Baymax:
                 keys_to_try.append(default_key)
             elif hasattr(self, 'gemini_key') and self.gemini_key:
                 keys_to_try.append(self.gemini_key)
-        
+
         if not keys_to_try:
             logger.error("Gemini API key is missing.")
             return None
 
         for idx, api_key in enumerate(keys_to_try):
             client = genai.Client(api_key=api_key)
-            
+
             if task == "file_analysis":
                 loop = 3
             else:
@@ -588,7 +595,8 @@ class Baymax:
                     t_start = time.time()
                     response = client.models.generate_content(
                         model=model,
-                        contents=self._build_cnt_gemini(user_text, task, current_files=current_files),
+                        contents=self._build_cnt_gemini(
+                            user_text, task, current_files=current_files),
                         config={
                             "system_instruction": self._build_system_prompt(task),
                             "temperature": self._get_temperature(task),
@@ -597,16 +605,19 @@ class Baymax:
                         }
                     )
                     if not getattr(self, "_winner_declared", False):
-                        logger.debug("Gemini %s generated in %.2fs", model, time.time() - t_start)
+                        logger.debug("Gemini %s generated in %.2fs",
+                                     model, time.time() - t_start)
                     return response.text.strip() if response.text else None
 
                 except Exception as e:
                     if not getattr(self, "_winner_declared", False):
-                        logger.warning("Gemini API Key %d, attempt %d failed: %s", idx + 1, i, str(e))
+                        logger.warning(
+                            "Gemini API Key %d, attempt %d failed: %s", idx + 1, i, str(e))
                     if i == loop:
                         if idx == len(keys_to_try) - 1:
                             if not getattr(self, "_winner_declared", False):
-                                logger.error("Gemini final attempt failed: %s", str(e))
+                                logger.error(
+                                    "Gemini final attempt failed: %s", str(e))
                             return None
                     time.sleep(2)
         return None
@@ -616,7 +627,7 @@ class Baymax:
         model:      str,
         user_text:  str,
         max_tokens: int,
-        task:       str   = "text_chat",
+        task:       str = "text_chat",
         timeout:    float = 2.5,
     ) -> str | None:
         """Send a request to the OpenRouter chat completions API."""
@@ -635,7 +646,8 @@ class Baymax:
             "top_p":       0.9,
         }
         try:
-            r = requests.post(self.openrouter_url, headers=headers, json=payload, timeout=timeout)
+            r = requests.post(self.openrouter_url,
+                              headers=headers, json=payload, timeout=timeout)
             logger.debug("OpenRouter %s → HTTP %d", model, r.status_code)
 
             if r.status_code == 200:
@@ -654,10 +666,12 @@ class Baymax:
                 logger.error("OpenRouter 401: invalid API key")
                 return None
             if r.status_code == 404:
-                logger.warning("OpenRouter 404: model %s not found — skipping", model)
+                logger.warning(
+                    "OpenRouter 404: model %s not found — skipping", model)
                 return None
             if r.status_code == 429:
-                logger.warning("OpenRouter 429 rate-limit (%s) — retrying once", model)
+                logger.warning(
+                    "OpenRouter 429 rate-limit (%s) — retrying once", model)
                 time.sleep(1)
                 try:
                     r2 = requests.post(
@@ -767,17 +781,17 @@ class Baymax:
             return
         self._initial_steps_logged = True
         self.t_start = time.time()
-        
+
         # 1. DB lookup
         logger.info("DB lookup: %.3fs", getattr(self, "db_lookup_time", 0.0))
-        
+
         # 2. Which model
         model_name = "Baymax"
         if task.startswith("zeno"):
             model_name = "Zeno (Baymax)"
-        logger.info("Model: %s | temporary=%s | superuser=%s | raw_history_len=%d", 
+        logger.info("Model: %s | temporary=%s | superuser=%s | raw_history_len=%d",
                     model_name, self.temporary, self.is_superuser, len(self.chat_history))
-        
+
         # 3. Which task
         active_history = self._get_limited_history(task)
         logger.info("Task: %s | active_history=%d", task, len(active_history))
@@ -807,18 +821,18 @@ To start chatting, please configure your API Keys in your Heros profile settings
             if task == "zeno_shadow":
                 return "🔑 **Groq API Key Required for Shadow Mode**\n\nPlease add your Groq API key in profile / settings / api key to enable background page summarization.\n" + No_API
             return "🔑 **Groq API Key Required for Fast Response**\n\nPlease add your Groq API key in profile / settings / api key to enable Fast mode.\n" + No_API
-            
+
         import concurrent.futures
 
         or_models = [primary_model] + self.models.get(fallback_key, [])
         gemini_models = self.models.get("fallback_with_gemini", [])
         groq_models = self.models.get("fallback_with_groq", [])
         max_len = max(len(or_models), len(gemini_models), len(groq_models))
-        
+
         # 6. Primary LLM model name
         logger.info("Primary LLM model name: %s", primary_model)
         logger.info("Fallback LLM model names (Fast Mode Concurrent):")
-        
+
         def run_model(model_type, model_name, call_fn):
             if not model_name:
                 raise Exception("No model provided")
@@ -832,21 +846,27 @@ To start chatting, please configure your API Keys in your Heros profile settings
 
         for attempt in range(max_len):
             or_model = or_models[attempt] if attempt < len(or_models) else None
-            gemini_model = gemini_models[attempt] if attempt < len(gemini_models) else None
-            groq_model = groq_models[attempt] if attempt < len(groq_models) else None
-            
+            gemini_model = gemini_models[attempt] if attempt < len(
+                gemini_models) else None
+            groq_model = groq_models[attempt] if attempt < len(
+                groq_models) else None
+
             # Log attempt matrix
-            logger.info("Attempt %d matrix: %s | %s | %s", attempt + 1, or_model or "None", gemini_model or "None", groq_model or "None")
-            
+            logger.info("Attempt %d matrix: %s | %s | %s", attempt + 1,
+                        or_model or "None", gemini_model or "None", groq_model or "None")
+
             futures = []
             executor = concurrent.futures.ThreadPoolExecutor(max_workers=3)
             if or_model:
-                futures.append(executor.submit(run_model, "Primary/Fallback", or_model, lambda m, t, max_t, tsk: self._call(m, t, max_t, tsk, current_files=current_files)))
+                futures.append(executor.submit(run_model, "Primary/Fallback", or_model, lambda m,
+                               t, max_t, tsk: self._call(m, t, max_t, tsk, current_files=current_files)))
             if gemini_model:
-                futures.append(executor.submit(run_model, "Gemini", gemini_model, lambda m, t, max_t, tsk: self._call(m, t, max_t, tsk, current_files=current_files)))
+                futures.append(executor.submit(run_model, "Gemini", gemini_model, lambda m,
+                               t, max_t, tsk: self._call(m, t, max_t, tsk, current_files=current_files)))
             if groq_model:
-                futures.append(executor.submit(run_model, "Groq", groq_model, self._call_groq))
-            
+                futures.append(executor.submit(
+                    run_model, "Groq", groq_model, self._call_groq))
+
             for future in concurrent.futures.as_completed(futures):
                 try:
                     m_type, m_name, res = future.result()
@@ -856,16 +876,18 @@ To start chatting, please configure your API Keys in your Heros profile settings
                         break  # Stop waiting as soon as one succeeds
                 except Exception as e:
                     pass
-            
+
             executor.shutdown(wait=False)
-            
+
             if winner:
-                logger.info("Winner: fallback model: %s | status code: 200", winner)
+                logger.info(
+                    "Winner: fallback model: %s | status code: 200", winner)
                 break
-                
+
         elapsed = time.time() - self.t_start
         logger.info("Total time taken: %.3fs", elapsed)
-        logger.info("----------------------------------------------------------")
+        logger.info(
+            "----------------------------------------------------------")
         if result:
             return result
         return "All models failed. Please try again later."
@@ -891,7 +913,8 @@ To start chatting, please configure your API Keys in your Heros profile settings
 *Your API keys are encrypted and stored securely on the server—they are never exposed to the browser.*
 """
         if primary_model.lower().startswith("gemini-"):
-            has_gemini = self.gemini_key or (hasattr(self, 'gemini_keys') and self.gemini_keys)
+            has_gemini = self.gemini_key or (
+                hasattr(self, 'gemini_keys') and self.gemini_keys)
             if not has_gemini:
                 from django.conf import settings
                 if not getattr(settings, "GEMINI_API_KEY", None):
@@ -904,12 +927,14 @@ To start chatting, please configure your API Keys in your Heros profile settings
         # 6. Primary LLM model name
         logger.info("Primary LLM model name: %s", primary_model)
 
-        result = self._call(primary_model, text, max_tokens, task, current_files=current_files)
+        result = self._call(primary_model, text, max_tokens,
+                            task, current_files=current_files)
         if result:
             logger.info("Winner: %s | status code: 200", primary_model)
             elapsed = time.time() - self.t_start
             logger.info("Total time taken: %.3fs", elapsed)
-            logger.info("----------------------------------------------------------")
+            logger.info(
+                "----------------------------------------------------------")
             return result
 
         logger.info("Primary model failed. Fallback LLM model names:")
@@ -918,39 +943,46 @@ To start chatting, please configure your API Keys in your Heros profile settings
             fallback_models.extend(self.models.get("fallback_with_gemini", []))
         if self.openrouter_key:
             fallback_models.extend(self.models.get(fallback_key, []))
-            
+
         for m in fallback_models:
             logger.info(" - %s", m)
 
         winner = None
-        for model in self.models.get("fallback_with_gemini", []):
-            if not self.gemini_key:
+        for model in self.models.get(fallback_key, []):
+            if not self.openrouter_key:
                 break
-            logger.info("Trying Gemini fallback: %s", model)
-            result = self._call(model, text, max_tokens, task, current_files=current_files)
+            logger.info("Trying OpenRouter fallback: %s", model)
+            result = self._call(model, text, max_tokens,
+                                task, current_files=current_files)
             if result:
-                logger.info("Winner: fallback model: %s | status code: 200", model)
+                logger.info(
+                    "Winner: fallback model: %s | status code: 200", model)
                 winner = model
                 break
             else:
-                logger.info("Gemini fallback model %s failed | status code: error/timeout", model)
+                logger.info(
+                    "OpenRouter fallback model %s failed | status code: error/timeout", model)
 
         if not winner:
-            for model in self.models.get(fallback_key, []):
-                if not self.openrouter_key:
+            for model in self.models.get("fallback_with_gemini", []):
+                if not self.gemini_key:
                     break
-                logger.info("Trying OpenRouter fallback: %s", model)
-                result = self._call(model, text, max_tokens, task, current_files=current_files)
+                logger.info("Trying Gemini fallback: %s", model)
+                result = self._call(model, text, max_tokens,
+                                    task, current_files=current_files)
                 if result:
-                    logger.info("Winner: fallback model: %s | status code: 200", model)
+                    logger.info(
+                        "Winner: fallback model: %s | status code: 200", model)
                     winner = model
                     break
                 else:
-                    logger.info("OpenRouter fallback model %s failed | status code: error/timeout", model)
+                    logger.info(
+                        "Gemini fallback model %s failed | status code: error/timeout", model)
 
         elapsed = time.time() - self.t_start
         logger.info("Total time taken: %.3fs", elapsed)
-        logger.info("----------------------------------------------------------")
+        logger.info(
+            "----------------------------------------------------------")
         if winner and result:
             return result
         return "All models failed. Please try again later."
@@ -965,45 +997,49 @@ To start chatting, please configure your API Keys in your Heros profile settings
         import concurrent.futures
         from backend.models_task.web_search import _search_duckduckgo, _search_wikipedia, _summarise_with_gemini, _plain_summary
         from backend.models_task.query_rewriter import rewrite_query_for_search
-        
+
         gemini_key = getattr(self, "gemini_key", "") or ""
         chat_history = self._get_limited_history(task)
-        
+
         timeout_val = 4.0 if getattr(self, "is_fast", False) else 10.0
-        
+
         ddg_results = []
         wiki_summary = ""
         rewritten_query = text
-        
+
         # Start 3 parallel tasks
         with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
             future_ddg = executor.submit(_search_duckduckgo, text, 5)
             future_wiki = executor.submit(_search_wikipedia, text, 5)
-            future_preprocess = executor.submit(rewrite_query_for_search, text, chat_history, gemini_key)
-            
+            future_preprocess = executor.submit(
+                rewrite_query_for_search, text, chat_history, gemini_key)
+
             try:
                 ddg_results = future_ddg.result(timeout=timeout_val)
             except Exception as e:
                 logger.error("[web_search_enrich] DDG failed: %s", e)
-                
+
             try:
                 wiki_summary = future_wiki.result(timeout=timeout_val)
             except Exception as e:
                 logger.error("[web_search_enrich] Wiki failed: %s", e)
-                
+
             try:
                 rewritten_query = future_preprocess.result(timeout=timeout_val)
             except Exception as e:
                 logger.error("[web_search_enrich] Preprocess failed: %s", e)
                 rewritten_query = text
-                
+
         # Merge available results using the summarizer
         if gemini_key:
             try:
-                answer = _summarise_with_gemini(rewritten_query, ddg_results, wiki_summary, gemini_key)
+                answer = _summarise_with_gemini(
+                    rewritten_query, ddg_results, wiki_summary, gemini_key)
             except Exception as e:
-                logger.error("[web_search_enrich] Gemini summary failed: %s", e)
-                answer = _plain_summary(rewritten_query, ddg_results, wiki_summary)
+                logger.error(
+                    "[web_search_enrich] Gemini summary failed: %s", e)
+                answer = _plain_summary(
+                    rewritten_query, ddg_results, wiki_summary)
         else:
             answer = _plain_summary(rewritten_query, ddg_results, wiki_summary)
 
@@ -1015,7 +1051,7 @@ To start chatting, please configure your API Keys in your Heros profile settings
                 "3. If you use the Live Data, do NOT mention 'Wikipedia', 'DuckDuckGo', search results, or provide any URLs/links unless the user explicitly asks for them."
             )
             return f"{system_note}\n\nLive Data:\n{answer}\n\nUser Message: {text}"
-            
+
         return text
 
     def _agentic_search_check(self, user_text: str) -> str | None:
@@ -1035,26 +1071,27 @@ To start chatting, please configure your API Keys in your Heros profile settings
             keys_to_try.append(("gemini", self.gemini_key))
         if getattr(self, "openrouter_key", None):
             keys_to_try.append(("openrouter", self.openrouter_key))
-        
+
         if not keys_to_try:
             return None
-            
+
         prompt = (
             "You are an intent classification engine. Read the user's message.\n"
             "Does the user's message require a live web search to answer accurately (e.g., latest news, current events, recent releases, live prices, or real-time facts)?\n"
             "If YES: Output ONLY the exact search query you would use. Do not explain.\n"
             "If NO: Output exactly the word 'NONE'."
         )
-        
+
         provider, key = keys_to_try[0]
         try:
             if provider == "groq":
                 import requests
                 r = requests.post(
                     "https://api.groq.com/openai/v1/chat/completions",
-                    headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
+                    headers={"Authorization": f"Bearer {key}",
+                             "Content-Type": "application/json"},
                     json={
-                        "model": "llama-3.1-8b-instant",
+                        "model": "openai/gpt-oss-20b",
                         "messages": [
                             {"role": "system", "content": prompt},
                             {"role": "user", "content": user_text}
@@ -1071,19 +1108,21 @@ To start chatting, please configure your API Keys in your Heros profile settings
                 from google import genai
                 client = genai.Client(api_key=key)
                 r = client.models.generate_content(
-                    model="gemini-2.5-flash",
+                    model="gemini-3.5-flash-lite",
                     contents=[
-                        {"role": "user", "parts": [{"text": prompt + "\n\nUser Message: " + user_text}]}
+                        {"role": "user", "parts": [
+                            {"text": prompt + "\n\nUser Message: " + user_text}]}
                     ],
                     config={"temperature": 0.0, "max_output_tokens": 50}
                 )
-                ans = r.text.strip()
+                ans = r.text.strip() if r.text else "NONE"
                 return ans if ans.upper() != "NONE" else None
             elif provider == "openrouter":
                 import requests
                 r = requests.post(
                     "https://openrouter.ai/api/v1/chat/completions",
-                    headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
+                    headers={"Authorization": f"Bearer {key}",
+                             "Content-Type": "application/json"},
                     json={
                         "model": "meta-llama/llama-3-8b-instruct:free",
                         "messages": [
@@ -1109,7 +1148,8 @@ To start chatting, please configure your API Keys in your Heros profile settings
             # 1. Agentic Orchestrator Check
             search_query = self._agentic_search_check(text)
             if search_query:
-                logger.info(f"Agentic Orchestrator triggered search: {search_query}")
+                logger.info(
+                    f"Agentic Orchestrator triggered search: {search_query}")
                 return self.handle_websearch(text, search_query=search_query)
 
             enriched_text = text
@@ -1188,10 +1228,11 @@ To start chatting, please configure your API Keys in your Heros profile settings
         try:
             query_to_search = search_query if search_query else text
             logger.info("[handle_websearch] query=%r", query_to_search[:80])
-            
+
             from backend.utils import is_greeting_or_smalltalk
             if search_query is not None and is_greeting_or_smalltalk(query_to_search):
-                logger.info("[handle_websearch] query is conversational greeting/small talk. Bypassing background search.")
+                logger.info(
+                    "[handle_websearch] query is conversational greeting/small talk. Bypassing background search.")
                 max_tok = self._smart_token_budget("text_chat")
                 if getattr(self, 'is_fast', False):
                     from backend.fast import run_fast_route
@@ -1202,17 +1243,19 @@ To start chatting, please configure your API Keys in your Heros profile settings
 
             chat_history = self._get_limited_history("web_search")
             answer, rewritten_query = perform_web_search(
-                query_to_search, 
+                query_to_search,
                 gemini_key=self.gemini_key or "",
                 chat_history=chat_history,
                 groq_key=self.groq_key or ""
             )
 
             if answer and not answer.startswith("No results"):
-                logger.info("[handle_websearch] Web search successfully retrieved context")
+                logger.info(
+                    "[handle_websearch] Web search successfully retrieved context")
                 enriched_text = f"Web Search Results:\n{answer}\n\nUser Query: {rewritten_query}"
             else:
-                logger.info("[handle_websearch] Web search returned no results")
+                logger.info(
+                    "[handle_websearch] Web search returned no results")
                 enriched_text = rewritten_query
 
             max_tok = self._smart_token_budget("web_search")
@@ -1228,39 +1271,44 @@ To start chatting, please configure your API Keys in your Heros profile settings
     def handle_zeno_plus(self, text: str) -> str:
         try:
             logger.info("[handle_zeno_plus] query=%r", text[:80])
-            
+
             from backend.utils import is_greeting_or_smalltalk
             if is_greeting_or_smalltalk(text):
-                logger.info("[handle_zeno_plus] query is greeting/small talk. Bypassing search.")
+                logger.info(
+                    "[handle_zeno_plus] query is greeting/small talk. Bypassing search.")
                 enriched_text = text
             else:
-                logger.info("[handle_zeno_plus] Executing web search task internally...")
+                logger.info(
+                    "[handle_zeno_plus] Executing web search task internally...")
                 chat_history = self._get_limited_history("web_search")
                 answer, rewritten_query = perform_web_search(
-                    text, 
+                    text,
                     gemini_key=self.gemini_key or "",
                     chat_history=chat_history,
                     groq_key=self.groq_key or ""
                 )
                 if answer and not answer.startswith("No results"):
-                    logger.info("[handle_zeno_plus] Web search successfully retrieved context")
+                    logger.info(
+                        "[handle_zeno_plus] Web search successfully retrieved context")
                     enriched_text = f"Web Search Results:\n{answer}\n\nUser Query: {rewritten_query}"
                 else:
-                    logger.info("[handle_zeno_plus] Web search returned no results")
+                    logger.info(
+                        "[handle_zeno_plus] Web search returned no results")
                     enriched_text = rewritten_query
 
             max_tok = self._smart_token_budget("zeno_plus")
-            
+
             # Detect selected text or page/shadow context
             is_selected_text = "---\nSelected Text:\n" in text or "Selected Text:\n" in text
             is_page_context = "---\nWeb Page Content:\n" in text or "Web Page Content:\n" in text
-            
+
             if is_selected_text or is_page_context:
-                logger.info("[handle_zeno_plus] Selected text or page context detected. Using basic Baymax backend.")
+                logger.info(
+                    "[handle_zeno_plus] Selected text or page context detected. Using basic Baymax backend.")
                 return self._with_fallback(
                     self.models["zeno_plus"], enriched_text, max_tokens=max_tok, task="zeno_plus"
                 )
-                
+
             from backend.fast import run_fast_route
             return run_fast_route(self, enriched_text, max_tokens=max_tok, task="zeno_plus")
         except Exception as e:
@@ -1269,25 +1317,29 @@ To start chatting, please configure your API Keys in your Heros profile settings
     def handle_zeno_eco(self, text: str) -> str:
         try:
             logger.info("[handle_zeno_eco] query=%r", text[:80])
-            
+
             from backend.utils import is_greeting_or_smalltalk
             if is_greeting_or_smalltalk(text):
-                logger.info("[handle_zeno_eco] query is greeting/small talk. Bypassing search.")
+                logger.info(
+                    "[handle_zeno_eco] query is greeting/small talk. Bypassing search.")
                 enriched_text = text
             else:
-                logger.info("[handle_zeno_eco] Executing web search task internally...")
+                logger.info(
+                    "[handle_zeno_eco] Executing web search task internally...")
                 chat_history = self._get_limited_history("web_search")
                 answer, rewritten_query = perform_web_search(
-                    text, 
+                    text,
                     gemini_key=self.gemini_key or "",
                     chat_history=chat_history,
                     groq_key=self.groq_key or ""
                 )
                 if answer and not answer.startswith("No results"):
-                    logger.info("[handle_zeno_eco] Web search successfully retrieved context")
+                    logger.info(
+                        "[handle_zeno_eco] Web search successfully retrieved context")
                     enriched_text = f"Web Search Results:\n{answer}\n\nUser Query: {rewritten_query}"
                 else:
-                    logger.info("[handle_zeno_eco] Web search returned no results")
+                    logger.info(
+                        "[handle_zeno_eco] Web search returned no results")
                     enriched_text = rewritten_query
 
             max_tok = self._smart_token_budget("zeno_eco")
@@ -1313,25 +1365,29 @@ To start chatting, please configure your API Keys in your Heros profile settings
     def handle_zeno_shadow(self, text: str) -> str:
         try:
             logger.info("[handle_zeno_shadow] query=%r", text[:80])
-            
+
             from backend.utils import is_greeting_or_smalltalk
             if is_greeting_or_smalltalk(text):
-                logger.info("[handle_zeno_shadow] query is greeting/small talk. Bypassing search.")
+                logger.info(
+                    "[handle_zeno_shadow] query is greeting/small talk. Bypassing search.")
                 enriched_text = text
             else:
-                logger.info("[handle_zeno_shadow] Executing web search task internally...")
+                logger.info(
+                    "[handle_zeno_shadow] Executing web search task internally...")
                 chat_history = self._get_limited_history("web_search")
                 answer, rewritten_query = perform_web_search(
-                    text, 
+                    text,
                     gemini_key=self.gemini_key or "",
                     chat_history=chat_history,
                     groq_key=self.groq_key or ""
                 )
                 if answer and not answer.startswith("No results"):
-                    logger.info("[handle_zeno_shadow] Web search successfully retrieved context")
+                    logger.info(
+                        "[handle_zeno_shadow] Web search successfully retrieved context")
                     enriched_text = f"Web Search Results:\n{answer}\n\nUser Query: {rewritten_query}"
                 else:
-                    logger.info("[handle_zeno_shadow] Web search returned no results")
+                    logger.info(
+                        "[handle_zeno_shadow] Web search returned no results")
                     enriched_text = rewritten_query
 
             max_tok = self._smart_token_budget("zeno_shadow")
@@ -1347,7 +1403,10 @@ To start chatting, please configure your API Keys in your Heros profile settings
             if not files_data:
                 return "No files were sent for analysis."
 
-            import importlib, base64, tempfile, os
+            import importlib
+            import base64
+            import tempfile
+            import os
 
             missing_libs = []
             for lib, install_name in [
@@ -1366,7 +1425,7 @@ To start chatting, please configure your API Keys in your Heros profile settings
             SUPPORTED_EXTS = {'.pdf', '.docx', '.doc', '.txt'}
 
             for file_obj in files_data:
-                name     = file_obj.get('name', 'unknown_file')
+                name = file_obj.get('name', 'unknown_file')
                 data_url = file_obj.get('dataUrl', '')
 
                 if not data_url or "," not in data_url:
@@ -1376,13 +1435,16 @@ To start chatting, please configure your API Keys in your Heros profile settings
                 ext = os.path.splitext(name)[1].lower()
 
                 if ext not in SUPPORTED_EXTS:
-                    results.append(f"**{name}** is not supported. Please upload a PDF, DOCX, DOC, or TXT file.")
+                    results.append(
+                        f"**{name}** is not supported. Please upload a PDF, DOCX, DOC, or TXT file.")
                     continue
 
-                needs = {'.pdf': 'pdfplumber', '.docx': 'python-docx', '.doc': 'python-docx'}
+                needs = {'.pdf': 'pdfplumber',
+                         '.docx': 'python-docx', '.doc': 'python-docx'}
                 required = needs.get(ext)
                 if required and required in missing_libs:
-                    results.append(f"Cannot process **{name}**: `{required}` is not installed. Run: `pip install {required}`")
+                    results.append(
+                        f"Cannot process **{name}**: `{required}` is not installed. Run: `pip install {required}`")
                     continue
 
                 try:
@@ -1392,7 +1454,7 @@ To start chatting, please configure your API Keys in your Heros profile settings
                     with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tf:
                         tf.write(file_data)
                         temp_path = tf.name
-                    
+
                     temp_files_info.append((temp_path, name))
 
                 except Exception as e:
@@ -1424,11 +1486,13 @@ To start chatting, please configure your API Keys in your Heros profile settings
         except Exception as e:
             return self._safe_error(e, "handle_live_display")
 
+
 class Developer:
     """
     A bare-metal, unopinionated client used for testing specific models
     directly on Groq or OpenRouter, returning status codes and raw error traces.
     """
+
     def __init__(self, user, provider, model_name):
         from .models import Api
         from .encryption import decrypt_api_key
@@ -1436,24 +1500,25 @@ class Developer:
         self.provider = provider.lower()
         self.model_name = model_name
         self.openrouter_url = "https://openrouter.ai/api/v1/chat/completions"
-        self.groq_url       = "https://api.groq.com/openai/v1/chat/completions"
+        self.groq_url = "https://api.groq.com/openai/v1/chat/completions"
 
-        self.groq_api_key       = None
+        self.groq_api_key = None
         self.openrouter_api_key = None
-        self.gemini_api_key     = None
-        
+        self.gemini_api_key = None
+
         for api in Api.objects.filter(user=self.user, model_name__in=['Groq', 'OpenRouter', 'Gemini']):
             if api.model_name == 'Groq':
                 self.groq_api_key = decrypt_api_key(api.api_key_encrypted)
             elif api.model_name == 'OpenRouter':
-                self.openrouter_api_key = decrypt_api_key(api.api_key_encrypted)
+                self.openrouter_api_key = decrypt_api_key(
+                    api.api_key_encrypted)
             elif api.model_name == 'Gemini':
                 self.gemini_api_key = decrypt_api_key(api.api_key_encrypted)
 
     def build_system_prompt(self, mode: str) -> str:
         from .hero_model import Baymax
         from .views import get_user_settings
-        
+
         if mode == 'coding':
             prompt = Baymax.CODING_PROMPT
         elif mode in ['voice', 'Voice Chat', 'voice_message']:
@@ -1472,8 +1537,10 @@ class Developer:
             prompt = Baymax.TEXT_PROMPT
 
         user_settings = get_user_settings(self.user)
-        user_instruction = user_settings.get('user_instruction') if user_settings.get('enable_custom_instructions') else None
-        user_about_me = user_settings.get('user_about_me') if user_settings.get('enable_custom_instructions') else None
+        user_instruction = user_settings.get('user_instruction') if user_settings.get(
+            'enable_custom_instructions') else None
+        user_about_me = user_settings.get('user_about_me') if user_settings.get(
+            'enable_custom_instructions') else None
         user_name = user_settings.get('user_name')
 
         if user_instruction:
@@ -1492,17 +1559,17 @@ class Developer:
         Sends the exact payload and returns detailed metadata.
         """
         import requests
-        
+
         if self.provider == 'gemini':
             if not self.gemini_api_key:
                 return {"reply": None, "status_code": 401, "error": "Gemini API key missing"}
-            
+
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model_name}:generateContent?key={self.gemini_api_key}"
             headers = {"Content-Type": "application/json"}
-            
+
             contents = []
             system_instruction = None
-            
+
             for msg in messages:
                 role = msg.get("role")
                 content = msg.get("content", "")
@@ -1510,20 +1577,23 @@ class Developer:
                     system_instruction = {"parts": [{"text": content}]}
                 else:
                     gemini_role = "model" if role == "assistant" else "user"
-                    contents.append({"role": gemini_role, "parts": [{"text": content}]})
-            
+                    contents.append(
+                        {"role": gemini_role, "parts": [{"text": content}]})
+
             payload = {"contents": contents}
             if system_instruction:
                 payload["system_instruction"] = system_instruction
-                
+
             try:
-                response = requests.post(url, headers=headers, json=payload, timeout=60)
+                response = requests.post(
+                    url, headers=headers, json=payload, timeout=60)
                 status_code = response.status_code
                 if status_code == 200:
                     data = response.json()
                     candidates = data.get("candidates", [])
                     if candidates:
-                        reply = candidates[0].get("content", {}).get("parts", [{}])[0].get("text", "")
+                        reply = candidates[0].get("content", {}).get(
+                            "parts", [{}])[0].get("text", "")
                         return {"reply": reply, "status_code": 200, "error": None}
                     return {"reply": None, "status_code": 200, "error": "No candidates returned"}
                 else:
@@ -1547,7 +1617,7 @@ class Developer:
                 "Authorization": f"Bearer {self.openrouter_api_key}",
                 "Content-Type": "application/json"
             }
-        
+
         payload = {
             "model": self.model_name,
             "messages": messages,
@@ -1556,11 +1626,13 @@ class Developer:
         }
 
         try:
-            response = requests.post(url, headers=headers, json=payload, timeout=60)
+            response = requests.post(
+                url, headers=headers, json=payload, timeout=60)
             status_code = response.status_code
             if status_code == 200:
                 data = response.json()
-                reply = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+                reply = data.get("choices", [{}])[0].get(
+                    "message", {}).get("content", "")
                 return {"reply": reply, "status_code": status_code, "error": None}
             else:
                 return {"reply": None, "status_code": status_code, "error": response.text}

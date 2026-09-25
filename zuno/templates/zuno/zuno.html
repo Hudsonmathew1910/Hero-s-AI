@@ -453,6 +453,98 @@
             background: rgba(199, 125, 255, 0.1);
             box-shadow: 0 6px 20px rgba(199, 125, 255, 0.25);
         }
+
+        /* Platform Menu Toggle */
+        .platform-menu {
+            padding: 0.5rem;
+            background-color: var(--surface-light);
+            border: 1px solid var(--border-color);
+            position: relative;
+            display: flex;
+            justify-content: center;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px 0 rgba(0,0,0, 0.2);
+            margin: 1.5rem auto;
+            width: fit-content;
+            gap: 5px;
+        }
+
+        .platform-link {
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            width: 50px;
+            height: 40px;
+            border-radius: 8px;
+            position: relative;
+            z-index: 1;
+            overflow: hidden;
+            transform-origin: center left;
+            transition: width 0.2s ease-in;
+            text-decoration: none;
+            color: var(--text-muted);
+            cursor: pointer;
+        }
+
+        .platform-link::before {
+            position: absolute;
+            z-index: -1;
+            content: "";
+            display: block;
+            border-radius: 8px;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            transform: translateX(100%);
+            transition: transform 0.2s ease-in;
+            transform-origin: center right;
+            background-color: var(--primary-color);
+        }
+
+        .platform-link:hover,
+        .platform-link:focus,
+        .platform-link.active {
+            outline: 0;
+            width: 130px;
+            color: white;
+        }
+
+        .platform-link:hover::before,
+        .platform-link:focus::before,
+        .platform-link.active::before,
+        .platform-link:hover .link-title,
+        .platform-link:focus .link-title,
+        .platform-link.active .link-title {
+            transform: translateX(0);
+            opacity: 1;
+        }
+
+        .platform-link .link-icon {
+            width: 24px;
+            height: 24px;
+            display: block;
+            flex-shrink: 0;
+            left: 13px;
+            position: absolute;
+        }
+
+        .platform-link .link-icon svg {
+            width: 24px;
+            height: 24px;
+        }
+
+        .platform-link .link-title {
+            transform: translateX(100%);
+            transition: transform 0.2s ease-in;
+            transform-origin: center right;
+            display: block;
+            text-align: center;
+            text-indent: 24px;
+            width: 100%;
+            opacity: 0;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
     </style>
 </head>
 <body>
@@ -472,6 +564,26 @@
 
         <div class="status-text" id="statusText">{% if groq_missing %}Configure your API key to start{% else %}Tap to speak{% endif %}</div>
         <div class="transcription" id="transcriptionText"></div>
+
+        <!-- Platform Toggle Menu -->
+        <div class="platform-menu" id="platformMenu">
+            <a class="platform-link active" data-platform="yt_music">
+                <span class="link-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/>
+                    </svg>
+                </span>
+                <span class="link-title">YT Music</span>
+            </a>
+            <a class="platform-link" data-platform="youtube">
+                <span class="link-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M21.58 7.19c-.23-.86-.91-1.54-1.77-1.77C18.25 5 12 5 12 5s-6.25 0-7.81.42c-.86.23-1.54.91-1.77 1.77C2 8.75 2 12 2 12s0 3.25.42 4.81c.23.86.91 1.54 1.77 1.77C5.75 19 12 19 12 19s6.25 0 7.81-.42c.86-.23 1.54-.91 1.77-1.77C22 15.25 22 12 22 12s0-3.25-.42-4.81zM10 15V9l5.2 3-5.2 3z"/>
+                    </svg>
+                </span>
+                <span class="link-title">YouTube</span>
+            </a>
+        </div>
 
         <!-- Zuno Music Player Card -->
         <div id="zuno-music-player" style="display: none; align-items: center; justify-content: center; margin: 2rem 0;">
@@ -658,6 +770,16 @@
             });
         }
 
+        let currentPlatform = 'yt_music';
+        
+        document.querySelectorAll('.platform-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                document.querySelectorAll('.platform-link').forEach(l => l.classList.remove('active'));
+                link.classList.add('active');
+                currentPlatform = link.getAttribute('data-platform');
+            });
+        });
+
         async function processAudio(text) {
             try {
                 const response = await fetch('/zuno/process_audio/', {
@@ -665,7 +787,7 @@
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ text: text })
+                    body: JSON.stringify({ text: text, platform: currentPlatform })
                 });
 
                 const data = await response.json();

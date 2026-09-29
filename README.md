@@ -6,32 +6,27 @@ Baymax (the core AI dispatcher) intelligently routes requests across **3-tier mo
 
 ---
 
-## 🚀 Latest Release: Heros 4th Gen | Baymax 4 | Halo 3.6 | Zeno Pro 3.0
+## 🚀 Latest Release: Heros 5th Gen | Baymax 4.5 | Halo 3.6 | Zeno Pro 3.5 | Zuno 2.1
 
-**Released:** July 27, 2026  
+**Released:** September 29, 2026  
 **Status:** ✅ Stable Production Release
 
-### 🌟 What's New in 4th Gen
+### 🌟 What's New in 5th Gen
 
-#### 🤖 **Baymax 4 & Halo 3.6 Engine**
-- **Baymax 4**: Faster query processing with higher precision and next-generation inference
-- **Halo 3.6**: Intelligent parallel task orchestration and advanced coordination across distributed processing
+#### 🤖 **Baymax 4.5 & Halo 3.6 Engine**
+- **Baymax 4.5**: Introduced Fast Mode Routing (Parallel API Racing) to instantly mitigate 503 upstream errors
+- **Halo 3.6**: Enhanced history formatting natively blocking context-length hallucinations across OpenRouter and Groq providers
+- **Zuno 2.1**: Directly integrated into the new Apps & Tools launcher
 
-#### 🎯 **Zeno Pro 3.0 Browser Extension**
+#### 🎨 **Massive UI/UX Overhaul**
+- **Glassmorphism Design**: Removed generic gradients in favor of a sleek, dark-theme optimized UI
+- **Unified Settings Hub**: New Account, Apps & Tools, and Privacy & Security panels
+- **API Key Management**: Added Hugging Face API integration directly to the landing page
+
+#### 🎯 **Zeno Pro 3.5 Browser Extension**
 - **Non-Blocking UI Engine** — Continue typing while Zeno thinks
 - **Universal Privacy Voice Support** — Secure backend endpoint for voice processing
-- **Shadow Mode Upgrades** — Instant webpage reading and summarization
 - **Zero-Downtime Smart Routing** — Fast, cost-efficient models with minimal latency
-- **Unbreakable Key Rotation** — Robust sequential failover system (User Key → Gemini_K1 → Gemini_K2 → Groq)
-- **Multiple Task Coordinator** — Parallel analysis task execution
-- **Advanced Intent Classification** — Distinguish real-time vs. static queries
-- **Frictionless Anonymous Access** — Premium features without login
-
-#### ⚙️ **Search & Data Fidelity**
-- **Strict Search Result Fidelity** — Exact fact summaries from DuckDuckGo/Wikipedia
-- **Dynamic Date Anchoring** — Current date/time injected into system prompts
-- **Wikipedia Scraper Fixes** — Custom User-Agent prevents data retrieval blocking
-- **Terminal & Log Optimization** — Reduced memory overhead for large documents
 
 ---
 
@@ -306,7 +301,8 @@ Tests cover:
 
 ## 📋 Release History
 
-- **Heros 4th Gen** (July 27, 2026) — Baymax 4, Halo 3.6, Zeno Pro 3.0
+- **Heros 5th Gen** (September 29, 2026) — Complete UI overhaul, Fast Routing, and Baymax 4.5
+- **Heros 4th Gen** (July 27, 2026) — Zeno 3.0 Extension & Unbreakable Routing
 - **Heros V2.8** (July 9, 2026) — Zeno V2.1 Pro with Zuno Music Assistant
 - **Heros V2.6 Plus** (July 3, 2026) — Zeno Extension launch
 - **Infinsight V2.8** (May 6, 2026) — Complete RAG analytics platform

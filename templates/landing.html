@@ -356,7 +356,7 @@
    ============================================================ */
       .hero-intro {
         text-align: center;
-        padding: 140px 32px 48px;
+        padding: 50px 32px 48px;
         max-width: 860px;
         margin: 0 auto;
         position: relative;
@@ -371,7 +371,12 @@
         line-height: 1.06;
         letter-spacing: -0.035em;
         margin-bottom: 24px;
-        background: linear-gradient(135deg, #fafafa 0%, rgba(250,250,250,0.65) 50%, #fafafa 100%);
+        background: linear-gradient(
+          135deg,
+          #fafafa 0%,
+          rgba(250, 250, 250, 0.65) 50%,
+          #fafafa 100%
+        );
         background-size: 200% auto;
         -webkit-background-clip: text;
         background-clip: text;
@@ -379,8 +384,13 @@
         animation: shimmerText 4s ease-in-out infinite;
       }
       @keyframes shimmerText {
-        0%, 100% { background-position: 0% center; }
-        50% { background-position: 200% center; }
+        0%,
+        100% {
+          background-position: 0% center;
+        }
+        50% {
+          background-position: 200% center;
+        }
       }
       .hero-intro p.lede {
         font-size: 1.1rem;
@@ -406,11 +416,8 @@
         z-index: 90;
         display: flex;
         justify-content: center;
-        padding: 12px 0;
-        backdrop-filter: blur(20px) saturate(180%);
+        padding: 30px 0;
         -webkit-backdrop-filter: blur(20px) saturate(180%);
-        background: rgba(9, 9, 11, 0.82);
-        border-bottom: 1px solid var(--border-soft);
         margin-bottom: 0;
       }
       .tabs {
@@ -420,7 +427,7 @@
         padding: 0.35rem;
         border-radius: 99px;
         border: 1px solid var(--border);
-        box-shadow: 0 4px 24px -4px rgba(0,0,0,0.4);
+        box-shadow: 0 4px 24px -4px rgba(0, 0, 0, 0.4);
       }
       .tabs .tab {
         display: flex;
@@ -453,7 +460,7 @@
         z-index: 1;
         border-radius: 99px;
         transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
       }
 
       /* ============================================================
@@ -523,7 +530,9 @@
       /* Visual panel hover lift */
       .hero-row .chain-card,
       .hero-row .data-panel {
-        transition: transform 0.4s var(--ease), box-shadow 0.4s var(--ease);
+        transition:
+          transform 0.4s var(--ease),
+          box-shadow 0.4s var(--ease);
       }
       .hero-row .chain-card:hover,
       .hero-row .data-panel:hover {
@@ -1612,16 +1621,34 @@
    PAGE LOAD KEYFRAME ANIMATIONS
    ============================================================ */
       @keyframes slideDownFade {
-        from { opacity: 0; transform: translateY(-20px); }
-        to { opacity: 1; transform: translateY(0); }
+        from {
+          opacity: 0;
+          transform: translateY(-20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
       }
       @keyframes slideUpFade {
-        from { opacity: 0; transform: translateY(30px); }
-        to { opacity: 1; transform: translateY(0); }
+        from {
+          opacity: 0;
+          transform: translateY(30px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
       }
       @keyframes scaleUpFade {
-        from { opacity: 0; transform: scale(0.97); }
-        to { opacity: 1; transform: scale(1); }
+        from {
+          opacity: 0;
+          transform: scale(0.97);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1);
+        }
       }
 
       .nav {
@@ -1645,10 +1672,12 @@
    ============================================================ */
       .reveal {
         opacity: 0;
-        transition: opacity 0.85s cubic-bezier(0.22, 1, 0.36, 1), transform 0.85s cubic-bezier(0.22, 1, 0.36, 1);
+        transition:
+          opacity 0.85s cubic-bezier(0.22, 1, 0.36, 1),
+          transform 0.85s cubic-bezier(0.22, 1, 0.36, 1);
         will-change: transform, opacity;
       }
-      
+
       /* Slide Up (Default reveal fallback) */
       .reveal.slide-up {
         transform: translateY(40px);
@@ -1657,7 +1686,7 @@
         opacity: 1;
         transform: translateY(0);
       }
-      
+
       /* Slide from Left */
       .reveal.slide-left {
         transform: translateX(-40px);
@@ -1772,7 +1801,9 @@
           font-size: clamp(1.6rem, 6vw, 2.2rem);
         }
         /* Keep Zeno popup from overflowing */
-        .hero-row .chain-card[style*="position: relative"] > div[style*="position: absolute"] {
+        .hero-row
+          .chain-card[style*="position: relative"]
+          > div[style*="position: absolute"] {
           width: 220px !important;
           right: 10px !important;
           top: 10px !important;
@@ -1851,7 +1882,7 @@
         margin-top: 12px;
         text-align: left;
         line-height: 1.5;
-        box-shadow: inset 0 2px 8px rgba(0,0,0,0.8);
+        box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.8);
       }
       .sim-console .log-line {
         margin-bottom: 4px;
@@ -1918,7 +1949,9 @@
         border: 1px solid var(--border);
         border-radius: 12px;
         overflow: hidden;
-        transition: border-color 0.3s ease, background 0.3s ease;
+        transition:
+          border-color 0.3s ease,
+          background 0.3s ease;
       }
       .faq-item.open {
         border-color: rgba(25, 195, 125, 0.25);
@@ -2030,9 +2063,19 @@
         animation: pulseGlow 2s infinite;
       }
       @keyframes pulseGlow {
-        0% { transform: scale(0.95); opacity: 0.6; }
-        50% { transform: scale(1.2); opacity: 1; box-shadow: 0 0 12px var(--cyan); }
-        100% { transform: scale(0.95); opacity: 0.6; }
+        0% {
+          transform: scale(0.95);
+          opacity: 0.6;
+        }
+        50% {
+          transform: scale(1.2);
+          opacity: 1;
+          box-shadow: 0 0 12px var(--cyan);
+        }
+        100% {
+          transform: scale(0.95);
+          opacity: 0.6;
+        }
       }
       .footer-nav-col h5 {
         font-family: var(--font-display);
@@ -2183,18 +2226,60 @@
        INTRO HERO
        ============================================================ -->
       <header class="hero-intro" id="top">
-        <span class="eyebrow"><span class="dot"></span> INTENT-AWARE NLP ROUTING</span>
+        <a
+          href="#updates"
+          class="new-badge reveal slide-up"
+          style="
+            display: inline-block;
+            margin-bottom: 25px;
+            background: rgba(37, 99, 235, 0.1);
+            border: 1px solid rgba(37, 99, 235, 0.3);
+            padding: 8px 18px;
+            border-radius: 20px;
+            color: var(--cyan);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 600;
+            box-shadow: 0 0 15px rgba(37, 99, 235, 0.15);
+            transition: all 0.3s ease;
+          "
+        >
+          <i
+            class="fa-solid fa-sparkles"
+            style="color: var(--violet); margin-right: 5px"
+          ></i>
+          New: Gemini 3.6 &amp; Zeno Media Switcher
+          <i class="fa-solid fa-arrow-right" style="margin-left: 8px"></i>
+        </a>
+        <br />
+        <span class="eyebrow"
+          ><span class="dot"></span> INTENT-AWARE NLP ROUTING</span
+        >
         <h1>The Unbroken AI Experience</h1>
         <p class="lede">
-          Heros automatically coordinates multiple specialized engines to keep your productivity running at 100% uptime. Explore our systems below.
+          Heros automatically coordinates multiple specialized engines to keep
+          your productivity running at 100% uptime. Explore our systems below.
         </p>
-        <div class="hero-actions" style="justify-content: center;">
+        <div class="hero-actions" style="justify-content: center">
           {% if is_authenticated %}
-          <a href="{% url 'home' %}" class="btn-slice"><span class="text"><i class="fa-solid fa-comment-dots"></i> Open Chat</span></a>
+          <a href="{% url 'home' %}" class="btn-slice"
+            ><span class="text"
+              ><i class="fa-solid fa-comment-dots"></i> Open Chat</span
+            ></a
+          >
           {% else %}
-          <a href="#" class="btn-slice open-login"><span class="text"><i class="fa-solid fa-bolt"></i> Get Started</span></a>
+          <a href="#" class="btn-slice open-login"
+            ><span class="text"
+              ><i class="fa-solid fa-bolt"></i> Get Started</span
+            ></a
+          >
           {% endif %}
-          <a href="https://github.com/Hudsonmathew1910/Hero-s-AI" target="_blank" rel="noopener" class="btn btn-ghost btn-lg">
+          <a
+            href="https://github.com/Hudsonmathew1910/Hero-s-AI"
+            target="_blank"
+            rel="noopener"
+            class="btn btn-ghost btn-lg"
+          >
             <i class="fa-brands fa-github"></i> View on GitHub
           </a>
         </div>
@@ -2212,19 +2297,22 @@
             </div>
             <div class="stat-card">
               <div class="stat-num-wrapper">
-                <span class="stat-num" data-val="100">0</span><span class="stat-suffix">%</span>
+                <span class="stat-num" data-val="100">0</span
+                ><span class="stat-suffix">%</span>
               </div>
               <span class="stat-lbl">Uptime Target</span>
             </div>
             <div class="stat-card">
               <div class="stat-num-wrapper">
-                <span class="stat-num" data-val="45">0</span><span class="stat-suffix">ms</span>
+                <span class="stat-num" data-val="45">0</span
+                ><span class="stat-suffix">ms</span>
               </div>
               <span class="stat-lbl">Triage Latency</span>
             </div>
             <div class="stat-card">
               <div class="stat-num-wrapper">
-                <span class="stat-num" data-val="24">0</span><span class="stat-suffix">/7</span>
+                <span class="stat-num" data-val="24">0</span
+                ><span class="stat-suffix">/7</span>
               </div>
               <span class="stat-lbl">Active Monitoring</span>
             </div>
@@ -2237,7 +2325,9 @@
         <div class="tabs" id="heroTabs">
           <a class="tab active" href="#section-baymax" data-index="0">Baymax</a>
           <a class="tab" href="#section-halo" data-index="1">Halo</a>
-          <a class="tab" href="#section-infinsight" data-index="2">Infinsight</a>
+          <a class="tab" href="#section-infinsight" data-index="2"
+            >Infinsight</a
+          >
           <a class="tab" href="#section-zeno" data-index="3">Zeno</a>
           <a class="tab" href="#section-zuno" data-index="4">Zuno</a>
           <span class="glider"></span>
@@ -2248,18 +2338,30 @@
       <section class="hero-row" id="section-baymax">
         <div class="hero-left reveal slide-left">
           <div class="hero-copy" style="padding: 0">
-            <span class="eyebrow"><span class="dot"></span> 3-TIER FALLBACK ENGINE — LIVE</span>
+            <span class="eyebrow"
+              ><span class="dot"></span> 3-TIER FALLBACK ENGINE — LIVE</span
+            >
             <h1>Meet <span class="grad">Baymax</span></h1>
             <p class="lede">
-              Heros routes every request through <b>Baymax</b>, an intent-aware premium dispatcher that fails over across Gemini, OpenRouter, and Groq in milliseconds. One provider outage never means a broken conversation.
+              Heros routes every request through <b>Baymax</b>, an intent-aware
+              premium dispatcher that fails over across Gemini, OpenRouter, and
+              Groq in milliseconds. One provider outage never means a broken
+              conversation.
             </p>
             <div class="hero-meta">
-              <span><i class="fa-solid fa-shield-halved"></i> Encrypted keys</span>
+              <span
+                ><i class="fa-solid fa-shield-halved"></i> Encrypted keys</span
+              >
               <span><i class="fa-solid fa-database"></i> pgvector RAG</span>
               <span><i class="fa-solid fa-django"></i> Django 5.2</span>
             </div>
-            <div class="hero-actions" style="margin-top: 32px; margin-bottom: 0">
-              <a href="{% url 'home' %}?model=Baymax" class="btn btn-primary"><i class="fa-solid fa-comment-dots"></i> Try Baymax</a>
+            <div
+              class="hero-actions"
+              style="margin-top: 32px; margin-bottom: 0"
+            >
+              <a href="{% url 'home' %}?model=Baymax" class="btn btn-primary"
+                ><i class="fa-solid fa-comment-dots"></i> Try Baymax</a
+              >
             </div>
           </div>
         </div>
@@ -2300,12 +2402,20 @@
             </div>
             <div class="sim-header">Outage Simulation Sandbox</div>
             <div class="sim-console" id="simConsole">
-              <div class="log-line system">[SYSTEM] Baymax coordinator initialized... Status: ONLINE</div>
+              <div class="log-line system">
+                [SYSTEM] Baymax coordinator initialized... Status: ONLINE
+              </div>
             </div>
             <div class="sim-controls">
-              <button type="button" class="sim-btn danger" id="btnSimGemini">Simulate Gemini Outage</button>
-              <button type="button" class="sim-btn danger" id="btnSimRouter">Simulate OpenRouter Outage</button>
-              <button type="button" class="sim-btn" id="btnSimReset">Reset Connection</button>
+              <button type="button" class="sim-btn danger" id="btnSimGemini">
+                Simulate Gemini Outage
+              </button>
+              <button type="button" class="sim-btn danger" id="btnSimRouter">
+                Simulate OpenRouter Outage
+              </button>
+              <button type="button" class="sim-btn" id="btnSimReset">
+                Reset Connection
+              </button>
             </div>
           </div>
         </div>
@@ -2313,38 +2423,151 @@
 
       <!-- ================= HALO SECTION ================= -->
       <section class="hero-row alt" id="section-halo">
-        <div class="hero-right reveal slide-left" style="display: flex; justify-content: center; align-items: center;">
-          <div class="chain-card" style="width: 100%;">
+        <div
+          class="hero-right reveal slide-left"
+          style="display: flex; justify-content: center; align-items: center"
+        >
+          <div class="chain-card" style="width: 100%">
             <div class="chain-card-head">
               <span>HALO ROUTING ENGINE</span>
-              <span class="chain-status"><span class="dot" style="background: var(--violet); box-shadow: 0 0 8px var(--violet);"></span> ACTIVE</span>
+              <span class="chain-status"
+                ><span
+                  class="dot"
+                  style="
+                    background: var(--violet);
+                    box-shadow: 0 0 8px var(--violet);
+                  "
+                ></span>
+                ACTIVE</span
+              >
             </div>
-            <div class="chain" style="display: flex; flex-direction: column; gap: 20px; align-items: center; padding: 20px 0;">
+            <div
+              class="chain"
+              style="
+                display: flex;
+                flex-direction: column;
+                gap: 20px;
+                align-items: center;
+                padding: 20px 0;
+              "
+            >
               <!-- User Input -->
-              <div style="background: var(--surface-2); border: 1px solid var(--border); padding: 12px 20px; border-radius: 12px; font-size: 0.85rem; width: 100%; text-align: center; font-family: var(--font-mono); color: var(--text-dim);">
+              <div
+                style="
+                  background: var(--surface-2);
+                  border: 1px solid var(--border);
+                  padding: 12px 20px;
+                  border-radius: 12px;
+                  font-size: 0.85rem;
+                  width: 100%;
+                  text-align: center;
+                  font-family: var(--font-mono);
+                  color: var(--text-dim);
+                "
+              >
                 User Request Received
               </div>
               <!-- Halo Router Node -->
-              <div class="chain-node active" style="border-color: rgba(26, 124, 255, 0.4); width: 100%; justify-content: center; background: rgba(26, 124, 255, 0.05);">
-                <div class="ic" style="color: var(--violet); background: rgba(26, 124, 255, 0.1);"><i class="fa-solid fa-network-wired"></i></div>
-                <div class="info" style="flex: none; text-align: center; margin-left: 12px;">
+              <div
+                class="chain-node active"
+                style="
+                  border-color: rgba(26, 124, 255, 0.4);
+                  width: 100%;
+                  justify-content: center;
+                  background: rgba(26, 124, 255, 0.05);
+                "
+              >
+                <div
+                  class="ic"
+                  style="
+                    color: var(--violet);
+                    background: rgba(26, 124, 255, 0.1);
+                  "
+                >
+                  <i class="fa-solid fa-network-wired"></i>
+                </div>
+                <div
+                  class="info"
+                  style="flex: none; text-align: center; margin-left: 12px"
+                >
                   <div class="name">Halo Coordinator</div>
                   <div class="role">Intent Routing &amp; Fast Triage</div>
                 </div>
               </div>
               <!-- Decisions arrows split -->
-              <div style="display: flex; justify-content: space-around; width: 100%; padding: 0 10px;">
-                <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
-                  <span style="font-size: 0.65rem; font-family: var(--font-mono); color: var(--cyan);">Casual / Fast Query</span>
-                  <i class="fa-solid fa-arrow-down-long" style="color: var(--cyan);"></i>
-                  <div style="background: rgba(25,195,125,0.1); border: 1px solid rgba(25,195,125,0.3); padding: 8px 12px; border-radius: 8px; font-size: 0.75rem; color: var(--cyan); font-weight: bold;">
+              <div
+                style="
+                  display: flex;
+                  justify-content: space-around;
+                  width: 100%;
+                  padding: 0 10px;
+                "
+              >
+                <div
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    gap: 8px;
+                  "
+                >
+                  <span
+                    style="
+                      font-size: 0.65rem;
+                      font-family: var(--font-mono);
+                      color: var(--cyan);
+                    "
+                    >Casual / Fast Query</span
+                  >
+                  <i
+                    class="fa-solid fa-arrow-down-long"
+                    style="color: var(--cyan)"
+                  ></i>
+                  <div
+                    style="
+                      background: rgba(25, 195, 125, 0.1);
+                      border: 1px solid rgba(25, 195, 125, 0.3);
+                      padding: 8px 12px;
+                      border-radius: 8px;
+                      font-size: 0.75rem;
+                      color: var(--cyan);
+                      font-weight: bold;
+                    "
+                  >
                     Execute Instantly
                   </div>
                 </div>
-                <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
-                  <span style="font-size: 0.65rem; font-family: var(--font-mono); color: var(--amber);">Heavy Reasoning</span>
-                  <i class="fa-solid fa-arrow-down-long" style="color: var(--amber);"></i>
-                  <div style="background: rgba(245,166,35,0.1); border: 1px solid rgba(245,166,35,0.3); padding: 8px 12px; border-radius: 8px; font-size: 0.75rem; color: var(--amber); font-weight: bold;">
+                <div
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    gap: 8px;
+                  "
+                >
+                  <span
+                    style="
+                      font-size: 0.65rem;
+                      font-family: var(--font-mono);
+                      color: var(--amber);
+                    "
+                    >Heavy Reasoning</span
+                  >
+                  <i
+                    class="fa-solid fa-arrow-down-long"
+                    style="color: var(--amber)"
+                  ></i>
+                  <div
+                    style="
+                      background: rgba(245, 166, 35, 0.1);
+                      border: 1px solid rgba(245, 166, 35, 0.3);
+                      padding: 8px 12px;
+                      border-radius: 8px;
+                      font-size: 0.75rem;
+                      color: var(--amber);
+                      font-weight: bold;
+                    "
+                  >
                     Route to Baymax
                   </div>
                 </div>
@@ -2355,20 +2578,72 @@
 
         <div class="hero-left reveal slide-right">
           <div class="hero-copy" style="padding: 0">
-            <span class="eyebrow" style="border-color: rgba(26, 124, 255, 0.3); color: var(--violet);">
+            <span
+              class="eyebrow"
+              style="
+                border-color: rgba(26, 124, 255, 0.3);
+                color: var(--violet);
+              "
+            >
               <i class="fa-solid fa-network-wired"></i> GATEWAY COORDINATOR
             </span>
-            <h1>Meet <span class="grad" style="background: linear-gradient(100deg, var(--violet) 10%, #6366f1 85%); -webkit-background-clip: text; background-clip: text; color: transparent;">Halo</span></h1>
+            <h1>
+              Meet
+              <span
+                class="grad"
+                style="
+                  background: linear-gradient(
+                    100deg,
+                    var(--violet) 10%,
+                    #6366f1 85%
+                  );
+                  -webkit-background-clip: text;
+                  background-clip: text;
+                  color: transparent;
+                "
+                >Halo</span
+              >
+            </h1>
             <p class="lede">
-              <b>Halo</b> is the foundational coordinator of the ecosystem. Halo triages request types, responds to casual conversations instantly, and prompts Baymax for high-level operations.
+              <b>Halo</b> is the foundational coordinator of the ecosystem. Halo
+              triages request types, responds to casual conversations instantly,
+              and prompts Baymax for high-level operations.
             </p>
             <div class="hero-meta">
-              <span><i class="fa-solid fa-microchip" style="color: var(--violet);"></i> Intelligent routing</span>
-              <span><i class="fa-solid fa-bolt" style="color: var(--violet);"></i> Instant coordination</span>
-              <span><i class="fa-solid fa-shuffle" style="color: var(--violet);"></i> Automatic triage</span>
+              <span
+                ><i
+                  class="fa-solid fa-microchip"
+                  style="color: var(--violet)"
+                ></i>
+                Intelligent routing</span
+              >
+              <span
+                ><i class="fa-solid fa-bolt" style="color: var(--violet)"></i>
+                Instant coordination</span
+              >
+              <span
+                ><i
+                  class="fa-solid fa-shuffle"
+                  style="color: var(--violet)"
+                ></i>
+                Automatic triage</span
+              >
             </div>
-            <div class="hero-actions" style="margin-top: 32px; margin-bottom: 0">
-              <a href="{% url 'home' %}?model=Halo" class="btn btn-primary" style="background: linear-gradient(120deg, var(--violet), #8b5cf6); box-shadow: 0 0 0 1px rgba(139, 92, 246, 0.4), 0 8px 24px -8px rgba(139, 92, 246, 0.55);"><i class="fa-solid fa-network-wired"></i> Try Halo</a>
+            <div
+              class="hero-actions"
+              style="margin-top: 32px; margin-bottom: 0"
+            >
+              <a
+                href="{% url 'home' %}?model=Halo"
+                class="btn btn-primary"
+                style="
+                  background: linear-gradient(120deg, var(--violet), #8b5cf6);
+                  box-shadow:
+                    0 0 0 1px rgba(139, 92, 246, 0.4),
+                    0 8px 24px -8px rgba(139, 92, 246, 0.55);
+                "
+                ><i class="fa-solid fa-network-wired"></i> Try Halo</a
+              >
             </div>
           </div>
         </div>
@@ -2378,39 +2653,170 @@
       <section class="hero-row" id="section-infinsight">
         <div class="hero-left reveal slide-left">
           <div class="hero-copy" style="padding: 0">
-            <span class="eyebrow"><i class="fa-solid fa-vector-square"></i> Your data, in a conversation</span>
+            <span class="eyebrow"
+              ><i class="fa-solid fa-vector-square"></i> Your data, in a
+              conversation</span
+            >
             <h1>Explore <span class="grad">Infinsight</span></h1>
             <p class="lede">
-              Drop in a spreadsheet and ask questions the way you'd ask a colleague. Infinsight embeds every row, retrieves the relevant ones, and runs real Pandas computations behind the scenes.
+              Drop in a spreadsheet and ask questions the way you'd ask a
+              colleague. Infinsight embeds every row, retrieves the relevant
+              ones, and runs real Pandas computations behind the scenes.
             </p>
-            <ul style="list-style: none; padding: 0; margin-top: 1rem; color: var(--text-dim); display: flex; flex-direction: column; gap: 12px; font-size: 1.05rem;">
-              <li><i class="fa-solid fa-file-arrow-up" style="color: var(--cyan); margin-right: 10px"></i> Upload a CSV, Excel, or PDF file</li>
-              <li><i class="fa-solid fa-database" style="color: var(--cyan); margin-right: 10px"></i> Rows are embedded and stored in pgvector</li>
-              <li><i class="fa-solid fa-comment-dots" style="color: var(--cyan); margin-right: 10px"></i> Ask in plain English — get computed answers back</li>
+            <ul
+              style="
+                list-style: none;
+                padding: 0;
+                margin-top: 1rem;
+                color: var(--text-dim);
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+                font-size: 1.05rem;
+              "
+            >
+              <li>
+                <i
+                  class="fa-solid fa-file-arrow-up"
+                  style="color: var(--cyan); margin-right: 10px"
+                ></i>
+                Upload a CSV, Excel, or PDF file
+              </li>
+              <li>
+                <i
+                  class="fa-solid fa-database"
+                  style="color: var(--cyan); margin-right: 10px"
+                ></i>
+                Rows are embedded and stored in pgvector
+              </li>
+              <li>
+                <i
+                  class="fa-solid fa-comment-dots"
+                  style="color: var(--cyan); margin-right: 10px"
+                ></i>
+                Ask in plain English — get computed answers back
+              </li>
             </ul>
-            <div class="hero-actions" style="margin-top: 32px; margin-bottom: 0">
-              <a href="{% url 'infinsight_home' %}" class="btn btn-primary"><i class="fa-solid fa-chart-pie"></i> Open Infinsight</a>
+            <div
+              class="hero-actions"
+              style="margin-top: 32px; margin-bottom: 0"
+            >
+              <a href="{% url 'infinsight_home' %}" class="btn btn-primary"
+                ><i class="fa-solid fa-chart-pie"></i> Open Infinsight</a
+              >
             </div>
           </div>
         </div>
 
         <div class="hero-right reveal scale">
-          <div class="data-panel" style="box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4); border: 1px solid var(--border-soft); border-radius: var(--radius-lg); overflow: hidden; background: var(--surface-1);">
-            <div class="data-panel-head" style="background: var(--surface-2); padding: 12px 16px; font-size: 0.8rem; font-family: var(--font-mono); color: var(--text-dim); border-bottom: 1px solid var(--border-soft); display: flex; align-items: center;">
-              <span class="fdot" style="width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; background: #ff6b6b;"></span>
-              <span class="fdot" style="width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; background: #ffb454;"></span>
-              <span class="fdot" style="width: 10px; height: 10px; border-radius: 50%; margin-right: 10px; background: #4ee1d6;"></span>
+          <div
+            class="data-panel"
+            style="
+              box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+              border: 1px solid var(--border-soft);
+              border-radius: var(--radius-lg);
+              overflow: hidden;
+              background: var(--surface-1);
+            "
+          >
+            <div
+              class="data-panel-head"
+              style="
+                background: var(--surface-2);
+                padding: 12px 16px;
+                font-size: 0.8rem;
+                font-family: var(--font-mono);
+                color: var(--text-dim);
+                border-bottom: 1px solid var(--border-soft);
+                display: flex;
+                align-items: center;
+              "
+            >
+              <span
+                class="fdot"
+                style="
+                  width: 10px;
+                  height: 10px;
+                  border-radius: 50%;
+                  margin-right: 6px;
+                  background: #ff6b6b;
+                "
+              ></span>
+              <span
+                class="fdot"
+                style="
+                  width: 10px;
+                  height: 10px;
+                  border-radius: 50%;
+                  margin-right: 6px;
+                  background: #ffb454;
+                "
+              ></span>
+              <span
+                class="fdot"
+                style="
+                  width: 10px;
+                  height: 10px;
+                  border-radius: 50%;
+                  margin-right: 10px;
+                  background: #4ee1d6;
+                "
+              ></span>
               infinsight — sales_q2.xlsx
             </div>
-            <div class="data-panel-body" style="padding: 24px; display: flex; flex-direction: column; gap: 16px;">
-              <div class="upload-chip" style="align-self: center; background: var(--bg); padding: 6px 12px; border-radius: 999px; font-size: 0.75rem; color: var(--text-dim); border: 1px solid var(--border-soft);">
-                <i class="fa-solid fa-file-arrow-up"></i> sales_q2.xlsx · 4,208 rows indexed
+            <div
+              class="data-panel-body"
+              style="
+                padding: 24px;
+                display: flex;
+                flex-direction: column;
+                gap: 16px;
+              "
+            >
+              <div
+                class="upload-chip"
+                style="
+                  align-self: center;
+                  background: var(--bg);
+                  padding: 6px 12px;
+                  border-radius: 999px;
+                  font-size: 0.75rem;
+                  color: var(--text-dim);
+                  border: 1px solid var(--border-soft);
+                "
+              >
+                <i class="fa-solid fa-file-arrow-up"></i> sales_q2.xlsx · 4,208
+                rows indexed
               </div>
-              <div class="msg user" style="align-self: flex-end; background: var(--cyan); color: #000; padding: 12px 18px; border-radius: 18px; border-bottom-right-radius: 4px; font-weight: 500;">
+              <div
+                class="msg user"
+                style="
+                  align-self: flex-end;
+                  background: var(--cyan);
+                  color: #000;
+                  padding: 12px 18px;
+                  border-radius: 18px;
+                  border-bottom-right-radius: 4px;
+                  font-weight: 500;
+                "
+              >
                 Which region underperformed in June?
               </div>
-              <div class="msg ai" style="align-self: flex-start; background: rgba(26, 124, 255, 0.08); border: 1px solid rgba(26, 124, 255, 0.25); color: var(--text); padding: 12px 18px; border-radius: 18px; border-bottom-left-radius: 4px; line-height: 1.4;">
-                The South region underperformed by 18% in June, driven mostly by a drop in repeat orders.
+              <div
+                class="msg ai"
+                style="
+                  align-self: flex-start;
+                  background: rgba(26, 124, 255, 0.08);
+                  border: 1px solid rgba(26, 124, 255, 0.25);
+                  color: var(--text);
+                  padding: 12px 18px;
+                  border-radius: 18px;
+                  border-bottom-left-radius: 4px;
+                  line-height: 1.4;
+                "
+              >
+                The South region underperformed by 18% in June, driven mostly by
+                a drop in repeat orders.
               </div>
             </div>
           </div>
@@ -2420,42 +2826,246 @@
       <!-- ================= ZENO SECTION ================= -->
       <section class="hero-row alt" id="section-zeno">
         <div class="hero-right reveal scale">
-          <div class="chain-card" aria-hidden="false" style="padding: 0; overflow: hidden; position: relative">
+          <div
+            class="chain-card"
+            aria-hidden="false"
+            style="padding: 0; overflow: hidden; position: relative"
+          >
             <!-- Faux browser window -->
-            <div style="height: 300px; background: #fff; padding: 20px; position: relative;">
-              <div style="height: 10px; width: 60%; background: #e2e8f0; border-radius: 4px; margin-bottom: 12px;"></div>
-              <div style="height: 10px; width: 40%; background: #e2e8f0; border-radius: 4px; margin-bottom: 24px;"></div>
-              <div style="padding: 10px; background: rgba(37, 99, 235, 0.15); border-radius: 4px; border-left: 3px solid var(--accent);">
-                <div style="height: 10px; width: 100%; background: var(--accent); opacity: 0.5; border-radius: 4px; margin-bottom: 8px;"></div>
-                <div style="height: 10px; width: 80%; background: var(--accent); opacity: 0.5; border-radius: 4px;"></div>
+            <div
+              style="
+                height: 300px;
+                background: #fff;
+                padding: 20px;
+                position: relative;
+              "
+            >
+              <div
+                style="
+                  height: 10px;
+                  width: 60%;
+                  background: #e2e8f0;
+                  border-radius: 4px;
+                  margin-bottom: 12px;
+                "
+              ></div>
+              <div
+                style="
+                  height: 10px;
+                  width: 40%;
+                  background: #e2e8f0;
+                  border-radius: 4px;
+                  margin-bottom: 24px;
+                "
+              ></div>
+              <div
+                style="
+                  padding: 10px;
+                  background: rgba(37, 99, 235, 0.15);
+                  border-radius: 4px;
+                  border-left: 3px solid var(--accent);
+                "
+              >
+                <div
+                  style="
+                    height: 10px;
+                    width: 100%;
+                    background: var(--accent);
+                    opacity: 0.5;
+                    border-radius: 4px;
+                    margin-bottom: 8px;
+                  "
+                ></div>
+                <div
+                  style="
+                    height: 10px;
+                    width: 80%;
+                    background: var(--accent);
+                    opacity: 0.5;
+                    border-radius: 4px;
+                  "
+                ></div>
               </div>
             </div>
             <!-- Zeno Overlay mock -->
-            <div style="position: absolute; right: 20px; top: 20px; width: 280px; background: #fff; border-radius: 12px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3); display: flex; flex-direction: column; font-family: 'Inter', sans-serif; overflow: hidden; border: 1px solid #ccc;">
-              <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-bottom: 1px solid #eee;">
+            <div
+              style="
+                position: absolute;
+                right: 20px;
+                top: 20px;
+                width: 280px;
+                background: #fff;
+                border-radius: 12px;
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+                display: flex;
+                flex-direction: column;
+                font-family: &quot;Inter&quot;, sans-serif;
+                overflow: hidden;
+                border: 1px solid #ccc;
+              "
+            >
+              <div
+                style="
+                  display: flex;
+                  align-items: center;
+                  justify-content: space-between;
+                  padding: 10px 14px;
+                  border-bottom: 1px solid #eee;
+                "
+              >
                 <div style="display: flex; align-items: center">
-                  <img src="/static/images/Hero_ai.png" style="width: 24px; height: 24px; border-radius: 50%; margin-right: 8px;"/>
-                  <div style="color: #000; font-size: 15px; font-weight: 600;">Zeno</div>
+                  <img
+                    src="/static/images/Hero_ai.png"
+                    style="
+                      width: 24px;
+                      height: 24px;
+                      border-radius: 50%;
+                      margin-right: 8px;
+                    "
+                  />
+                  <div style="color: #000; font-size: 15px; font-weight: 600">
+                    Zeno
+                  </div>
                 </div>
-                <div style="display: flex; background: #f0f0f0; border-radius: 20px; padding: 2px; gap: 2px;">
-                  <div style="background: #fff; padding: 3px 10px; font-size: 10px; font-weight: 600; color: #333; border-radius: 18px; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">Eco</div>
-                  <div style="padding: 3px 10px; font-size: 10px; font-weight: 500; color: #666; border-radius: 18px;">Plus</div>
+                <div
+                  style="
+                    display: flex;
+                    background: #f0f0f0;
+                    border-radius: 20px;
+                    padding: 2px;
+                    gap: 2px;
+                  "
+                >
+                  <div
+                    style="
+                      background: #fff;
+                      padding: 3px 10px;
+                      font-size: 10px;
+                      font-weight: 600;
+                      color: #333;
+                      border-radius: 18px;
+                      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+                    "
+                  >
+                    Eco
+                  </div>
+                  <div
+                    style="
+                      padding: 3px 10px;
+                      font-size: 10px;
+                      font-weight: 500;
+                      color: #666;
+                      border-radius: 18px;
+                    "
+                  >
+                    Plus
+                  </div>
                 </div>
               </div>
-              <div style="padding: 12px; display: flex; flex-direction: column; gap: 10px; background: #fff;">
-                <div style="background: #f1f1f1; color: #000; font-size: 12px; padding: 10px 12px; border-radius: 10px; border-bottom-left-radius: 2px; align-self: flex-start; max-width: 85%;">
-                  <p style="margin: 0; line-height: 1.4">Hello! I'm Zeno, your mini AI assistant.</p>
+              <div
+                style="
+                  padding: 12px;
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  background: #fff;
+                "
+              >
+                <div
+                  style="
+                    background: #f1f1f1;
+                    color: #000;
+                    font-size: 12px;
+                    padding: 10px 12px;
+                    border-radius: 10px;
+                    border-bottom-left-radius: 2px;
+                    align-self: flex-start;
+                    max-width: 85%;
+                  "
+                >
+                  <p style="margin: 0; line-height: 1.4">
+                    Hello! I'm Zeno, your mini AI assistant.
+                  </p>
                 </div>
-                <div style="background: #333; color: #fff; font-size: 12px; padding: 10px 12px; border-radius: 10px; border-bottom-right-radius: 2px; align-self: flex-end; max-width: 85%;">
-                  <p style="margin: 0; line-height: 1.4">Can you break down the python event loop?</p>
+                <div
+                  style="
+                    background: #333;
+                    color: #fff;
+                    font-size: 12px;
+                    padding: 10px 12px;
+                    border-radius: 10px;
+                    border-bottom-right-radius: 2px;
+                    align-self: flex-end;
+                    max-width: 85%;
+                  "
+                >
+                  <p style="margin: 0; line-height: 1.4">
+                    Can you break down the python event loop?
+                  </p>
                 </div>
               </div>
-              <div style="padding: 10px 12px; border-top: 1px solid #eee; background: #fff;">
+              <div
+                style="
+                  padding: 10px 12px;
+                  border-top: 1px solid #eee;
+                  background: #fff;
+                "
+              >
                 <div style="display: flex; gap: 6px">
-                  <div style="flex: 1; border: 1px solid #ccc; border-radius: 10px; padding: 8px 10px; font-size: 11px; color: #999;">Type your message...</div>
-                  <div style="display: flex; flex-direction: column; gap: 4px; width: 50px;">
-                    <div style="background: #f1f1f1; border: 1px solid #ccc; color: #333; border-radius: 8px; flex: 1; display: flex; align-items: center; justify-content: center; padding: 3px 0;"><i class="fa-solid fa-microphone" style="font-size: 11px"></i></div>
-                    <div style="background: #333; color: #fff; border-radius: 8px; flex: 1; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 500; padding: 3px 0;">Send</div>
+                  <div
+                    style="
+                      flex: 1;
+                      border: 1px solid #ccc;
+                      border-radius: 10px;
+                      padding: 8px 10px;
+                      font-size: 11px;
+                      color: #999;
+                    "
+                  >
+                    Type your message...
+                  </div>
+                  <div
+                    style="
+                      display: flex;
+                      flex-direction: column;
+                      gap: 4px;
+                      width: 50px;
+                    "
+                  >
+                    <div
+                      style="
+                        background: #f1f1f1;
+                        border: 1px solid #ccc;
+                        color: #333;
+                        border-radius: 8px;
+                        flex: 1;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        padding: 3px 0;
+                      "
+                    >
+                      <i
+                        class="fa-solid fa-microphone"
+                        style="font-size: 11px"
+                      ></i>
+                    </div>
+                    <div
+                      style="
+                        background: #333;
+                        color: #fff;
+                        border-radius: 8px;
+                        flex: 1;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-size: 11px;
+                        font-weight: 500;
+                        padding: 3px 0;
+                      "
+                    >
+                      Send
+                    </div>
                   </div>
                 </div>
               </div>
@@ -2465,19 +3075,65 @@
 
         <div class="hero-left reveal slide-right">
           <div class="hero-copy" style="padding: 0">
-            <span class="eyebrow"><i class="fa-solid fa-puzzle-piece"></i> Heros, anywhere on the web</span>
+            <span class="eyebrow"
+              ><i class="fa-solid fa-puzzle-piece"></i> Heros, anywhere on the
+              web</span
+            >
             <h1>Meet <span class="grad">Zeno</span></h1>
             <p class="lede">
-              Your personal mini AI assistant browser extension. Get instant answers without switching tabs, powered by Baymax's resilient routing.
+              Your personal mini AI assistant browser extension. Get instant
+              answers without switching tabs, powered by Baymax's resilient
+              routing.
             </p>
-            <ul style="list-style: none; padding: 0; margin-top: 1rem; color: var(--text-dim); display: flex; flex-direction: column; gap: 12px; font-size: 1.05rem;">
-              <li><i class="fa-solid fa-mouse-pointer" style="color: var(--cyan); margin-right: 10px"></i> <b>Ask Zeno Plus:</b> Right-click highlighted text to analyze instantly</li>
-              <li><i class="fa-solid fa-microphone-lines" style="color: var(--cyan); margin-right: 10px"></i> <b>Voice Chat:</b> Talk naturally with instant interruption support</li>
-              <li><i class="fa-solid fa-user-secret" style="color: var(--cyan); margin-right: 10px"></i> <b>Temporary Chats:</b> Quick answers without cluttering your history</li>
+            <ul
+              style="
+                list-style: none;
+                padding: 0;
+                margin-top: 1rem;
+                color: var(--text-dim);
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+                font-size: 1.05rem;
+              "
+            >
+              <li>
+                <i
+                  class="fa-solid fa-mouse-pointer"
+                  style="color: var(--cyan); margin-right: 10px"
+                ></i>
+                <b>Ask Zeno Plus:</b> Right-click highlighted text to analyze
+                instantly
+              </li>
+              <li>
+                <i
+                  class="fa-solid fa-microphone-lines"
+                  style="color: var(--cyan); margin-right: 10px"
+                ></i>
+                <b>Voice Chat:</b> Talk naturally with instant interruption
+                support
+              </li>
+              <li>
+                <i
+                  class="fa-solid fa-user-secret"
+                  style="color: var(--cyan); margin-right: 10px"
+                ></i>
+                <b>Temporary Chats:</b> Quick answers without cluttering your
+                history
+              </li>
             </ul>
-            <div class="hero-actions" style="margin-top: 32px; margin-bottom: 0">
-              <a href="https://github.com/Hudsonmathew1910/Hero-s-AI/releases/download/Heros_4th_Gen/Zeno_Pro_3.0.zip" class="btn btn-primary" download>
-                <i class="fa-brands fa-edge"></i> / <i class="fa-brands fa-chrome"></i> Download for Edge &amp; Chrome
+            <div
+              class="hero-actions"
+              style="margin-top: 32px; margin-bottom: 0"
+            >
+              <a
+                href="https://github.com/Hudsonmathew1910/Hero-s-AI/releases/download/Heros_5th_Gen/Zeno_Pro_3.0.zip"
+                class="btn btn-primary"
+                download
+              >
+                <i class="fa-brands fa-edge"></i> /
+                <i class="fa-brands fa-chrome"></i> Download for Edge &amp;
+                Chrome
               </a>
             </div>
           </div>
@@ -2488,54 +3144,247 @@
       <section class="hero-row" id="section-zuno">
         <div class="hero-left reveal slide-left">
           <div class="hero-copy" style="padding: 0">
-            <span class="eyebrow"><i class="fa-solid fa-music"></i> Zuno inside Zeno</span>
+            <span class="eyebrow"
+              ><i class="fa-solid fa-music"></i> Zuno inside Zeno</span
+            >
             <h1>Meet <span class="grad">Zuno</span></h1>
             <p class="lede">
-              Your intelligent built-in music assistant. Control YouTube and YouTube Music seamlessly through the Zeno extension using your voice or a dedicated mini-player.
+              Your intelligent built-in music assistant. Control YouTube and
+              YouTube Music seamlessly through the Zeno extension using your
+              voice or a dedicated mini-player.
             </p>
-            <ul style="list-style: none; padding: 0; margin-top: 1rem; color: var(--text-dim); display: flex; flex-direction: column; gap: 12px; font-size: 1.05rem;">
-              <li><i class="fa-solid fa-play" style="color: var(--cyan); margin-right: 10px"></i> <b>Silent background control:</b> No more switching tabs.</li>
-              <li><i class="fa-solid fa-microphone-lines" style="color: var(--cyan); margin-right: 10px"></i> <b>Voice commands:</b> "Play [Song]", "Pause", "Next", "Skip Ad"</li>
-              <li><i class="fa-solid fa-compact-disc" style="color: var(--cyan); margin-right: 10px"></i> <b>Music Radar:</b> Instantly bring your hidden music tab to the front.</li>
+            <ul
+              style="
+                list-style: none;
+                padding: 0;
+                margin-top: 1rem;
+                color: var(--text-dim);
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+                font-size: 1.05rem;
+              "
+            >
+              <li>
+                <i
+                  class="fa-solid fa-play"
+                  style="color: var(--cyan); margin-right: 10px"
+                ></i>
+                <b>Silent background control:</b> No more switching tabs.
+              </li>
+              <li>
+                <i
+                  class="fa-solid fa-microphone-lines"
+                  style="color: var(--cyan); margin-right: 10px"
+                ></i>
+                <b>Voice commands:</b> "Play [Song]", "Pause", "Next", "Skip Ad"
+              </li>
+              <li>
+                <i
+                  class="fa-solid fa-compact-disc"
+                  style="color: var(--cyan); margin-right: 10px"
+                ></i>
+                <b>Music Radar:</b> Instantly bring your hidden music tab to the
+                front.
+              </li>
             </ul>
-            <div class="hero-actions" style="margin-top: 32px; margin-bottom: 0">
-              <a href="https://github.com/Hudsonmathew1910/Hero-s-AI/releases/download/Heros_4th_Gen/Zeno_Pro_3.0.zip" class="btn btn-primary" download>
-                <i class="fa-brands fa-edge"></i> / <i class="fa-brands fa-chrome"></i> Download for Edge &amp; Chrome
+            <div
+              class="hero-actions"
+              style="margin-top: 32px; margin-bottom: 0"
+            >
+              <a
+                href="https://github.com/Hudsonmathew1910/Hero-s-AI/releases/download/Heros_5th_Gen/Zeno_Pro_3.0.zip"
+                class="btn btn-primary"
+                download
+              >
+                <i class="fa-brands fa-edge"></i> /
+                <i class="fa-brands fa-chrome"></i> Download for Edge &amp;
+                Chrome
               </a>
             </div>
           </div>
         </div>
 
         <div class="hero-right reveal scale">
-          <div class="chain-card" aria-hidden="false" style="padding: 0; overflow: hidden; position: relative">
-            <div style="height: 300px; background: linear-gradient(135deg, #18181b, #27272a); padding: 20px; position: relative; display: flex; align-items: center; justify-content: center;">
-              <div style="width: 320px; padding: 18px; border-radius: 35px; background: #000; box-shadow: 0 15px 40px rgba(0, 0, 0, 0.7); display: flex; flex-direction: column; gap: 14px; font-family: 'Inter', sans-serif; color: white; box-sizing: border-box;">
-                <div style="display: flex; align-items: center; gap: 12px;">
-                  <img src="{% static 'images/leo.png' %}" alt="Album Art" style="width: 64px; height: 64px; border-radius: 16px; object-fit: cover; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5); flex-shrink: 0;" />
-                  <div style="flex-grow: 1; overflow: hidden; text-align: left;">
-                    <div style="font-size: 1.3em; font-weight: 600; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">I'm Scared</div>
-                    <div style="font-size: 0.9em; color: #d1d1d6; margin-top: 2px;">Anirudh Ravichander</div>
+          <div
+            class="chain-card"
+            aria-hidden="false"
+            style="padding: 0; overflow: hidden; position: relative"
+          >
+            <div
+              style="
+                height: 300px;
+                background: linear-gradient(135deg, #18181b, #27272a);
+                padding: 20px;
+                position: relative;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+              "
+            >
+              <div
+                style="
+                  width: 320px;
+                  padding: 18px;
+                  border-radius: 35px;
+                  background: #000;
+                  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.7);
+                  display: flex;
+                  flex-direction: column;
+                  gap: 14px;
+                  font-family: &quot;Inter&quot;, sans-serif;
+                  color: white;
+                  box-sizing: border-box;
+                "
+              >
+                <div style="display: flex; align-items: center; gap: 12px">
+                  <img
+                    src="{% static 'images/leo.png' %}"
+                    alt="Album Art"
+                    style="
+                      width: 64px;
+                      height: 64px;
+                      border-radius: 16px;
+                      object-fit: cover;
+                      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+                      flex-shrink: 0;
+                    "
+                  />
+                  <div style="flex-grow: 1; overflow: hidden; text-align: left">
+                    <div
+                      style="
+                        font-size: 1.3em;
+                        font-weight: 600;
+                        white-space: nowrap;
+                        text-overflow: ellipsis;
+                        overflow: hidden;
+                      "
+                    >
+                      I'm Scared
+                    </div>
+                    <div
+                      style="font-size: 0.9em; color: #d1d1d6; margin-top: 2px"
+                    >
+                      Anirudh Ravichander
+                    </div>
                   </div>
-                  <div style="display: flex; align-items: flex-end; gap: 2px; width: 38px; height: 32px;">
-                    <div style="width: 3px; height: 16px; background: linear-gradient(180deg, #00c6ff, #0072ff); border-radius: 2px;"></div>
-                    <div style="width: 3px; height: 26px; background: linear-gradient(180deg, #00c6ff, #0072ff); border-radius: 2px;"></div>
-                    <div style="width: 3px; height: 12px; background: linear-gradient(180deg, #00c6ff, #0072ff); border-radius: 2px;"></div>
-                    <div style="width: 3px; height: 20px; background: linear-gradient(180deg, #00c6ff, #0072ff); border-radius: 2px;"></div>
+                  <div
+                    style="
+                      display: flex;
+                      align-items: flex-end;
+                      gap: 2px;
+                      width: 38px;
+                      height: 32px;
+                    "
+                  >
+                    <div
+                      style="
+                        width: 3px;
+                        height: 16px;
+                        background: linear-gradient(180deg, #00c6ff, #0072ff);
+                        border-radius: 2px;
+                      "
+                    ></div>
+                    <div
+                      style="
+                        width: 3px;
+                        height: 26px;
+                        background: linear-gradient(180deg, #00c6ff, #0072ff);
+                        border-radius: 2px;
+                      "
+                    ></div>
+                    <div
+                      style="
+                        width: 3px;
+                        height: 12px;
+                        background: linear-gradient(180deg, #00c6ff, #0072ff);
+                        border-radius: 2px;
+                      "
+                    ></div>
+                    <div
+                      style="
+                        width: 3px;
+                        height: 20px;
+                        background: linear-gradient(180deg, #00c6ff, #0072ff);
+                        border-radius: 2px;
+                      "
+                    ></div>
                   </div>
                 </div>
-                <div style="display: flex; flex-direction: column; gap: 8px;">
-                  <div style="display: flex; justify-content: space-between; font-size: 0.8em; color: #8e8e93;">
+                <div style="display: flex; flex-direction: column; gap: 8px">
+                  <div
+                    style="
+                      display: flex;
+                      justify-content: space-between;
+                      font-size: 0.8em;
+                      color: #8e8e93;
+                    "
+                  >
                     <span>1:12</span>
                     <span>-2:24</span>
                   </div>
-                  <div style="width: 100%; height: 4px; background-color: rgba(255, 255, 255, 0.1); border-radius: 2px; position: relative;">
-                    <div style="height: 100%; width: 33%; background: linear-gradient(90deg, #00c6ff, #0072ff); border-radius: 2px;"></div>
+                  <div
+                    style="
+                      width: 100%;
+                      height: 4px;
+                      background-color: rgba(255, 255, 255, 0.1);
+                      border-radius: 2px;
+                      position: relative;
+                    "
+                  >
+                    <div
+                      style="
+                        height: 100%;
+                        width: 33%;
+                        background: linear-gradient(90deg, #00c6ff, #0072ff);
+                        border-radius: 2px;
+                      "
+                    ></div>
                   </div>
-                  <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 4px;">
-                    <div style="display: flex; gap: 24px; align-items: center; justify-content: center; flex: 1;">
-                      <i class="fa-solid fa-backward-step" style="font-size: 16px; color: #fff; cursor: pointer;"></i>
-                      <div style="width: 48px; height: 48px; border-radius: 50%; background: #fff; display: flex; align-items: center; justify-content: center; color: #000; cursor: pointer;"><i class="fa-solid fa-pause" style="font-size: 20px;"></i></div>
-                      <i class="fa-solid fa-forward-step" style="font-size: 16px; color: #fff; cursor: pointer;"></i>
+                  <div
+                    style="
+                      display: flex;
+                      justify-content: space-between;
+                      align-items: center;
+                      gap: 12px;
+                      margin-top: 4px;
+                    "
+                  >
+                    <div
+                      style="
+                        display: flex;
+                        gap: 24px;
+                        align-items: center;
+                        justify-content: center;
+                        flex: 1;
+                      "
+                    >
+                      <i
+                        class="fa-solid fa-backward-step"
+                        style="font-size: 16px; color: #fff; cursor: pointer"
+                      ></i>
+                      <div
+                        style="
+                          width: 48px;
+                          height: 48px;
+                          border-radius: 50%;
+                          background: #fff;
+                          display: flex;
+                          align-items: center;
+                          justify-content: center;
+                          color: #000;
+                          cursor: pointer;
+                        "
+                      >
+                        <i
+                          class="fa-solid fa-pause"
+                          style="font-size: 20px"
+                        ></i>
+                      </div>
+                      <i
+                        class="fa-solid fa-forward-step"
+                        style="font-size: 16px; color: #fff; cursor: pointer"
+                      ></i>
                     </div>
                   </div>
                 </div>
@@ -2550,43 +3399,137 @@
       <!-- ============================================================
        DYNAMIC INTENT & FAST MODE SECTION
        ============================================================ -->
-      <section class="section reveal fade" id="intelligence" style="padding-bottom: 0;">
+      <section
+        class="section reveal fade"
+        id="intelligence"
+        style="padding-bottom: 0"
+      >
         <div class="container">
           <div class="section-head reveal slide-up">
             <span class="section-eyebrow">Advanced NLP Pipeline</span>
             <h2>Adaptive Personas &amp; Fast Mode</h2>
             <p>
-              Heros dynamically shifts its intellect, tone, and response budgets 
+              Heros dynamically shifts its intellect, tone, and response budgets
               to match your goals, with ultra-fast latency options.
             </p>
           </div>
 
-          <div class="grid-features" style="grid-template-columns: repeat(2, 1fr); margin-bottom: 50px;">
-            <article class="fcard reveal slide-left" style="grid-column: span 1;">
-              <div class="ic" style="color: var(--cyan);"><i class="fa-solid fa-brain"></i></div>
+          <div
+            class="grid-features"
+            style="grid-template-columns: repeat(2, 1fr); margin-bottom: 50px"
+          >
+            <article
+              class="fcard reveal slide-left"
+              style="grid-column: span 1"
+            >
+              <div class="ic" style="color: var(--cyan)">
+                <i class="fa-solid fa-brain"></i>
+              </div>
               <h3>Adaptive Personas</h3>
               <p>
-                The advanced NLP engine routes tasks to specific model personalities based on your intent.
+                The advanced NLP engine routes tasks to specific model
+                personalities based on your intent.
               </p>
-              <ul style="list-style: none; padding: 0; display: flex; flex-direction: column; gap: 8px; font-size: 0.85rem; color: var(--text-dim);">
-                <li><i class="fa-solid fa-comment-dots" style="color: var(--cyan); margin-right: 6px;"></i> <b>Chat (ChatGPT style):</b> Natural, friendly, and engaging conversation.</li>
-                <li><i class="fa-solid fa-code" style="color: var(--cyan); margin-right: 6px;"></i> <b>Coding (Claude style):</b> Production-ready code blocks and design logic.</li>
-                <li><i class="fa-solid fa-magnifying-glass" style="color: var(--cyan); margin-right: 6px;"></i> <b>Search (Gemini/Grok style):</b> Real-time synthesized search facts.</li>
-                <li><i class="fa-solid fa-microphone-lines" style="color: var(--cyan); margin-right: 6px;"></i> <b>Voice (ChatGPT Voice style):</b> Concise, natural spoken phrases.</li>
+              <ul
+                style="
+                  list-style: none;
+                  padding: 0;
+                  display: flex;
+                  flex-direction: column;
+                  gap: 8px;
+                  font-size: 0.85rem;
+                  color: var(--text-dim);
+                "
+              >
+                <li>
+                  <i
+                    class="fa-solid fa-comment-dots"
+                    style="color: var(--cyan); margin-right: 6px"
+                  ></i>
+                  <b>Chat (ChatGPT style):</b> Natural, friendly, and engaging
+                  conversation.
+                </li>
+                <li>
+                  <i
+                    class="fa-solid fa-code"
+                    style="color: var(--cyan); margin-right: 6px"
+                  ></i>
+                  <b>Coding (Claude style):</b> Production-ready code blocks and
+                  design logic.
+                </li>
+                <li>
+                  <i
+                    class="fa-solid fa-magnifying-glass"
+                    style="color: var(--cyan); margin-right: 6px"
+                  ></i>
+                  <b>Search (Gemini/Grok style):</b> Real-time synthesized
+                  search facts.
+                </li>
+                <li>
+                  <i
+                    class="fa-solid fa-microphone-lines"
+                    style="color: var(--cyan); margin-right: 6px"
+                  ></i>
+                  <b>Voice (ChatGPT Voice style):</b> Concise, natural spoken
+                  phrases.
+                </li>
               </ul>
             </article>
 
-            <article class="fcard reveal slide-right" style="grid-column: span 1;">
-              <div class="ic" style="color: var(--violet);"><i class="fa-solid fa-bolt"></i></div>
+            <article
+              class="fcard reveal slide-right"
+              style="grid-column: span 1"
+            >
+              <div class="ic" style="color: var(--violet)">
+                <i class="fa-solid fa-bolt"></i>
+              </div>
               <h3>Groq Fast Mode &amp; Budgeting</h3>
               <p>
-                Toggle Fast Mode to bypass heavy reasoning paths for rapid-fire responses in milliseconds.
+                Toggle Fast Mode to bypass heavy reasoning paths for rapid-fire
+                responses in milliseconds.
               </p>
-              <ul style="list-style: none; padding: 0; display: flex; flex-direction: column; gap: 8px; font-size: 0.85rem; color: var(--text-dim);">
-                <li><i class="fa-solid fa-gauge-high" style="color: var(--violet); margin-right: 6px;"></i> <b>Instant Replies:</b> Accelerated fallback paths for quick Q&amp;A.</li>
-                <li><i class="fa-solid fa-chart-simple" style="color: var(--violet); margin-right: 6px;"></i> <b>Response Budgeting:</b> Automatically adjusts length by intent.</li>
-                <li><i class="fa-solid fa-circle-check" style="color: var(--violet); margin-right: 6px;"></i> <b>Resource Efficiency:</b> Snappy, clean dialogs without context bloat.</li>
-                <li><i class="fa-solid fa-network-wired" style="color: var(--violet); margin-right: 6px;"></i> <b>Halo Integration:</b> Zero-login foundational coordination.</li>
+              <ul
+                style="
+                  list-style: none;
+                  padding: 0;
+                  display: flex;
+                  flex-direction: column;
+                  gap: 8px;
+                  font-size: 0.85rem;
+                  color: var(--text-dim);
+                "
+              >
+                <li>
+                  <i
+                    class="fa-solid fa-gauge-high"
+                    style="color: var(--violet); margin-right: 6px"
+                  ></i>
+                  <b>Instant Replies:</b> Accelerated fallback paths for quick
+                  Q&amp;A.
+                </li>
+                <li>
+                  <i
+                    class="fa-solid fa-chart-simple"
+                    style="color: var(--violet); margin-right: 6px"
+                  ></i>
+                  <b>Response Budgeting:</b> Automatically adjusts length by
+                  intent.
+                </li>
+                <li>
+                  <i
+                    class="fa-solid fa-circle-check"
+                    style="color: var(--violet); margin-right: 6px"
+                  ></i>
+                  <b>Resource Efficiency:</b> Snappy, clean dialogs without
+                  context bloat.
+                </li>
+                <li>
+                  <i
+                    class="fa-solid fa-network-wired"
+                    style="color: var(--violet); margin-right: 6px"
+                  ></i>
+                  <b>Halo Integration:</b> Zero-login foundational coordination.
+                </li>
               </ul>
             </article>
           </div>
@@ -2601,8 +3544,8 @@
             <span class="section-eyebrow">Core pillars</span>
             <h2>Four systems, one assistant.</h2>
             <p>
-              Everything Heros does is built around one idea: never leave
-              the user staring at an error.
+              Everything Heros does is built around one idea: never leave the
+              user staring at an error.
             </p>
           </div>
 
@@ -2640,15 +3583,21 @@
             </article>
 
             <article class="fcard reveal slide-up">
-              <div class="ic"><i class="fa-solid fa-microphone"></i></div>
-              <h3>Voice, Web &amp; File Analysis</h3>
+              <div class="ic"><i class="fa-solid fa-globe"></i></div>
+              <h3>Web, Voice &amp; Media Analysis</h3>
               <p>
-                Speak instead of typing, pull live answers from the web, or hand
-                over a PDF, image, or document to parse.
+                Speak instead of typing, pull live answers from Serpstack &
+                Serply, or intelligently switch between YouTube & YT Music via
+                Zeno/Zuno.
               </p>
               <ul>
-                <li><i class="fa-solid fa-circle"></i>Speech-to-text input</li>
-                <li><i class="fa-solid fa-circle"></i>Real-time web search</li>
+                <li>
+                  <i class="fa-solid fa-circle"></i>Serpstack & Serply Web
+                  Search
+                </li>
+                <li>
+                  <i class="fa-solid fa-circle"></i>Zeno & Zuno Media Switcher
+                </li>
                 <li>
                   <i class="fa-solid fa-circle"></i>OCR &amp; document parsing
                 </li>
@@ -2659,15 +3608,16 @@
               <div class="ic"><i class="fa-solid fa-link"></i></div>
               <h3>Unbroken Chat Context</h3>
               <p>
-                Conversation memory and smart routing persist across every model
-                switch, so the thread never resets.
+                Conversation memory, smart routing, and a live "Pause/Abort"
+                switch ensures you have total control over the thread without
+                memory leaks.
               </p>
               <ul>
                 <li>
                   <i class="fa-solid fa-circle"></i>Persistent session history
                 </li>
                 <li>
-                  <i class="fa-solid fa-circle"></i>Cross-model context transfer
+                  <i class="fa-solid fa-circle"></i>Live Pause & Abort Controls
                 </li>
                 <li>
                   <i class="fa-solid fa-circle"></i>NLP-based intent detection
@@ -2749,11 +3699,11 @@
               <ul style="margin-top: 0.5rem">
                 <li>
                   <i class="fa-solid fa-circle"></i><b>Gemini:</b> Primary
-                  reasoning engine
+                  (3.6-flash & 3.5-lite)
                 </li>
                 <li>
-                  <i class="fa-solid fa-circle"></i><b>OpenRouter:</b> Secondary
-                  fallback pool
+                  <i class="fa-solid fa-circle"></i><b>OpenRouter:</b> Nemotron,
+                  Llama 3.2, Gemma 2
                 </li>
                 <li>
                   <i class="fa-solid fa-circle"></i><b>Groq:</b> Ultra-fast
@@ -2881,9 +3831,9 @@
                 color: var(--text-dim);
               "
             >
-              Born out of the frustration of endless API outages, Heros is
-              built on the philosophy that your workflow should never break. We
-              are a passionate team of engineers and AI enthusiasts dedicated to
+              Born out of the frustration of endless API outages, Heros is built
+              on the philosophy that your workflow should never break. We are a
+              passionate team of engineers and AI enthusiasts dedicated to
               building resilient, fault-tolerant infrastructure that gracefully
               handles the chaos of the modern web.
             </p>
@@ -2899,10 +3849,10 @@
               Whether you're a developer building the next generation of LLM
               applications, or an enterprise needing guaranteed uptime, our
               ecosystem—from our robust Django core to our seamlessly integrated
-              Zeno & Zuno browser extension—is designed to empower you with unbroken
-              context, lightning-fast inference, and intelligent background capabilities. We believe in open-source
-              collaboration, extreme reliability, and giving control back to the
-              user.
+              Zeno & Zuno browser extension—is designed to empower you with
+              unbroken context, lightning-fast inference, and intelligent
+              background capabilities. We believe in open-source collaboration,
+              extreme reliability, and giving control back to the user.
             </p>
           </div>
         </div>
@@ -2911,12 +3861,22 @@
       <!-- ============================================================
        FAQ SECTION
        ============================================================ -->
-      <section class="section reveal fade" id="faq" style="background: var(--bg-soft);">
+      <section
+        class="section reveal fade"
+        id="faq"
+        style="background: var(--bg-soft)"
+      >
         <div class="container">
-          <div class="section-head reveal slide-up" style="text-align: center; max-width: 650px; margin: 0 auto 50px;">
+          <div
+            class="section-head reveal slide-up"
+            style="text-align: center; max-width: 650px; margin: 0 auto 50px"
+          >
             <span class="section-eyebrow">Got Questions?</span>
             <h2>Frequently Asked Questions</h2>
-            <p>Everything you need to know about the Heros AI ecosystem, failover routing, and setup.</p>
+            <p>
+              Everything you need to know about the Heros AI ecosystem, failover
+              routing, and setup.
+            </p>
           </div>
 
           <div class="faq-accordion">
@@ -2928,7 +3888,10 @@
               </button>
               <div class="faq-content">
                 <div class="faq-content-inner">
-                  Heros routes every query through Baymax. If Gemini (Tier 1) experiences a rate limit or API outage, Baymax instantly handshakes with OpenRouter (Tier 2), and subsequently Groq (Tier 3) if needed, preserving your chat context perfectly.
+                  Heros routes every query through Baymax. If Gemini (Tier 1)
+                  experiences a rate limit or API outage, Baymax instantly
+                  handshakes with OpenRouter (Tier 2), and subsequently Groq
+                  (Tier 3) if needed, preserving your chat context perfectly.
                 </div>
               </div>
             </div>
@@ -2941,7 +3904,10 @@
               </button>
               <div class="faq-content">
                 <div class="faq-content-inner">
-                  Yes, absolutely. Your API keys are encrypted at-rest using standard Fernet cryptography inside the Django database. Furthermore, keys are linked strictly to your user profile session.
+                  Yes, absolutely. Your API keys are encrypted at-rest using
+                  standard Fernet cryptography inside the Django database.
+                  Furthermore, keys are linked strictly to your user profile
+                  session.
                 </div>
               </div>
             </div>
@@ -2954,7 +3920,9 @@
               </button>
               <div class="faq-content">
                 <div class="faq-content-inner">
-                  Yes. Heros is released under the MIT License. You can run it locally, deploy it to staging or production using Docker, and configure custom fallback models without licensing fees.
+                  Yes. Heros is released under the MIT License. You can run it
+                  locally, deploy it to staging or production using Docker, and
+                  configure custom fallback models without licensing fees.
                 </div>
               </div>
             </div>
@@ -2967,7 +3935,11 @@
               </button>
               <div class="faq-content">
                 <div class="faq-content-inner">
-                  Zeno is the core companion browser extension that puts the AI assistant directly inside any web page (right-click highlighted text lookup, voice chat overlay, etc.). Zuno is a specialized module embedded inside Zeno that allows background YouTube and music radar controls.
+                  Zeno is the core companion browser extension that puts the AI
+                  assistant directly inside any web page (right-click
+                  highlighted text lookup, voice chat overlay, etc.). Zuno is a
+                  specialized module embedded inside Zeno that allows background
+                  YouTube and music radar controls.
                 </div>
               </div>
             </div>
@@ -3009,14 +3981,159 @@
       <!-- ============================================================
        FOOTER
        ============================================================ -->
+      <!-- ============================================================
+       UPDATES SECTION
+       ============================================================ -->
+      <div class="container"><div class="divider"></div></div>
+      <section
+        class="section reveal fade"
+        id="updates"
+        style="padding-bottom: 80px"
+      >
+        <div class="container" style="max-width: 800px; margin: 0 auto">
+          <div class="section-head reveal slide-up" style="text-align: left">
+            <span class="section-eyebrow">Changelog</span>
+            <h2 style="font-size: 2.5rem; margin-bottom: 1rem">
+              What's New in Heros
+            </h2>
+            <p style="font-size: 1.1rem; color: var(--text-dim)">
+              We constantly push updates to keep your AI workflow unbroken and
+              blazingly fast. Here's what we just shipped.
+            </p>
+          </div>
+          <div
+            class="fcard reveal slide-up"
+            style="
+              border-color: rgba(37, 99, 235, 0.3);
+              box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            "
+          >
+            <h3 style="color: var(--accent); margin-bottom: 1.5rem">
+              <i class="fa-solid fa-rocket" style="margin-right: 10px"></i
+              >Updates
+            </h3>
+            <ul
+              style="
+                list-style: none;
+                padding: 0;
+                margin: 0;
+                display: flex;
+                flex-direction: column;
+                gap: 20px;
+              "
+            >
+              <li style="display: flex; gap: 15px; align-items: flex-start">
+                <i
+                  class="fa-solid fa-bolt"
+                  style="
+                    color: var(--violet);
+                    margin-top: 5px;
+                    font-size: 1.2rem;
+                  "
+                ></i>
+                <div>
+                  <strong style="color: var(--text); font-size: 1.1rem"
+                    >Live Pause & Abort Feature</strong
+                  >
+                  <p
+                    style="
+                      color: var(--text-dim);
+                      margin-top: 4px;
+                      font-size: 0.95rem;
+                      line-height: 1.5;
+                    "
+                  >
+                    Cancel long-running AI generations instantly without ghost
+                    memory leaks into your database history.
+                  </p>
+                </div>
+              </li>
+              <li style="display: flex; gap: 15px; align-items: flex-start">
+                <i
+                  class="fa-solid fa-brain"
+                  style="color: var(--cyan); margin-top: 5px; font-size: 1.2rem"
+                ></i>
+                <div>
+                  <strong style="color: var(--text); font-size: 1.1rem"
+                    >Upgraded Model Fallbacks</strong
+                  >
+                  <p
+                    style="
+                      color: var(--text-dim);
+                      margin-top: 4px;
+                      font-size: 0.95rem;
+                      line-height: 1.5;
+                    "
+                  >
+                    Added Gemini 3.6-flash, Llama 3.2, and Nemotron to the core
+                    routing chain for unprecedented intelligence.
+                  </p>
+                </div>
+              </li>
+              <li style="display: flex; gap: 15px; align-items: flex-start">
+                <i
+                  class="fa-solid fa-music"
+                  style="color: #f59e0b; margin-top: 5px; font-size: 1.2rem"
+                ></i>
+                <div>
+                  <strong style="color: var(--text); font-size: 1.1rem"
+                    >Zeno Media Switcher</strong
+                  >
+                  <p
+                    style="
+                      color: var(--text-dim);
+                      margin-top: 4px;
+                      font-size: 0.95rem;
+                      line-height: 1.5;
+                    "
+                  >
+                    Zeno & Zuno now dynamically switch between YouTube (video
+                    tutorials) and YT Music (albums & tracks) based on intent.
+                  </p>
+                </div>
+              </li>
+              <li style="display: flex; gap: 15px; align-items: flex-start">
+                <i
+                  class="fa-solid fa-globe"
+                  style="color: #10b981; margin-top: 5px; font-size: 1.2rem"
+                ></i>
+                <div>
+                  <strong style="color: var(--text); font-size: 1.1rem"
+                    >Serpstack & Serply Web Engines</strong
+                  >
+                  <p
+                    style="
+                      color: var(--text-dim);
+                      margin-top: 4px;
+                      font-size: 0.95rem;
+                      line-height: 1.5;
+                    "
+                  >
+                    Dramatically improved live search results by integrating
+                    secondary search engines alongside duckduckgo.
+                  </p>
+                </div>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
       <footer class="footer-refined">
         <div class="footer-grid">
           <div class="footer-brand-col">
             <div class="brand">
-              <img src="{% static 'images/Hero_ai.png' %}" class="brand-mark" alt="Heros Logo" />
+              <img
+                src="{% static 'images/Hero_ai.png' %}"
+                class="brand-mark"
+                alt="Heros Logo"
+              />
               Heros
             </div>
-            <p class="brand-desc">The resilient, multi-tier AI routing gateway built for guaranteed uptime and privacy.</p>
+            <p class="brand-desc">
+              The resilient, multi-tier AI routing gateway built for guaranteed
+              uptime and privacy.
+            </p>
             <div class="status-indicator">
               <span class="status-dot pulsing"></span> All Systems Operational
             </div>
@@ -3032,16 +4149,49 @@
           <div class="footer-nav-col">
             <h5>Resources</h5>
             <ul>
-              <li><a href="https://docs.google.com/document/d/1ob42_kMVSGRNzEID4G3BnRPwnUiEFgmRnpogke7tMS0/edit?usp=sharing" target="_blank" rel="noopener">Documentation</a></li>
-              <li><a href="https://github.com/Hudsonmathew1910/Hero-s-AI" target="_blank" rel="noopener">GitHub Repository</a></li>
-              <li><a href="https://github.com/Hudsonmathew1910/Hero-s-AI/security" target="_blank" rel="noopener">Security Policy</a></li>
+              <li>
+                <a
+                  href="https://docs.google.com/document/d/1ob42_kMVSGRNzEID4G3BnRPwnUiEFgmRnpogke7tMS0/edit?usp=sharing"
+                  target="_blank"
+                  rel="noopener"
+                  >Documentation</a
+                >
+              </li>
+              <li>
+                <a
+                  href="https://github.com/Hudsonmathew1910/Hero-s-AI"
+                  target="_blank"
+                  rel="noopener"
+                  >GitHub Repository</a
+                >
+              </li>
+              <li>
+                <a
+                  href="https://github.com/Hudsonmathew1910/Hero-s-AI/security"
+                  target="_blank"
+                  rel="noopener"
+                  >Security Policy</a
+                >
+              </li>
             </ul>
           </div>
           <div class="footer-nav-col">
             <h5>Ecosystem</h5>
             <ul>
-              <li><a href="https://github.com/Hudsonmathew1910/Hero-s-AI/releases/download/Heros_4th_Gen/Zeno_Pro_3.0.zip" download>Zeno Extension</a></li>
-              <li><a href="https://github.com/Hudsonmathew1910/Hero-s-AI/releases/download/Heros_4th_Gen/Zeno_Pro_3.0.zip" download>Zuno Audio</a></li>
+              <li>
+                <a
+                  href="https://github.com/Hudsonmathew1910/Hero-s-AI/releases/download/Heros_5th_Gen/Zeno_Pro_3.0.zip"
+                  download
+                  >Zeno Extension</a
+                >
+              </li>
+              <li>
+                <a
+                  href="https://github.com/Hudsonmathew1910/Hero-s-AI/releases/download/Heros_5th_Gen/Zeno_Pro_3.0.zip"
+                  download
+                  >Zuno Audio</a
+                >
+              </li>
               <li><a href="{% url 'infinsight_home' %}">Infinsight RAG</a></li>
             </ul>
           </div>
@@ -3049,9 +4199,18 @@
         <div class="footer-bottom">
           <span>&copy; 2026 Heros AI platform. Licensed under MIT.</span>
           <div class="footer-socials">
-            <a href="https://github.com/Hudsonmathew1910/Hero-s-AI" target="_blank" rel="noopener"><i class="fa-brands fa-github"></i></a>
-            <a href="#" aria-label="Twitter"><i class="fa-brands fa-x-twitter"></i></a>
-            <a href="#" aria-label="Discord"><i class="fa-brands fa-discord"></i></a>
+            <a
+              href="https://github.com/Hudsonmathew1910/Hero-s-AI"
+              target="_blank"
+              rel="noopener"
+              ><i class="fa-brands fa-github"></i
+            ></a>
+            <a href="#" aria-label="Twitter"
+              ><i class="fa-brands fa-x-twitter"></i
+            ></a>
+            <a href="#" aria-label="Discord"
+              ><i class="fa-brands fa-discord"></i
+            ></a>
           </div>
         </div>
       </footer>
@@ -3082,7 +4241,16 @@
             <label>
               <span class="provider-dot" style="background: #4ee1d6"></span>
               Gemini API Key
-              <span class="hint">tier 1 · <a href="https://aistudio.google.com/" target="_blank" rel="noopener" class="label-link">Get Key <i class="fa-solid fa-arrow-up-right-from-square"></i></a></span>
+              <span class="hint"
+                >tier 1 ·
+                <a
+                  href="https://aistudio.google.com/"
+                  target="_blank"
+                  rel="noopener"
+                  class="label-link"
+                  >Get Key
+                  <i class="fa-solid fa-arrow-up-right-from-square"></i></a
+              ></span>
             </label>
             <div class="key-input">
               <input
@@ -3101,7 +4269,16 @@
             <label>
               <span class="provider-dot" style="background: #8b7bff"></span>
               OpenRouter API Key
-              <span class="hint">tier 2 · <a href="https://openrouter.ai/keys" target="_blank" rel="noopener" class="label-link">Get Key <i class="fa-solid fa-arrow-up-right-from-square"></i></a></span>
+              <span class="hint"
+                >tier 2 ·
+                <a
+                  href="https://openrouter.ai/keys"
+                  target="_blank"
+                  rel="noopener"
+                  class="label-link"
+                  >Get Key
+                  <i class="fa-solid fa-arrow-up-right-from-square"></i></a
+              ></span>
             </label>
             <div class="key-input">
               <input
@@ -3124,7 +4301,16 @@
             <label>
               <span class="provider-dot" style="background: #ffb454"></span>
               Groq API Key
-              <span class="hint">tier 3 · <a href="https://console.groq.com/keys" target="_blank" rel="noopener" class="label-link">Get Key <i class="fa-solid fa-arrow-up-right-from-square"></i></a></span>
+              <span class="hint"
+                >tier 3 ·
+                <a
+                  href="https://console.groq.com/keys"
+                  target="_blank"
+                  rel="noopener"
+                  class="label-link"
+                  >Get Key
+                  <i class="fa-solid fa-arrow-up-right-from-square"></i></a
+              ></span>
             </label>
             <div class="key-input">
               <input
@@ -3134,6 +4320,34 @@
                 autocomplete="off"
               />
               <button type="button" class="toggle-vis" data-target="groqKey">
+                <i class="fa-solid fa-eye"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="key-field">
+            <label>
+              <span class="provider-dot" style="background: #ffd21e"></span>
+              Hugging Face API Key
+              <span class="hint"
+                >optional ·
+                <a
+                  href="https://huggingface.co/settings/tokens"
+                  target="_blank"
+                  rel="noopener"
+                  class="label-link"
+                  >Get Key
+                  <i class="fa-solid fa-arrow-up-right-from-square"></i></a
+              ></span>
+            </label>
+            <div class="key-input">
+              <input
+                type="password"
+                id="huggingfaceKey"
+                placeholder="hf_••••••••••••••••••••"
+                autocomplete="off"
+              />
+              <button type="button" class="toggle-vis" data-target="huggingfaceKey">
                 <i class="fa-solid fa-eye"></i>
               </button>
             </div>
@@ -3269,9 +4483,7 @@
         <div class="modal-head">
           <div>
             <h3 id="gracefulTitle">How it fails gracefully</h3>
-            <p>
-              Heros ensures 100% uptime through a 3-tier fallback engine.
-            </p>
+            <p>Heros ensures 100% uptime through a 3-tier fallback engine.</p>
           </div>
           <button class="modal-close" id="closeGracefulBtn" aria-label="Close">
             <i class="fa-solid fa-xmark"></i>
@@ -3338,6 +4550,7 @@
                 var g = document.getElementById("geminiKey");
                 var o = document.getElementById("openrouterKey");
                 var gr = document.getElementById("groqKey");
+                var h = document.getElementById("huggingfaceKey");
                 if (g)
                   g.placeholder = data.keys.gemini
                     ? "Modify your Gemini API key"
@@ -3350,6 +4563,10 @@
                   gr.placeholder = data.keys.groq
                     ? "Modify your Groq API key"
                     : "gsk_••••••••••••••••••••";
+                if (h)
+                  h.placeholder = data.keys.huggingface
+                    ? "Modify your Hugging Face API key"
+                    : "hf_••••••••••••••••••••";
               }
             })
             .catch((e) => console.error(e));
@@ -3544,6 +4761,7 @@
             .getElementById("openrouterKey")
             .value.trim();
           const groq = document.getElementById("groqKey").value.trim();
+          const huggingface = document.getElementById("huggingfaceKey") ? document.getElementById("huggingfaceKey").value.trim() : "";
 
           if (!gemini) {
             showToast("Gemini API key is required.", true);
@@ -3562,7 +4780,7 @@
               "X-CSRFToken": getCSRFToken(),
             },
             credentials: "include",
-            body: JSON.stringify({ gemini, openrouter, groq }),
+            body: JSON.stringify({ gemini, openrouter, groq, huggingface }),
           })
             .then((r) => r.json())
             .then((data) => {
@@ -3651,78 +4869,105 @@
         }
 
         if (btnSimGemini) {
-          btnSimGemini.addEventListener("click", function() {
+          btnSimGemini.addEventListener("click", function () {
             isSimulating = true;
-            nodes.forEach(function(n) {
+            nodes.forEach(function (n) {
               n.classList.remove("active");
               n.classList.remove("outage");
             });
             nodes[0].classList.add("outage");
             nodes[1].classList.add("active");
-            
+
             addLog("SIMULATE: Gemini (Tier 1) outage triggered.", "system");
-            setTimeout(function() {
+            setTimeout(function () {
               addLog("DIAL: Attempting connection to Gemini API...", "system");
             }, 300);
-            setTimeout(function() {
-              addLog("ERROR: Gemini API connection timeout (504 gateway timeout)", "error");
+            setTimeout(function () {
+              addLog(
+                "ERROR: Gemini API connection timeout (504 gateway timeout)",
+                "error",
+              );
             }, 1000);
-            setTimeout(function() {
-              addLog("FAILOVER: Initiating secondary fallback routing...", "system");
+            setTimeout(function () {
+              addLog(
+                "FAILOVER: Initiating secondary fallback routing...",
+                "system",
+              );
             }, 1600);
-            setTimeout(function() {
-              addLog("DIAL: Connecting to OpenRouter API (Tier 2)...", "system");
+            setTimeout(function () {
+              addLog(
+                "DIAL: Connecting to OpenRouter API (Tier 2)...",
+                "system",
+              );
             }, 2100);
-            setTimeout(function() {
-              addLog("SUCCESS: Connection established. Failover handoff completed in 12ms.", "success");
+            setTimeout(function () {
+              addLog(
+                "SUCCESS: Connection established. Failover handoff completed in 12ms.",
+                "success",
+              );
             }, 2600);
           });
         }
 
         if (btnSimRouter) {
-          btnSimRouter.addEventListener("click", function() {
+          btnSimRouter.addEventListener("click", function () {
             isSimulating = true;
-            nodes.forEach(function(n) {
+            nodes.forEach(function (n) {
               n.classList.remove("active");
               n.classList.remove("outage");
             });
             nodes[0].classList.add("outage");
             nodes[1].classList.add("outage");
             nodes[2].classList.add("active");
-            
-            addLog("SIMULATE: Primary and Secondary provider outages triggered.", "system");
-            setTimeout(function() {
+
+            addLog(
+              "SIMULATE: Primary and Secondary provider outages triggered.",
+              "system",
+            );
+            setTimeout(function () {
               addLog("DIAL: Attempting Gemini connection...", "system");
             }, 300);
-            setTimeout(function() {
+            setTimeout(function () {
               addLog("ERROR: Gemini API service unavailable.", "error");
             }, 900);
-            setTimeout(function() {
+            setTimeout(function () {
               addLog("DIAL: Attempting OpenRouter connection...", "system");
             }, 1400);
-            setTimeout(function() {
+            setTimeout(function () {
               addLog("ERROR: OpenRouter returned 502 Bad Gateway.", "error");
             }, 2000);
-            setTimeout(function() {
-              addLog("FAILOVER: Engaging Tier 3 Groq inference net...", "system");
+            setTimeout(function () {
+              addLog(
+                "FAILOVER: Engaging Tier 3 Groq inference net...",
+                "system",
+              );
             }, 2500);
-            setTimeout(function() {
-              addLog("SUCCESS: Routed successfully via Groq in 4ms.", "success");
+            setTimeout(function () {
+              addLog(
+                "SUCCESS: Routed successfully via Groq in 4ms.",
+                "success",
+              );
             }, 3100);
           });
         }
 
         if (btnSimReset) {
-          btnSimReset.addEventListener("click", function() {
+          btnSimReset.addEventListener("click", function () {
             isSimulating = false;
-            nodes.forEach(function(n) {
+            nodes.forEach(function (n) {
               n.classList.remove("active");
               n.classList.remove("outage");
             });
             nodes[0].classList.add("active");
-            addLog("RESET: Restoring default routing configuration...", "system");
-            setTimeout(function() {
-              addLog("STATUS: All systems healthy. Auto-routing active.", "success");
+            addLog(
+              "RESET: Restoring default routing configuration...",
+              "system",
+            );
+            setTimeout(function () {
+              addLog(
+                "STATUS: All systems healthy. Auto-routing active.",
+                "success",
+              );
             }, 600);
             startCycle();
           });
@@ -3768,14 +5013,14 @@
       function triggerStatsCountUp(banner) {
         banner.classList.add("counted");
         const nums = banner.querySelectorAll(".stat-num");
-        nums.forEach(num => {
+        nums.forEach((num) => {
           const target = parseInt(num.getAttribute("data-val"), 10);
           let current = 0;
           const duration = 1200; // ms
           const stepTime = 15; // ms
           const totalSteps = duration / stepTime;
           const increment = target / totalSteps;
-          
+
           let step = 0;
           const timer = setInterval(() => {
             step++;
@@ -3798,7 +5043,10 @@
           const elementVisible = 50;
           if (elementTop < windowHeight - elementVisible) {
             reveals[i].classList.add("active");
-            if (reveals[i].classList.contains("stats-banner") && !reveals[i].classList.contains("counted")) {
+            if (
+              reveals[i].classList.contains("stats-banner") &&
+              !reveals[i].classList.contains("counted")
+            ) {
               triggerStatsCountUp(reveals[i]);
             }
           }
@@ -3812,21 +5060,23 @@
    HERO TABS SCROLL & GLIDER UPDATES
    ========================================== */
       function updateGlider(index) {
-        const glider = document.querySelector('.glider');
+        const glider = document.querySelector(".glider");
         if (glider) {
           glider.style.transform = `translateX(${index * 100}%)`;
         }
       }
 
-      document.querySelectorAll('#heroTabs .tab').forEach((tab) => {
-        tab.addEventListener('click', function (e) {
+      document.querySelectorAll("#heroTabs .tab").forEach((tab) => {
+        tab.addEventListener("click", function (e) {
           e.preventDefault();
-          document.querySelectorAll('#heroTabs .tab').forEach(t => t.classList.remove('active'));
-          this.classList.add('active');
-          const index = parseInt(this.getAttribute('data-index'), 10);
+          document
+            .querySelectorAll("#heroTabs .tab")
+            .forEach((t) => t.classList.remove("active"));
+          this.classList.add("active");
+          const index = parseInt(this.getAttribute("data-index"), 10);
           updateGlider(index);
 
-          const target = document.querySelector(this.getAttribute('href'));
+          const target = document.querySelector(this.getAttribute("href"));
           if (target) {
             const offset = 140; // Avoid navbar overlay
             const bodyRect = document.body.getBoundingClientRect().top;
@@ -3836,7 +5086,7 @@
 
             window.scrollTo({
               top: offsetPosition,
-              behavior: 'smooth'
+              behavior: "smooth",
             });
           }
         });
@@ -3845,43 +5095,49 @@
       // Intersection Observer to update glider as user scrolls
       const observerOptions = {
         root: null,
-        rootMargin: '-30% 0px -50% 0px',
-        threshold: 0
+        rootMargin: "-30% 0px -50% 0px",
+        threshold: 0,
       };
 
       const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
+        entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            const id = entry.target.getAttribute('id');
-            const activeTab = document.querySelector(`#heroTabs .tab[href="#${id}"]`);
+            const id = entry.target.getAttribute("id");
+            const activeTab = document.querySelector(
+              `#heroTabs .tab[href="#${id}"]`,
+            );
             if (activeTab) {
-              document.querySelectorAll('#heroTabs .tab').forEach(t => t.classList.remove('active'));
-              activeTab.classList.add('active');
-              const index = parseInt(activeTab.getAttribute('data-index'), 10);
+              document
+                .querySelectorAll("#heroTabs .tab")
+                .forEach((t) => t.classList.remove("active"));
+              activeTab.classList.add("active");
+              const index = parseInt(activeTab.getAttribute("data-index"), 10);
               updateGlider(index);
             }
           }
         });
       }, observerOptions);
 
-      document.querySelectorAll('.hero-row').forEach(sec => observer.observe(sec));
+      document
+        .querySelectorAll(".hero-row")
+        .forEach((sec) => observer.observe(sec));
 
       /* ==========================================
    FAQ ACCORDION TOGGLE
    ========================================== */
-      document.querySelectorAll('.faq-trigger').forEach(trigger => {
-        trigger.addEventListener('click', function() {
+      document.querySelectorAll(".faq-trigger").forEach((trigger) => {
+        trigger.addEventListener("click", function () {
           const item = this.parentElement;
-          const isOpen = item.classList.contains('open');
-          
-          document.querySelectorAll('.faq-item').forEach(i => {
-            if (i !== item) i.classList.remove('open');
+          const isOpen = item.classList.contains("open");
+
+          document.querySelectorAll(".faq-item").forEach((i) => {
+            if (i !== item) i.classList.remove("open");
           });
-          
+
           if (!isOpen) {
-            item.classList.add('open');
+            item.classList.add("open");
           } else {
-            item.classList.remove('open');
+            item.classList.remove("open");
           }
         });
       });

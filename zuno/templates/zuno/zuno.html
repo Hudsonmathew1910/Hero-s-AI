@@ -1,53 +1,152 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Zuno AI Music Assistant</title>
-    <!-- Use Google Fonts -->
+    <link rel="icon" type="image/png" href="{% static 'images/Hero_ai.png' %}">
+    <!-- Use Google Fonts & FontAwesome -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300..800;1,14..32,300..800&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <style>
         :root {
-            --bg-color: #0d0f12;
-            --primary-color: #7b2cbf;
-            --secondary-color: #c77dff;
-            --text-color: #ffffff;
-            --text-muted: #a0aab2;
-            --glass-bg: rgba(255, 255, 255, 0.05);
-            --glass-border: rgba(255, 255, 255, 0.1);
+            --bg-color: #09090b;
+            --primary-color: #3b82f6;
+            --secondary-color: #10b981;
+            --text-color: #fafafa;
+            --text-muted: #a1a1aa;
+            --glass-bg: rgba(24, 24, 27, 0.6);
+            --glass-border: rgba(255, 255, 255, 0.07);
+            
+            --bg: #09090b;
+            --surface: #18181b;
+            --surface-2: #1f1f23;
+            --border: rgba(255, 255, 255, 0.07);
+            --border-soft: rgba(255, 255, 255, 0.04);
+            --text: #fafafa;
+            --text-dim: #a1a1aa;
+            --cyan: #10b981;
+            --violet: #3b82f6;
+            
+            --font-display: "Plus Jakarta Sans", "Inter", sans-serif;
+            --font-body: "Inter", system-ui, -apple-system, sans-serif;
         }
 
         body {
             margin: 0;
             padding: 0;
-            font-family: 'Outfit', sans-serif;
+            font-family: var(--font-body);
             background-color: var(--bg-color);
-            background-image: 
-                radial-gradient(circle at 15% 50%, rgba(123, 44, 191, 0.15), transparent 25%),
-                radial-gradient(circle at 85% 30%, rgba(199, 125, 255, 0.15), transparent 25%);
             color: var(--text-color);
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
             min-height: 100vh;
-            overflow: hidden;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            pointer-events: none;
+            background:
+                radial-gradient(700px 520px at 12% -8%, rgba(16, 185, 129, 0.08), transparent 60%),
+                radial-gradient(640px 500px at 90% 12%, rgba(59, 130, 246, 0.06), transparent 60%),
+                radial-gradient(900px 700px at 50% 108%, rgba(16, 185, 129, 0.04), transparent 60%);
+        }
+        
+        .header-nav {
+            width: 100%;
+            padding: 12px 40px;
+            padding-left: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            z-index: 10;
+        }
+
+        .header-nav .brand {
+            display: flex;
+            align-items: center;
+            font-family: var(--font-display);
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-color);
+            text-decoration: none;
+        }
+
+        .header-nav .brand img {
+            width: 32px;
+            height: 32px;
+            margin-right: 12px;
+        }
+
+        .rules-card {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 1rem;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            padding: 1.5rem;
+            border-radius: 15px;
+            backdrop-filter: blur(20px);
+            text-align: left;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+            animation: fadeIn 0.5s ease;
+        }
+        
+        @media (max-width: 600px) {
+            .rules-card { grid-template-columns: 1fr; }
+        }
+
+        .rule-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 10px;
+            background: rgba(255,255,255,0.02);
+            border-radius: 10px;
+            border: 1px solid var(--border-soft);
+        }
+        
+        .rule-item i {
+            color: var(--cyan);
+            margin-top: 4px;
+            font-size: 1.2rem;
+        }
+        
+        .rule-item div {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            line-height: 1.4;
+        }
+        
+        .rule-item div strong {
+            color: var(--text-color);
+            display: block;
+            margin-bottom: 2px;
+            font-weight: 600;
         }
 
         .container {
             text-align: center;
             z-index: 10;
-            padding: 2rem;
+            padding: 0.2rem 2rem 0.5rem;
             max-width: 600px;
             width: 100%;
         }
 
         h1 {
-            font-size: 3rem;
+            font-size: 2.5rem;
             font-weight: 800;
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.2rem;
             background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
@@ -56,13 +155,13 @@
         p.subtitle {
             color: var(--text-muted);
             font-size: 1.1rem;
-            margin-bottom: 3rem;
+            margin-bottom: 1rem;
         }
 
         .mic-container {
             position: relative;
-            width: 150px;
-            height: 150px;
+            width: 110px;
+            height: 110px;
             margin: 0 auto;
             border-radius: 50%;
             display: flex;
@@ -77,8 +176,8 @@
         }
 
         .mic-button {
-            width: 100px;
-            height: 100px;
+            width: 80px;
+            height: 80px;
             border-radius: 50%;
             background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
             display: flex;
@@ -102,8 +201,8 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            width: 100px;
-            height: 100px;
+            width: 80px;
+            height: 80px;
             border-radius: 50%;
             background: rgba(199, 125, 255, 0.3);
             z-index: 1;
@@ -116,12 +215,12 @@
         }
 
         @keyframes ripple {
-            0% { width: 100px; height: 100px; opacity: 1; }
-            100% { width: 250px; height: 250px; opacity: 0; }
+            0% { width: 80px; height: 80px; opacity: 1; }
+            100% { width: 180px; height: 180px; opacity: 0; }
         }
 
         .status-text {
-            margin-top: 2rem;
+            margin-top: 0.5rem;
             font-size: 1.2rem;
             min-height: 1.5rem;
             color: var(--text-color);
@@ -129,7 +228,7 @@
         }
 
         .transcription {
-            margin-top: 1rem;
+            margin-top: 0.2rem;
             font-size: 1.1rem;
             color: var(--secondary-color);
             font-style: italic;
@@ -137,7 +236,7 @@
         }
 
         .results-container {
-            margin-top: 2rem;
+            margin-top: 1rem;
             background: var(--glass-bg);
             border: 1px solid var(--glass-border);
             border-radius: 15px;
@@ -361,7 +460,7 @@
 
         /* Error Card */
         .error-card {
-            margin-top: 2rem;
+            margin-top: 1rem;
             background: rgba(255, 60, 80, 0.08);
             border: 1px solid rgba(255, 80, 100, 0.3);
             border-radius: 18px;
@@ -548,22 +647,17 @@
     </style>
 </head>
 <body>
+    <header class="header-nav">
+        <a href="/" class="brand">
+            <img src="{% static 'images/Hero_ai.png' %}" alt="Heros Logo" />
+            Heros
+        </a>
+    </header>
 
     <div class="container">
-        <h1>Zuno</h1>
+        <h1><span style="background: linear-gradient(100deg, var(--cyan) 10%, var(--violet) 85%); -webkit-background-clip: text; color: transparent;">Zuno</span></h1>
         <p class="subtitle">Your intelligent voice-controlled music assistant</p>
 
-        <div class="mic-container" id="micContainer" {% if groq_missing %}style="opacity:0.4;pointer-events:none;"{% endif %}>
-            <div class="mic-ripple"></div>
-            <button class="mic-button" id="micBtn" aria-label="Start recording" {% if groq_missing %}disabled{% endif %}>
-                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 14c1.66 0 2.99-1.34 2.99-3L15 5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/>
-                </svg>
-            </button>
-        </div>
-
-        <div class="status-text" id="statusText">{% if groq_missing %}Configure your API key to start{% else %}Tap to speak{% endif %}</div>
-        <div class="transcription" id="transcriptionText"></div>
 
         <!-- Platform Toggle Menu -->
         <div class="platform-menu" id="platformMenu">
@@ -585,8 +679,52 @@
             </a>
         </div>
 
-        <!-- Zuno Music Player Card -->
-        <div id="zuno-music-player" style="display: none; align-items: center; justify-content: center; margin: 2rem 0;">
+        
+
+        <div class="mic-container" id="micContainer" {% if groq_missing %}style="opacity:0.4;pointer-events:none;"{% endif %}>
+            <div class="mic-ripple"></div>
+            <button class="mic-button" id="micBtn" aria-label="Start recording" {% if groq_missing %}disabled{% endif %}>
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 14c1.66 0 2.99-1.34 2.99-3L15 5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/>
+                </svg>
+            </button>
+        </div>
+
+        <div class="status-text" id="statusText">{% if groq_missing %}Configure your API key to start{% else %}Tap to speak{% endif %}</div>
+        <div class="transcription" id="transcriptionText"></div>
+
+        <div class="rules-card">
+            <div class="rule-item">
+                <i class="fa-solid fa-play"></i>
+                <div>
+                    <strong>Play Music</strong>
+                    "Play Starboy by The Weeknd"
+                </div>
+            </div>
+            <div class="rule-item">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <div>
+                    <strong>Search Artist</strong>
+                    "Search for Anirudh"
+                </div>
+            </div>
+            <div class="rule-item">
+                <i class="fa-solid fa-forward-step"></i>
+                <div>
+                    <strong>Control Playback</strong>
+                    "Next song", "Pause", "Resume"
+                </div>
+            </div>
+            <div class="rule-item">
+                <i class="fa-solid fa-up-right-from-square"></i>
+                <div>
+                    <strong>Music Radar</strong>
+                    "Bring music tab to front"
+                </div>
+            </div>
+        </div>
+<!-- Zuno Music Player Card -->
+        <div id="zuno-music-player" style="display: none; align-items: center; justify-content: center; margin: 1rem 0;">
             <div class="main-music-card">
                 <div class="track-info">
                     <div class="album-art" id="zuno-album-art"></div>
@@ -669,7 +807,7 @@
         <!-- Error Card for login / API key issues -->
         <div class="error-card" id="errorCard" {% if groq_missing %}style="display:block;"{% endif %}>
             <div class="error-card-title" id="errorCardTitle">
-                {% if groq_missing %}🔑 Groq API Key Missing{% else %}⚠️ Action Required{% endif %}
+                {% if groq_missing %}Groq API Key Missing{% else %}Action Required{% endif %}
             </div>
             <div class="error-card-body" id="errorCardBody">
                 {% if groq_missing %}
@@ -738,7 +876,14 @@
             };
 
             recognition.onresult = function(event) {
-                const transcript = event.results[0][0].transcript;
+                const transcript = event.results[0][0].transcript.trim();
+                
+                if (!transcript) {
+                    statusText.innerText = "Tap to speak";
+                    transcriptionText.innerText = "";
+                    return;
+                }
+
                 transcriptionText.innerText = `"${transcript}"`;
                 statusText.innerText = "Processing...";
                 
@@ -749,8 +894,14 @@
             recognition.onerror = function(event) {
                 isListening = false;
                 micContainer.classList.remove('listening');
-                statusText.innerText = "Error capturing audio.";
-                showToast(`Error: ${event.error}`);
+                
+                if (event.error === 'no-speech' || event.error === 'aborted') {
+                    statusText.innerText = "Tap to speak";
+                    transcriptionText.innerText = "";
+                } else {
+                    statusText.innerText = "Error capturing audio.";
+                    showToast(`Error: ${event.error}`);
+                }
             };
 
             recognition.onend = function() {
@@ -825,11 +976,21 @@
                     displayResults(data.query, data.results);
                 }
 
-            } catch (error) {
+                        } catch (error) {
                 console.error('Error:', error);
-                statusText.innerText = "Failed to process request.";
-                showErrorCard(error.message);
-                showToast(error.message);
+                
+                let friendlyMsg = "I couldn't quite connect. Please try again.";
+                if (error.message.includes("No text provided") || error.message.includes("Failed to parse")) {
+                    friendlyMsg = "I didn't quite catch that. Try speaking a bit louder or more clearly.";
+                } else if (error.message.includes("All models failed")) {
+                    friendlyMsg = "The AI routing engine is currently experiencing high load. Retrying in a moment should work.";
+                } else if (error.message.includes("API Key") || error.message.includes("log in")) {
+                    friendlyMsg = error.message;
+                }
+                
+                statusText.innerText = "Failed.";
+                showErrorCard(friendlyMsg);
+                showToast(friendlyMsg);
             }
         }
 
@@ -973,15 +1134,17 @@
         const errorCardTitle = document.getElementById('errorCardTitle');
         const errorCardBody = document.getElementById('errorCardBody');
 
-        function showErrorCard(message) {
+                function showErrorCard(message) {
             // Detect login-required errors
-            if (message && (message.includes('log in') || message.includes('Login') || message.includes('API Key') || message.includes('Groq'))) {
-                const isLoginError = message.includes('log in') || message.includes('Login');
+            const isLoginError = message.includes('log in') || message.includes('Login');
+            const isKeyError = message.includes('API Key') || message.includes('Groq');
+            
+            if (isLoginError || isKeyError) {
                 if (isLoginError) {
-                    errorCardTitle.innerHTML = '⚠️ Login Required';
+                    errorCardTitle.innerHTML = 'Login Required';
                     errorCardBody.innerHTML = 'Please log in to your Heros account and configure your API keys to use this feature.';
                 } else {
-                    errorCardTitle.innerHTML = '🔑 Groq API Key Missing';
+                    errorCardTitle.innerHTML = 'Groq API Key Missing';
                     errorCardBody.innerHTML =
                         'To use Zuno, please configure your Groq API key in your Heros profile:' +
                         '<ol>' +
@@ -990,6 +1153,10 @@
                         '<li>Add your <strong>Groq API Key</strong> and save.</li>' +
                         '</ol>';
                 }
+                errorCard.style.display = 'block';
+            } else {
+                errorCardTitle.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Oops, something went wrong';
+                errorCardBody.innerHTML = message;
                 errorCard.style.display = 'block';
             }
         }

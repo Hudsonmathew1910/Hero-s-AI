@@ -25,6 +25,7 @@ urlpatterns = [
     
     # Chat & TTS & STT
     path('api/chat', views.chat_api, name='chat_api'),
+    path('api/chat/abort', views.abort_chat_api, name='abort_chat_api'),
     path('api/tts', views.tts_api, name='tts_api'),
     path('api/transcribe', views.transcribe_audio, name='transcribe_audio'),
     path('api/chat/history', views.get_chat_history, name='get_chat_history'),

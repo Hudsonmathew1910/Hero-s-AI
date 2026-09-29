@@ -251,6 +251,11 @@ def chat(request):
                 if chunk["type"] == "final":
                     # Persist the exchange
                     if chunk.get("error") != "session_not_ready":
+                        # If the LLM took over 10 minutes (API hangs), the DB SSL connection might have died silently.
+                        # We force Django to close old/stale connections so it reconnects for the save.
+                        from django.db import close_old_connections
+                        close_old_connections()
+
                         ChatMessage.objects.create(
                             session=session,
                             user_message=user_message,

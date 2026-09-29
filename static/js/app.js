@@ -829,6 +829,8 @@ function updateFastModeDefault() {
   }
 }
 
+let currentAbortController = null;
+
 async function sendMessage() {
   if (isLoading) return;
   const inp = $('chatInput'); if (!inp) return;
@@ -880,9 +882,15 @@ async function sendMessage() {
       sessionHistory = messages.slice(0, -1);
     }
 
+    // Initialize abort controller with a unique request ID
+    const req_id = Date.now().toString() + Math.random().toString(36).substring(7);
+    currentAbortController = new AbortController();
+    currentAbortController.req_id = req_id;
+
     // FIX: Send temporary_chat (not temporary) matching backend expectations
     const res = await fetch('/api/chat', {
       method: 'POST',
+      signal: currentAbortController.signal,
       headers: { 
         'Content-Type': 'application/json',
         'X-CSRFToken': getCsrfToken()
@@ -902,7 +910,8 @@ async function sendMessage() {
         dev_provider:     isDeveloperMode ? devConfig.provider : '',
         dev_model_name:   isDeveloperMode ? devConfig.model : '',
         send_history:     sessionHistory,
-        remember_history: !!userSettings.rememberHistory
+        remember_history: !!userSettings.rememberHistory,
+        req_id:           req_id
       })
     });
     
@@ -923,7 +932,8 @@ async function sendMessage() {
         status_code: data.status_code,
         error: data.error,
         dev_model: data.dev_model,
-        time_taken: data.time_taken
+        time_taken: data.time_taken,
+        web_evidence: data.web_evidence
       };
       messages.push(aiMsg);
       renderMessage(aiMsg);
@@ -948,11 +958,15 @@ async function sendMessage() {
     }
   } catch (err) {
     typingRow.remove();
-    let userMsg = err.message;
-    if (userMsg.includes('is not valid JSON') || userMsg.includes('unexpected response format')) {
-      userMsg = "Heros encountered a server processing error. Please try again or check your settings.";
+    if (err.name === 'AbortError') {
+      renderMessage({ role: 'assistant', content: '— Request cancelled —' });
+    } else {
+      let userMsg = err.message;
+      if (userMsg.includes('is not valid JSON') || userMsg.includes('unexpected response format')) {
+        userMsg = "Heros encountered a server processing error. Please try again or check your settings.";
+      }
+      renderMessage({ role: 'assistant', content: `Error: ${userMsg}` });
     }
-    renderMessage({ role: 'assistant', content: `Error: ${userMsg}` });
   }
 
   isLoading = false; toggleSendBtn();
@@ -1020,6 +1034,13 @@ function renderMessage(msg) {
       </div>
       ${modeTag}${filesHTML}
       <div class="bubble">${formatContent(msg.content || '')}${devFooter}</div>
+      ${msg.web_evidence ? `
+        <div style="margin-top: 6px; text-align: left;">
+          <button class="source-btn" onclick="showWebEvidenceModal(this)" data-evidence="${escHtml(msg.web_evidence)}" title="${escHtml(extractWebEvidenceTitles(msg.web_evidence).join(', ') + '...')}" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: var(--text-dim); padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+            <i class="fa-solid fa-globe"></i> Source
+          </button>
+        </div>
+      ` : ''}
     </div>`;
 
   // If the reply is a login-required alert, inject navigation buttons into the bubble
@@ -1372,10 +1393,10 @@ function formatContent(raw) {
   text = text.replace(/(<\/(?:ul|ol|h[123]|hr|div|pre|table|tbody|tr|th|td)>)\s*<br>/g, '$1');
 
   // ── Restore protected blocks ──────────────────────────────────
+  rawHtmlBlocks.forEach((block, i) => { text = text.replace(`%%RAWHTML_${i}%%`, () => block); });
+  tables.forEach((block, i)      => { text = text.replace(`%%TABLE_${i}%%`,    () => block); });
   codeBlocks.forEach((block, i) => { text = text.replace(`%%CODEBLOCK_${i}%%`, () => block); });
   inlineCodes.forEach((block, i) => { text = text.replace(`%%INLINE_${i}%%`,   () => block); });
-  tables.forEach((block, i)      => { text = text.replace(`%%TABLE_${i}%%`,    () => block); });
-  rawHtmlBlocks.forEach((block, i) => { text = text.replace(`%%RAWHTML_${i}%%`, () => block); });
   mathBlocks.forEach((block, i)    => { text = text.replace(`%%MATHBLOCK_${i}%%`, () => block); });
 
   // ── FIX 2: Restore clickable link placeholders ────────────────
@@ -1569,9 +1590,25 @@ function autoResize(el) {
 }
 
 function handleSendMicClick() {
+  if (isLoading) {
+    if (currentAbortController) {
+      const abortReqId = currentAbortController.req_id;
+      currentAbortController.abort();
+      currentAbortController = null;
+      
+      if (abortReqId) {
+        fetch('/api/chat/abort', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ req_id: abortReqId })
+        }).catch(e => console.error(e));
+      }
+    }
+    return;
+  }
   const inp = $('chatInput');
   const hasContent = (inp && (inp.value.trim().length > 0 || attachedFiles.length > 0));
-  if (hasContent || isLoading) {
+  if (hasContent) {
     sendMessage();
   } else {
     toggleInlineMic();
@@ -1584,13 +1621,20 @@ function toggleSendBtn() {
   
   const hasContent = (inp.value.trim().length > 0 || attachedFiles.length > 0);
   
-  if (hasContent || isLoading) {
+  if (isLoading) {
+    btn.className = 'stop-btn';
+    btn.style.background = 'var(--bg-lighter)';
+    btn.style.color = 'var(--accent)';
+    btn.title = 'Stop generating';
+    icon.className = 'fa-solid fa-pause';
+    btn.disabled = false;
+  } else if (hasContent) {
     btn.className = 'send-btn';
     btn.style.background = 'var(--accent)';
     btn.style.color = '#000';
     btn.title = 'Send message';
     icon.className = 'fa-solid fa-paper-plane';
-    btn.disabled = isLoading;
+    btn.disabled = false;
   } else {
     btn.className = inlineMicOn ? 'mic-btn listening' : 'mic-btn';
     btn.style.background = inlineMicOn ? 'rgba(25,195,125,0.15)' : 'transparent';
@@ -2559,7 +2603,7 @@ function drawBall() {
 if (window.speechSynthesis) window.speechSynthesis.getVoices();
 setTimeout(() => { initBallCanvas(); _syncMuteBtn(); toggleSendBtn(); }, 100);
 document.addEventListener('DOMContentLoaded', checkSession);
-console.log('✅ Heros loaded.');
+console.log('Heros loaded.');
 
 /* ════════ DEVELOPER MODE ════════ */
 let isDeveloperMode = false;
@@ -2567,30 +2611,28 @@ let devConfig = { provider: 'openrouter', model: '', saveHistory: true };
 
 const devModels = {
   openrouter: [
-    'nvidia/nemotron-3-nano-30b-a3b:free',
-    'google/gemma-4-26b-a4b-it:free',
-    'meta-llama/llama-3.3-70b-instruct:free',
-    'google/gemma-4-31b-it:free',
-    'nvidia/nemotron-nano-9b-v2:free',
-    'meta-llama/llama-3.2-3b-instruct:free',
-    'meta-llama/llama-3.3-70b:free',
     'nvidia/nemotron-3-super-120b-a12b:free',
+    'meta-llama/llama-3.2-3b-instruct:free',
+    'google/gemma-2-9b-it:free',
+    'nvidia/nemotron-3-ultra-550b-a55b:free',
+    'nvidia/nemotron-3.5-lightning:free',
     'custom'
   ],
   groq: [
+    'allam-2-7b',
     'openai/gpt-oss-20b',
+    'qwen/qwen3.8-27b',
     'openai/gpt-oss-120b',
-    'openai/gpt-oss-20b',
-    'llama-3.3-70b-versatile',
-    'qwen/qwen3.6-27b',
-    'qwen/qwen3-32b',
     'custom'
   ],
   gemini: [
+    'gemini-3.6-flash',
     'gemini-3.5-flash',
+    'gemini-3.5-flash-lite',
     'gemini-3.1-flash-lite',
     'gemini-2.5-flash',
     'gemini-2.5-flash-lite',
+    'gemini-flash-latest',
     'custom'
   ]
 };
@@ -2737,3 +2779,136 @@ function toggleDevSidebar() {
   }
 }
 
+function extractWebEvidenceTitles(raw) {
+  const titles = [];
+  if (!raw) return titles;
+  const lines = raw.split('\n');
+  for (let line of lines) {
+    if (line.startsWith('Title: ')) {
+      let t = line.replace('Title: ', '').trim();
+      let shortT = t.split(/[-|:]/)[0].trim();
+      if (shortT.length > 20) shortT = shortT.substring(0, 17) + '...';
+      titles.push(shortT);
+      if (titles.length >= 3) break;
+    }
+  }
+  return titles;
+}
+
+function showWebEvidenceModal(btn) {
+  let raw = btn.getAttribute('data-evidence') || '';
+  // Remove provider headers
+  raw = raw.replace(/===.*?===\n/g, '');
+  raw = raw.replace(/Result \d+\n/g, '');
+  
+  // Create modal dynamically
+  let modal = document.getElementById('webEvidenceModal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'webEvidenceModal';
+    modal.className = 'modal-overlay';
+    // Remove default modal-content background and use custom glassmorphism
+    modal.innerHTML = `
+      <div style="background: var(--bg); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; width: 90%; max-width: 650px; padding: 24px; text-align: left; max-height: 85vh; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.5); position: relative; margin: auto; margin-top: 5vh; font-family: var(--font-stack, sans-serif);">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 12px; margin-bottom: 16px; position: sticky; top: 0; background: var(--bg); z-index: 10;">
+          <h3 style="margin:0; font-size:1.15rem; color:var(--text); font-weight: 600; display:flex; align-items:center; gap: 8px;">
+            <i class="fa-solid fa-globe" style="color:var(--accent);"></i> Web Search Evidence
+          </h3>
+          <button onclick="document.getElementById('webEvidenceModal').classList.remove('active')" style="background:rgba(255,255,255,0.05); border:none; color:var(--text-dim); cursor:pointer; width: 32px; height: 32px; border-radius: 50%; display:flex; align-items:center; justify-content:center; transition: all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.1)';this.style.color='var(--text)'" onmouseout="this.style.background='rgba(255,255,255,0.05)';this.style.color='var(--text-dim)'"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div id="webEvidenceBody" style="display: flex; flex-direction: column; gap: 12px;">
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) modal.classList.remove('active');
+    });
+  }
+  
+  // Parse and format the raw content
+  const results = raw.trim().split(/\n\n+/);
+  let htmlContent = '';
+  
+  results.forEach(result => {
+    let title = '';
+    let url = '';
+    let content = '';
+    let contentStarted = false;
+    
+    const lines = result.split('\n');
+    for (let line of lines) {
+      if (!contentStarted) {
+        if (line.startsWith('Title: ')) {
+          title = line.substring(7);
+        } else if (line.startsWith('URL: ')) {
+          url = line.substring(5);
+        } else if (line.startsWith('Content:')) {
+          contentStarted = true;
+        } else if (line.trim() !== '') {
+          content += line + '\n';
+        }
+      } else {
+        content += line + '\n';
+      }
+    }
+    
+    if (title || url || content) {
+      const safeTitle = escHtml(title || 'Search Result');
+      const safeUrl = escHtml(url);
+      
+      // Auto-linkify URLs inside the content text too
+      let safeContent = escHtml(content.trim());
+      safeContent = safeContent.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" style="color: var(--accent); text-decoration: underline; text-underline-offset: 2px;">$1</a>');
+      
+      htmlContent += `
+        <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 16px; transition: transform 0.2s, background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)';this.style.borderColor='rgba(255,255,255,0.15)'" onmouseout="this.style.background='rgba(255,255,255,0.03)';this.style.borderColor='rgba(255,255,255,0.08)'">
+          <div style="font-weight: 600; color: var(--text); font-size: 1rem; margin-bottom: 6px;">${safeTitle}</div>
+          ${safeUrl ? `<div style="margin-bottom: 10px; font-size: 0.85rem; word-break: break-all;">
+            <a href="${safeUrl}" target="_blank" style="color: var(--accent); text-decoration: none; display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px; background: rgba(25, 195, 125, 0.1); border-radius: 6px; transition: background 0.2s;" onmouseover="this.style.background='rgba(25, 195, 125, 0.2)'" onmouseout="this.style.background='rgba(25, 195, 125, 0.1)'">
+              <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 0.75rem;"></i> Visit Source
+            </a>
+            <span style="color: var(--text-dim); margin-left: 8px; font-family: monospace;">${safeUrl}</span>
+          </div>` : ''}
+          <div style="color: var(--text-dim); font-size: 0.9rem; line-height: 1.6; white-space: pre-wrap;">${safeContent}</div>
+        </div>
+      `;
+    }
+  });
+
+  if (!htmlContent) {
+    htmlContent = `<div style="text-align: center; color: var(--text-dim); padding: 40px 20px; font-style: italic;">No structured evidence available.</div>`;
+  }
+  
+  document.getElementById('webEvidenceBody').innerHTML = htmlContent;
+  modal.classList.add('active');
+}
+
+
+// --- Scroll down button logic ---
+document.addEventListener('DOMContentLoaded', () => {
+  const messagesContainer = document.getElementById('messages');
+  const scrollDownBtn = document.getElementById('scrollDownBtn');
+
+  if (messagesContainer && scrollDownBtn) {
+    messagesContainer.addEventListener('scroll', () => {
+      // Show button if scrolled up more than 150px from bottom
+      const distanceToBottom = messagesContainer.scrollHeight - messagesContainer.scrollTop - messagesContainer.clientHeight;
+      if (distanceToBottom > 150) {
+        scrollDownBtn.style.display = 'flex';
+      } else {
+        scrollDownBtn.style.display = 'none';
+      }
+    });
+  }
+});
+
+window.scrollToBottom = function() {
+  const messagesContainer = document.getElementById('messages');
+  if (messagesContainer) {
+    messagesContainer.scrollTo({
+      top: messagesContainer.scrollHeight,
+      behavior: 'smooth'
+    });
+  }
+};

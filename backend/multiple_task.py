@@ -17,46 +17,33 @@ class MultipleTask:
 
     def handle_search_code(self, message: str) -> str:
         """search and send result to LLM with code task"""
-        # 2. Get web search context
-        get_hist = getattr(self.baymax, "_get_limited_history", lambda x: self.baymax.chat_history)
-        chat_history = get_hist("web_search")
-        search_result, rewritten = perform_web_search(
-            message,
-            gemini_key=getattr(self.baymax, "gemini_key", "") or "",
-            chat_history=chat_history,
-            groq_key=getattr(self.baymax, "groq_key", "") or ""
-        )
-        
-        if search_result:
-            prompt = (
-                f"{rewritten}\n\n"
-                f"[Search Result]\n{search_result}\n\n"
-                f"Important: use search result also."
-            )
-        else:
-            prompt = rewritten
-        return self.baymax.handle_coding(prompt)
+        # We rely on handle_coding's built-in query router
+        return self.baymax.handle_coding(message)
 
     def handle_search_file(self, message: str, files_data: list) -> str:
         """search and send result to LLM with file handling task"""
-        get_hist = getattr(self.baymax, "_get_limited_history", lambda x: getattr(self.baymax, "chat_history", []))
-        chat_history = get_hist("web_search")
-        search_result, rewritten = perform_web_search(
-            message,
-            gemini_key=getattr(self.baymax, "gemini_key", "") or "",
-            chat_history=chat_history,
-            groq_key=getattr(self.baymax, "groq_key", "") or ""
+        router_instruction = (
+            "CRITICAL INSTRUCTION: If the user's query requires current, live, or real-time web data "
+            "(like news, weather, live prices, or recent events that you don't know), "
+            "you MUST NOT attempt to answer. Instead, output ONLY exactly this format: SEARCH_REQUIRED: [your optimized search query]. "
+            "If the query does NOT require live data, answer it directly and normally."
         )
+        enriched_text = f"{router_instruction}\n\nUser Message: {message}"
+        response = self.baymax.handle_file(enriched_text, files_data)
         
-        if search_result:
-            prompt = (
-                f"{rewritten}\n\n"
-                f"[Search Result]\n{search_result}\n\n"
-                f"Important: use search result also."
-            )
-        else:
-            prompt = rewritten
-        return self.baymax.handle_file(prompt, files_data)
+        if response and "SEARCH_REQUIRED:" in response:
+            search_query = response.split("SEARCH_REQUIRED:")[1].strip()
+            # Perform search and run file handler again
+            raw_context = perform_web_search(search_query)
+            if raw_context:
+                enriched_text2 = (
+                    "System Instruction: Below is some retrieved Live Data related to the user query.\n"
+                    "Use this Live Data and the attached files to answer accurately.\n\n"
+                    f"Live Data:\n{raw_context}\n\n"
+                    f"User Query: {message}"
+                )
+                return self.baymax.handle_file(enriched_text2, files_data)
+        return response
 
     def handle_code_file(self, message: str, files_data: list) -> str:
         """file preprocessing and send result to LLM with new prompt file handling and coding prompt."""
@@ -68,27 +55,31 @@ class MultipleTask:
 
     def handle_search_code_file(self, message: str, files_data: list) -> str:
         """search + file preprocessing and send result to LLM with new prompt file handling with coding and search result prompt."""
-        get_hist = getattr(self.baymax, "_get_limited_history", lambda x: getattr(self.baymax, "chat_history", []))
-        chat_history = get_hist("web_search")
-        search_result, rewritten = perform_web_search(
-            message,
-            gemini_key=getattr(self.baymax, "gemini_key", "") or "",
-            chat_history=chat_history,
-            groq_key=getattr(self.baymax, "groq_key", "") or ""
+        router_instruction = (
+            "CRITICAL INSTRUCTION: If the user's query requires current, live, or real-time web data "
+            "(like news, weather, live prices, or recent events that you don't know), "
+            "you MUST NOT attempt to answer. Instead, output ONLY exactly this format: SEARCH_REQUIRED: [your optimized search query]. "
+            "If the query does NOT require live data, answer it directly and normally."
         )
-        
-        if search_result:
-            prompt = (
-                f"{rewritten}\n\n"
-                f"[Search Result]\n{search_result}\n\n"
-                f"Important: use search result also and act as a coding assistant while handling these files."
-            )
-        else:
-            prompt = (
-                f"{rewritten}\n\n"
-                f"Important: act as a coding assistant while handling these files."
-            )
-        return self.baymax.handle_file(prompt, files_data)
+        prompt = (
+            f"{router_instruction}\n\n"
+            f"User message: {message}\n\n"
+            f"Important: act as a coding assistant while handling these files."
+        )
+        response = self.baymax.handle_file(prompt, files_data)
+        if response and "SEARCH_REQUIRED:" in response:
+            search_query = response.split("SEARCH_REQUIRED:")[1].strip()
+            raw_context = perform_web_search(search_query)
+            if raw_context:
+                enriched_text2 = (
+                    "System Instruction: Below is some retrieved Live Data related to the user query.\n"
+                    "Use this Live Data and the attached files to answer accurately.\n\n"
+                    f"Live Data:\n{raw_context}\n\n"
+                    f"User Query: {message}\n\n"
+                    f"Important: act as a coding assistant while handling these files."
+                )
+                return self.baymax.handle_file(enriched_text2, files_data)
+        return response
 
     def handle_voice_file(self, message: str, files_data: list) -> str:
         """file preprocessing and send result to LLM with new prompt for voice chat."""
@@ -99,7 +90,6 @@ class MultipleTask:
             f"Keep your response concise and conversational since this is a voice chat."
         )
         
-        # Directly use native inline_data for voice files to prevent LLM hallucination and speed up response
         primary = self.baymax.models.get("voice_chat", "gemini-3.5-flash-lite")
         max_tok = self.baymax._TOKEN_BUDGETS.get("voice", 256)
         
@@ -113,75 +103,50 @@ class MultipleTask:
 
     def handle_voice_search(self, message: str) -> str:
         """search and send result to LLM with voice chat response constraints"""
-        get_hist = getattr(self.baymax, "_get_limited_history", lambda x: getattr(self.baymax, "chat_history", []))
-        chat_history = get_hist("web_search")
-        search_result, rewritten = perform_web_search(
-            message,
-            gemini_key=getattr(self.baymax, "gemini_key", "") or "",
-            chat_history=chat_history,
-            groq_key=getattr(self.baymax, "groq_key", "") or ""
-        )
-        
-        if search_result:
-            prompt = (
-                f"User message: {rewritten}\n\n"
-                f"[Search Result]\n{search_result}\n\n"
-                f"Important: Answer the user query using the search results. Keep your response extremely brief, casual, and natural (max 2-3 short sentences, under 60 words total) since this is a voice chat. Do not output lists or bullets."
-            )
-        else:
-            prompt = (
-                f"User message: {rewritten}\n\n"
-                f"Important: Keep your response extremely brief, casual, and natural (max 2-3 short sentences, under 60 words total) since this is a voice chat. Do not output lists or bullets."
-            )
-        
-        primary = self.baymax.models.get("voice_chat", "gemini-3.5-flash-lite")
-        max_tok = self.baymax._TOKEN_BUDGETS.get("voice", 256)
-        
-        if getattr(self.baymax, 'is_fast', False):
-            from backend.fast import run_fast_route
-            return run_fast_route(self.baymax, prompt, max_tokens=max_tok, task="voice")
-            
-        return self.baymax._with_fallback(
-            primary_model=primary,
-            text=prompt,
-            max_tokens=max_tok,
-            task="voice"
-        )
+        # Voice chat uses handle_voice_chat internally for routing now
+        return self.baymax.handle_voice_chat(message)
 
     def handle_voice_search_file(self, message: str, files_data: list) -> str:
         """search + file preprocessing and send result to LLM with voice chat constraints"""
-        get_hist = getattr(self.baymax, "_get_limited_history", lambda x: getattr(self.baymax, "chat_history", []))
-        chat_history = get_hist("web_search")
-        search_result, rewritten = perform_web_search(
-            message,
-            gemini_key=getattr(self.baymax, "gemini_key", "") or "",
-            chat_history=chat_history,
-            groq_key=getattr(self.baymax, "groq_key", "") or ""
+        router_instruction = (
+            "CRITICAL INSTRUCTION: If the user's query requires current, live, or real-time web data "
+            "(like news, weather, live prices, or recent events that you don't know), "
+            "you MUST NOT attempt to answer. Instead, output ONLY exactly this format: SEARCH_REQUIRED: [your optimized search query]. "
+            "If the query does NOT require live data, answer it directly and normally."
         )
-        
-        if search_result:
-            prompt = (
-                f"User message: {rewritten}\n\n"
-                f"[Search Result]\n{search_result}\n\n"
-                f"Important: The user has attached files. Answer the user query using the search results and files. Keep your response extremely brief, casual, and natural (max 2-3 short sentences, under 60 words total) since this is a voice chat. Do not output lists or bullets."
-            )
-        else:
-            prompt = (
-                f"User message: {rewritten}\n\n"
-                f"Important: The user has attached files. Answer the user query using the files. Keep your response extremely brief, casual, and natural (max 2-3 short sentences, under 60 words total) since this is a voice chat. Do not output lists or bullets."
-            )
+        prompt = (
+            f"{router_instruction}\n\n"
+            f"User message: {message}\n\n"
+            f"Important: Keep your response extremely brief, casual, and natural (max 2-3 short sentences, under 60 words total) since this is a voice chat. Do not output lists or bullets."
+        )
         
         primary = self.baymax.models.get("voice_chat", "gemini-3.5-flash-lite")
         max_tok = self.baymax._TOKEN_BUDGETS.get("voice", 256)
         
-        if getattr(self.baymax, 'is_fast', False):
-            from backend.fast import run_fast_route
-            return run_fast_route(self.baymax, prompt, max_tokens=max_tok, task="voice")
-            
-        return self.baymax._with_fallback(
+        response = self.baymax._with_fallback(
             primary_model=primary,
             text=prompt,
             max_tokens=max_tok,
             task="voice",
             current_files=files_data
         )
+        
+        if response and "SEARCH_REQUIRED:" in response:
+            search_query = response.split("SEARCH_REQUIRED:")[1].strip()
+            raw_context = perform_web_search(search_query)
+            if raw_context:
+                enriched_text2 = (
+                    "System Instruction: Below is some retrieved Live Data related to the user query.\n"
+                    "Use this Live Data and the attached files to answer accurately.\n\n"
+                    f"Live Data:\n{raw_context}\n\n"
+                    f"User Query: {message}\n\n"
+                    f"Important: Keep your response extremely brief, casual, and natural (max 2-3 short sentences, under 60 words total) since this is a voice chat. Do not output lists or bullets."
+                )
+                return self.baymax._with_fallback(
+                    primary_model=primary,
+                    text=enriched_text2,
+                    max_tokens=max_tok,
+                    task="voice",
+                    current_files=files_data
+                )
+        return response

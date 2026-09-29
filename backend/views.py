@@ -167,6 +167,9 @@ def _save_chat_async(user, session, mode, model, message, reply, intent=None):
     `temporary_chat` is True.
     """
     try:
+        from django.db import close_old_connections
+        close_old_connections()
+        
         task_type = intent if (mode == "text" and intent) else mode
         Chat.objects.create(
             user=user, session=session, task_type=task_type,
@@ -307,9 +310,11 @@ def json_only(f):
 def home(request):
     username = None
     user_id = request.session.get('user_id')
+    email = None
     if user_id:
         try:
             user = User.objects.get(user_id=user_id)
+            email = user.email
             settings = Setting.objects.get(user=user)
             if settings.user_name:
                 username = settings.user_name
@@ -319,7 +324,7 @@ def home(request):
     if not username:
         username = request.session.get('user_name')
 
-    return render(request, 'home.html', {'username': username})
+    return render(request, 'home.html', {'username': username, 'email': email})
 
 
 def landing(request):
@@ -655,6 +660,7 @@ def chat_api(request):
     """
     t0 = time.time()
     d  = request.json_data
+    req_id = d.get('req_id')
 
     raw_message    = d.get('message', '').strip()
     model          = d.get('model', 'Baymax')
@@ -680,7 +686,7 @@ def chat_api(request):
         if mode == 'zeno_plus':
             return JsonResponse({
                 "status": "success",
-                "reply": "⚠️ **Login Required**\n\nPlease log in to your Heros account and configure your Groq API key to use Zeno Plus.",
+                "reply": "**Login Required**\n\nPlease log in to your Heros account and configure your Groq API key to use Zeno Plus.",
                 "session_id": session_id_str,
                 "is_new_chat": False,
                 "temporary": True
@@ -827,7 +833,7 @@ def chat_api(request):
         if mode == 'zeno_plus' and not groq_key:
             return JsonResponse({
                 "status": "success",
-                "reply": "⚠️ **Groq API Key Required**\n\nPlease configure your Groq API Key in account settings to use Zeno Plus.",
+                "reply": "**Groq API Key Required**\n\nPlease configure your Groq API Key in account settings to use Zeno Plus.",
                 "session_id": session_id_str,
                 "is_new_chat": False,
                 "temporary": True
@@ -925,7 +931,7 @@ def chat_api(request):
                 if mode in coding_and_file_modes and not has_hf_key:
                     return JsonResponse({
                         "status": "success",
-                        "reply": "⚠️ **Access Restricted**\n\nTo use coding or file handling features in Halo, please log in and add your Hugging Face API key in settings.",
+                        "reply": "**Access Restricted**\n\nTo use coding or file handling features in Halo, please log in and add your Hugging Face API key in settings.",
                         "session_id": session_id_str,
                         "is_new_chat": False,
                         "temporary": True
@@ -936,7 +942,7 @@ def chat_api(request):
                     if current_usage >= HALO_MAX_LIMIT:
                         return JsonResponse({
                             "status": "success",
-                            "reply": "⚠️ **Limit Reached**\n\nYou have reached the maximum message limit for Halo. To continue using Halo, please log in and add your Hugging Face API key in settings. You can also log in and configure a Gemini API key to get access to Baymax, our flagship reasoning model.",
+                            "reply": "**Limit Reached**\n\nYou have reached the maximum message limit for Halo. To continue using Halo, please log in and add your Hugging Face API key in settings. You can also log in and configure a Gemini API key to get access to Baymax, our flagship reasoning model.",
                             "session_id": session_id_str,
                             "is_new_chat": False,
                             "temporary": True
@@ -966,9 +972,9 @@ def chat_api(request):
                     current_usage = get_baymax_usage(user_key)
                     if current_usage >= BAYMAX_MAX_LIMIT:
                         if mode.startswith('zeno_'):
-                            limit_msg = "⚠️ **Limit Reached**\n\nYou have reached the maximum message limit for Zeno. To continue, please log in and configure your own API keys (Gemini and Groq) in account."
+                            limit_msg = "**Limit Reached**\n\nYou have reached the maximum message limit for Zeno. To continue, please log in and configure your own API keys (Gemini and Groq) in account."
                         else:
-                            limit_msg = "⚠️ **Limit Reached**\n\nYou have reached the maximum message limit for Baymax. To continue, please log in and configure your own API keys (Gemini, OpenRouter, or Groq) in settings."
+                            limit_msg = "**Limit Reached**\n\nYou have reached the maximum message limit for Baymax. To continue, please log in and configure your own API keys (Gemini, OpenRouter, or Groq) in settings."
                         return JsonResponse({
                             "status": "success",
                             "reply": limit_msg,
@@ -1062,10 +1068,17 @@ def chat_api(request):
         if not reply:
             reply = "Something went wrong. Please try again later."
             
+        # Strip LLM-generated citation artifacts (e.g. 【DuckDuckGo†Result 3】)
+        reply = re.sub(r'【.*?】', '', reply)
+            
         logger.debug("AI reply: %.2fs | total: %.2fs", time.time() - t1, time.time() - t0)
         
         # ── Update Active Memory Buffer ───────────────────────────────────────
-        if not temporary_chat:
+        is_aborted = False
+        if req_id and cache.get(f"abort_{req_id}"):
+            is_aborted = True
+
+        if not temporary_chat and not is_aborted:
             active_buffer = cache.get(f"history_{chat_session.session_id}")
             if active_buffer is None:
                 active_buffer = list(chat_history)
@@ -1078,17 +1091,17 @@ def chat_api(request):
             cache.set(f"history_{chat_session.session_id}", active_buffer, timeout=3600 * 2)
 
         # ── Persist (skipped for temporary chats) ─────────────────────────────
-        if not temporary_chat:
+        if not temporary_chat and not is_aborted:
             _db_executor.submit(
                 _save_chat_async,
                 request.user_obj, chat_session, mode, model, message, reply, nlp_intent,
             )
         else:
             logger.debug(
-                "Temporary chat — skipping DB save for session %s", getattr(chat_session, 'session_id', session_id_str)
+                "Temporary or aborted chat — skipping DB save for session %s", getattr(chat_session, 'session_id', session_id_str)
             )
 
-        return JsonResponse({
+        response_data = {
             "status":      "success",
             "reply":       reply,
             "session_id":  str(chat_session.session_id) if chat_session else session_id_str,
@@ -1096,10 +1109,29 @@ def chat_api(request):
             # Let the frontend know whether this was a temporary session so it
             # can avoid storing the session_id in its own history list.
             "temporary":   temporary_chat,
-        })
+        }
+        
+        if hasattr(baymax, 'latest_web_evidence') and baymax.latest_web_evidence:
+            response_data["web_evidence"] = baymax.latest_web_evidence
+            
+        return JsonResponse(response_data)
 
     except Exception as e:
         return safe_error_response(request, logger, "chat_api", e)
+
+@csrf_exempt
+def abort_chat_api(request):
+    if request.method == "POST":
+        import json
+        try:
+            data = json.loads(request.body)
+            req_id = data.get("req_id")
+            if req_id:
+                cache.set(f"abort_{req_id}", True, timeout=60)
+            return JsonResponse({"status": "success"})
+        except Exception:
+            return JsonResponse({"status": "error"})
+    return JsonResponse({"status": "error"})
 
 
 # ── Profile & Settings (unchanged) ────────────────────────────────────────────

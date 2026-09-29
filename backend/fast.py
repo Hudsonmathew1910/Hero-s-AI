@@ -1,6 +1,8 @@
+
 import time
 import logging
-from backend.hero_model import GroqProviderError, GroqModelError
+import concurrent.futures
+from backend.hero_model import ProviderError, ModelError
 
 logger = logging.getLogger("hero_ai.fast")
 
@@ -11,94 +13,95 @@ def run_fast_route(
     task: str = "text_chat",
     fallback_key: str = "fallback"
 ) -> str:
-    """
-    New fast mode routing logic:
-    If fast mode is enabled:
-      1. Directly use Groq models for fast response.
-      2. Query the first Groq model in fallback_with_groq.
-         - If it succeeds, return the response.
-         - If it fails due to GroqProviderError (auth, traffic, network, HTTP 429, 503, etc.):
-           Immediately skip remaining Groq models and jump to the primary model for the task.
-           If the primary model fails, run the regular fallbacks (Gemini/OpenRouter lists).
-         - If it fails due to GroqModelError (model-specific issue):
-           Continue trying the remaining Groq models in fallback_with_groq.
-           If all of them fail, fall back to the primary model and regular fallbacks.
-    """
     baymax_instance._log_initial_steps(task)
     
-    No_API = """
-🔑 **API Key Configuration Required**
-
-To start chatting, please configure your API Keys in your Heros profile settings:
-1. Log in to your Heros account website.
-2. Go to **Settings** / **API Keys**.
-3. Add your key (Gemini, OpenRouter, or Groq) and save.
-
-*Your API keys are encrypted and stored securely on the server—they are never exposed to the browser.*
-"""
-    if not baymax_instance.groq_key:
-        if task == "zeno_shadow":
-            return "🔑 **Groq API Key Required for Shadow Mode**\n\nPlease add your Groq API key in profile / settings / api key to enable background page summarization.\n" + No_API
-        if task == "voice":
-            return baymax_instance._with_fallback(primary_model, text, max_tokens, fallback_key, task)
-        return "🔑 **Groq API Key Required for Fast Response**\n\nPlease add your Groq API key in profile / settings / api key to enable Fast mode.\n" + No_API
-
-    groq_models = baymax_instance.models.get("fallback_with_groq", [])
-    primary_model = baymax_instance.models.get(task)
-    if not primary_model:
-        # Fallback default if task isn't specifically mapped
-        primary_model = 'gemini-3.5-flash-lite'
-
-    if not groq_models:
-        logger.warning("No Groq models configured. Reverting to primary model fallback.")
-        return baymax_instance._with_fallback(primary_model, text, max_tokens, fallback_key, task)
-
-    # Attempt the first Groq model
-    first_model = groq_models[0]
-    logger.info("Fast mode: querying first Groq model: %s", first_model)
+    is_router = "CRITICAL INSTRUCTION: If the user's query requires current" in text
     
-    try:
-        res = baymax_instance._call_groq(first_model, text, max_tokens, task)
-        if res:
-            logger.info("Winner: fallback model: %s | status code: 200", first_model)
-            elapsed = time.time() - baymax_instance.t_start
-            logger.info("Total time taken: %.3fs", elapsed)
-            logger.info("----------------------------------------------------------")
-            return res
-    except GroqProviderError as e:
-        logger.warning(
-            "First Groq model failed due to Provider/Traffic error: %s. "
-            "Immediately skipping remaining Groq models and falling back to Primary Model: %s.",
-            e, primary_model
-        )
-        return baymax_instance._with_fallback(primary_model, text, max_tokens, fallback_key, task)
-    except GroqModelError as e:
-        logger.warning(
-            "First Groq model failed due to Model-specific error: %s. "
-            "Continuing sequentially with remaining Groq fallback models.",
-            e
-        )
-    except Exception as e:
-        logger.error(
-            "Unexpected exception querying first Groq model: %s. Falling back to Primary Model: %s.",
-            str(e), primary_model
-        )
-        return baymax_instance._with_fallback(primary_model, text, max_tokens, fallback_key, task)
-
-    # Attempt the remaining Groq models sequentially
-    for model in groq_models[1:]:
-        logger.info("Trying next Groq fallback model: %s", model)
-        try:
-            res = baymax_instance._call_groq(model, text, max_tokens, task)
-            if res:
-                logger.info("Winner: fallback model: %s | status code: 200", model)
-                elapsed = time.time() - baymax_instance.t_start
-                logger.info("Total time taken: %.3fs", elapsed)
-                logger.info("----------------------------------------------------------")
-                return res
-        except Exception as e:
-            logger.warning("Groq fallback model %s failed: %s", model, e)
-
-    # If all Groq models failed, use the normal fallback chain
-    logger.warning("All Groq models failed. Falling back to Primary Model: %s.", primary_model)
-    return baymax_instance._with_fallback(primary_model, text, max_tokens, fallback_key, task)
+    from django.conf import settings
+    env_gemini = getattr(settings, "GEMINI_API_KEY", None)
+    env_or = getattr(settings, "OPENROUTER_API_KEY", None)
+    env_groq = getattr(settings, "GROQ_API_KEY", None)
+    
+    user_gemini = baymax_instance.gemini_key or (baymax_instance.gemini_keys[0] if hasattr(baymax_instance, 'gemini_keys') and baymax_instance.gemini_keys else None)
+    user_or = baymax_instance.openrouter_key
+    user_groq = baymax_instance.groq_key
+    
+    list_gemini = baymax_instance.models.get("fallback_with_gemini", [])
+    list_or = baymax_instance.models.get(fallback_key, [])
+    list_groq = baymax_instance.models.get("fallback_with_groq", [])
+    
+    # In fast mode, we have parallel groups
+    # Group 1: User APIs
+    # Group 2: Env APIs
+    # Group 3: Env APIs (retry)
+    
+    groups = [
+        [
+            ("gemini", list_gemini, user_gemini, "USER"),
+            ("openrouter", list_or, user_or, "USER"),
+            ("groq", list_groq, user_groq, "USER")
+        ],
+        [
+            ("gemini", list_gemini, env_gemini, "ENV"),
+            ("openrouter", list_or, env_or, "ENV"),
+            ("groq", list_groq, env_groq, "ENV")
+        ],
+        [
+            ("gemini", list_gemini, env_gemini, "ENV"),
+            ("openrouter", list_or, env_or, "ENV"),
+            ("groq", list_groq, env_groq, "ENV")
+        ]
+    ]
+    
+    def run_provider(provider, models, api_key, key_type):
+        if not api_key or not models:
+            raise Exception(f"No key or models for {provider}")
+        
+        # We try models sequentially inside the parallel provider thread
+        for model in models:
+            try:
+                logger.info(f"[Fast] {provider.capitalize()} | {key_type}_KEY | model={model} started")
+                t_start = time.time()
+                res = baymax_instance._call(model, text, max_tokens, task, None, provider, api_key)
+                if res:
+                    logger.info(f"[Fast] {provider.capitalize()} SUCCESS | {model} | {time.time()-t_start:.2f}s")
+                    return res
+            except ModelError as e:
+                logger.info(f"[Fast] ERROR | {provider} model_error | {e}")
+                continue
+            except ProviderError as e:
+                logger.info(f"[Fast] ERROR | {provider} provider_error | {e}")
+                break
+        raise Exception(f"All models failed for {provider}")
+    
+    for group_idx, group in enumerate(groups):
+        futures = []
+        executor = concurrent.futures.ThreadPoolExecutor(max_workers=3)
+        valid_tasks = 0
+        for provider, models, api_key, key_type in group:
+            if api_key and models:
+                valid_tasks += 1
+                futures.append(executor.submit(run_provider, provider, models, api_key, key_type))
+                
+        if valid_tasks == 0:
+            continue
+            
+        logger.info(f"[Fast] Starting parallel group {group_idx + 1}")
+        
+        winner_res = None
+        for future in concurrent.futures.as_completed(futures):
+            try:
+                res = future.result()
+                if res and not winner_res:
+                    winner_res = res
+                    # Shutdown executor immediately without waiting for others
+                    executor.shutdown(wait=False, cancel_futures=True)
+                    logger.info("[Fast] Returning first successful response")
+                    return winner_res
+            except Exception as e:
+                pass
+                
+        # If we got here, all futures in this group failed
+        logger.info(f"[Fast] All providers in group {group_idx + 1} failed")
+        
+    return "All fast models failed. Please try again later."

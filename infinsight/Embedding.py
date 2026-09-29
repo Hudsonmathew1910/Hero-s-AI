@@ -165,11 +165,19 @@ def upsert_chunks(chunks: list[dict], namespace: str, api_key: str) -> int:
         vectors = []
         for j, emb in enumerate(embeddings):
             chunk = batch[j]
+            
+            # Pinecone has a hard limit of 40,960 bytes per vector metadata.
+            # If the chunk text is massive, we must truncate it so the upsert doesn't crash.
+            # 35000 characters is a safe threshold well below the limit.
+            safe_text = chunk["text"]
+            if len(safe_text) > 35000:
+                safe_text = safe_text[:35000] + "... [TRUNCATED DUE TO SIZE]"
+
             vectors.append({
                 "id": f"{namespace}_{i+j}",
                 "values": emb,
                 "metadata": {
-                    "text": chunk["text"],
+                    "text": safe_text,
                     "session_id": namespace,
                     "type": chunk["metadata"].get("type", "text"),
                     "page": chunk["metadata"].get("page", 0)

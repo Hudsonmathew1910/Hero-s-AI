@@ -2,8 +2,8 @@
 infinsight/services/llm.py
 ---------------------------
 Gemini LLM integration for the Infinsight analyst.
-Primary: gemini-3.5-flash
-Fallback: gemini-3.1-flash-lite, gemini-2.5-flash, gemini-2.5-flash-lite, gemini-1.5-flash
+Primary: gemini-3.6-flash
+Fallback: gemini-3.5-flash, gemini-3.5-flash-lite, gemini-3.1-flash-lite, gemini-2.5-flash
 """
 
 import logging
@@ -14,11 +14,13 @@ from backend.hero_model import Baymax
 logger = logging.getLogger("infinsight.llm")
 
 GEMINI_MODELS = [
-    "models/gemini-3.5-flash",
-    "models/gemini-3.1-flash-lite",
-    "models/gemini-2.5-flash",
-    "models/gemini-2.5-flash-lite",
-    "models/gemini-1.5-flash",
+    "models/gemini-3.6-flash",         # Primary (Best)
+    "models/gemini-3.5-flash",         # Fallback 1
+    "models/gemini-3.5-flash-lite",    # Fallback 2
+    "models/gemini-3.1-flash-lite",    # Fallback 3
+    "models/gemini-2.5-flash",         # Fallback 4
+    "models/gemini-2.5-flash-lite",    # Fallback 5
+    "models/gemini-1.5-flash",         # Fallback 6
 ]
 
 ANALYST_SYSTEM_PROMPT = """You are **Infinsight**, the advanced AI Data Analyst for Hero AI.

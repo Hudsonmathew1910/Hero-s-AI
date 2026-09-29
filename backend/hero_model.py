@@ -22,14 +22,10 @@ from backend.Nlp import PreprocessedInput
 logger = logging.getLogger("hero_ai.baymax")
 
 
-class GroqProviderError(Exception):
-    """Errors related to Groq provider traffic, auth, or network."""
-    pass
 
 
-class GroqModelError(Exception):
-    """Errors specific to model availability or parameter issues."""
-    pass
+
+
 
 
 class LocalLoggerProxy:
@@ -53,6 +49,13 @@ class LocalLoggerProxy:
             logger.error(msg, *args, **kwargs)
 
 
+
+class ProviderError(Exception):
+    pass
+
+class ModelError(Exception):
+    pass
+
 class Baymax:
     # ── System prompt constants ──────────────────────────────────
     HERO_AI_UNIVERSE = """
@@ -66,6 +69,17 @@ class Baymax:
                     5. Infinsight: The advanced data analyst and RAG engine that processes and computes answers from CSV/Excel/PDF data using Pandas. Users can access Infinsight by uploading spreadsheets in the Heros web interface(need login for storing files for long term use).
 
                     If a user asks about you, your creators, your capabilities, or how to use a specific feature, acknowledge your place within the Heros ecosystem, explain your sibling components, and tell them how to get or use them but only if user asks, don't tell without reason.
+
+                    Global Core Directives (CRITICAL for Safety and Reasoning):
+                    1. Contradiction Detection: Actively monitor for and prevent logical contradictions or reasoning failures within your own answers.
+                    2. Role & Context Stability: Never break character. Never output bizarre metadata like "User Response:" or "AI Thoughts:" in the final output unless requested.
+                    3. Assumption Handling: Never invent missing information. If you lack context, either state what you don't know or ask clarifying questions.
+                    4. Hallucination & Factual Discipline: Base your answers strictly on verified knowledge or provided context. Make answers completely trustworthy.
+                    5. Response Proportionality: Stop over-answering. Keep responses incredibly concise for simple questions, and only provide detailed structure when explicitly required.
+                    6. Technical Simplicity: Do not over-engineer solutions. Provide the simplest, most elegant answer or code that works perfectly.
+                    7. Multi-turn Context & Memory: Correctly track the latest facts and state across the conversation history. Do not revert to older, outdated information.
+                    8. Prioritization: Always focus immediately on what matters most to the user's explicit request. Do not bury the main answer.
+                    9. Adaptive Conversation: Make the interaction feel fluid, highly natural, and human-like.
                     """
 
     BASIC_RULES = """You are Baymax, an LLM-powered AI assistant with advanced multi-model capabilities.
@@ -261,20 +275,24 @@ class Baymax:
             'zeno_shadow':     'openai/gpt-oss-20b',
             'fallback': [
                 'nvidia/nemotron-3-super-120b-a12b:free',
-                'nex-agi/nex-n2.5-mini:free',
-                'liquid/lfm-2.5-2.6b:free',
+                'meta-llama/llama-3.2-3b-instruct:free',
+                'google/gemma-2-9b-it:free',
+                'nvidia/nemotron-3-ultra-550b-a55b:free',
+                'nvidia/nemotron-3.5-lightning:free',
             ],
             'fallback_with_groq': [
-                "allam-2-7b",
                 "openai/gpt-oss-20b",
                 "qwen/qwen3.8-27b",
                 "openai/gpt-oss-120b",
+                "allam-2-7b",
             ],
             'fallback_with_gemini': [
-                'gemini-3.5-flash',
-                'gemini-3.1-flash-lite',
                 'gemini-3.6-flash',
+                'gemini-3.5-flash',
                 'gemini-3.5-flash-lite',
+                'gemini-3.1-flash-lite',
+                'gemini-2.5-flash',
+                'gemini-2.5-flash-lite',
                 'gemini-flash-latest',
             ],
 
@@ -473,17 +491,12 @@ class Baymax:
 
         history = self._get_limited_history(task)
         if history:
-            lines = []
-            # We iterate through the limited history.
-            # Note: history might start with 'assistant' if limit is odd or history is uneven.
             for msg in history:
-                prefix = "U: " if msg["role"] == "user" else "A: "
-                lines.append(f"{prefix}{msg['content']}")
-
-            messages.append({
-                "role":    "system",
-                "content": "Recent conversation:\n" + "\n".join(lines),
-            })
+                role = "user" if msg["role"] == "user" else "assistant"
+                messages.append({
+                    "role": role,
+                    "content": msg["content"],
+                })
 
         messages.append({"role": "user", "content": user_text})
         return messages
@@ -563,63 +576,44 @@ class Baymax:
         task:       str = "text_chat",
         timeout:    float = 10.0,
         current_files: list = None,
+        api_key:    str = None,
     ) -> str | None:
-        """Send a request to the Gemini API using the official google-genai SDK."""
         logger = LocalLoggerProxy(self)
         from google import genai
+        from google.genai.errors import APIError
+        
+        if not api_key:
+            raise ProviderError("No Gemini API key provided")
+            
+        client = genai.Client(api_key=api_key)
+        loop = 3 if task == "file_analysis" else 1
 
-        # Load API keys securely from the instance attribute
-        keys_to_try = self.gemini_keys.copy() if hasattr(self, 'gemini_keys') else []
-        if not keys_to_try:
-            from django.conf import settings
-            default_key = getattr(settings, "GEMINI_API_KEY", None)
-            if default_key:
-                keys_to_try.append(default_key)
-            elif hasattr(self, 'gemini_key') and self.gemini_key:
-                keys_to_try.append(self.gemini_key)
-
-        if not keys_to_try:
-            logger.error("Gemini API key is missing.")
-            return None
-
-        for idx, api_key in enumerate(keys_to_try):
-            client = genai.Client(api_key=api_key)
-
-            if task == "file_analysis":
-                loop = 3
-            else:
-                loop = 2
-
-            for i in range(1, loop + 1):
-                try:
-                    t_start = time.time()
-                    response = client.models.generate_content(
-                        model=model,
-                        contents=self._build_cnt_gemini(
-                            user_text, task, current_files=current_files),
-                        config={
-                            "system_instruction": self._build_system_prompt(task),
-                            "temperature": self._get_temperature(task),
-                            "max_output_tokens": max_tokens,
-                            "top_p": 0.9,
-                        }
-                    )
-                    if not getattr(self, "_winner_declared", False):
-                        logger.debug("Gemini %s generated in %.2fs",
-                                     model, time.time() - t_start)
-                    return response.text.strip() if response.text else None
-
-                except Exception as e:
-                    if not getattr(self, "_winner_declared", False):
-                        logger.warning(
-                            "Gemini API Key %d, attempt %d failed: %s", idx + 1, i, str(e))
-                    if i == loop:
-                        if idx == len(keys_to_try) - 1:
-                            if not getattr(self, "_winner_declared", False):
-                                logger.error(
-                                    "Gemini final attempt failed: %s", str(e))
-                            return None
-                    time.sleep(2)
+        for i in range(1, loop + 1):
+            try:
+                t_start = time.time()
+                response = client.models.generate_content(
+                    model=model,
+                    contents=self._build_cnt_gemini(user_text, task, current_files=current_files),
+                    config={
+                        "max_output_tokens": max_tokens,
+                        "temperature": self._get_temperature(task),
+                        "system_instruction": self._build_system_instruction_gemini(task),
+                    }
+                )
+                if response and response.text:
+                    return response.text
+            except APIError as e:
+                # Differentiate based on status code if possible
+                code = getattr(e, 'code', 500)
+                if code in [400, 404]: # usually model not found or bad request
+                    raise ModelError(f"Gemini Model Error: {e}")
+                else:
+                    raise ProviderError(f"Gemini Provider Error: {e}")
+            except Exception as e:
+                err_str = str(e).lower()
+                if "timeout" in err_str or "connection" in err_str:
+                    raise ProviderError(f"Gemini Network/Timeout Error: {e}")
+                raise ProviderError(f"Gemini Unexpected Error: {e}")
         return None
 
     def _call_openrouter(
@@ -628,74 +622,56 @@ class Baymax:
         user_text:  str,
         max_tokens: int,
         task:       str = "text_chat",
-        timeout:    float = 2.5,
+        timeout:    float = 15.0,
+        current_files: list = None,
+        api_key:    str = None,
     ) -> str | None:
-        """Send a request to the OpenRouter chat completions API."""
         logger = LocalLoggerProxy(self)
+        import requests
+        
+        if not api_key:
+            raise ProviderError("No OpenRouter API key provided")
+            
         headers = {
-            "Authorization": f"Bearer {self.openrouter_key}",
-            "Content-Type":  "application/json",
-            "HTTP-Referer":  "https://yourapp.com",
-            "X-Title":       "Heros",
+            "Authorization": f"Bearer {api_key}",
+            "HTTP-Referer": "http://localhost:8000",
+            "X-Title": "Hero AI",
+            "Content-Type": "application/json"
         }
-        payload = {
-            "model":       model,
-            "messages":    self._build_msg_openrouter(user_text, task),
+        
+        data = {
+            "model": model,
+            "messages": self._build_msg_openrouter(user_text, task),
+            "max_tokens": max_tokens,
             "temperature": self._get_temperature(task),
-            "max_tokens":  max_tokens,
-            "top_p":       0.9,
+            "top_p": 0.9,
+            "top_k": 50,
+            "repetition_penalty": 1,
+            "stop": ["<|endoftext|>", "</s>", "\n\n\n\n\n"]
         }
+        
         try:
-            r = requests.post(self.openrouter_url,
-                              headers=headers, json=payload, timeout=timeout)
-            logger.debug("OpenRouter %s → HTTP %d", model, r.status_code)
-
-            if r.status_code == 200:
-                content = (
-                    r.json()
-                     .get("choices", [{}])[0]
-                     .get("message", {})
-                     .get("content")
-                )
-                return content.strip() if content else None
-            if r.status_code == 400:
-                msg = r.json().get("error", {}).get("message", "400 Bad Request")
-                logger.warning("OpenRouter 400 (%s): %s", model, msg)
-                return None
-            if r.status_code == 401:
-                logger.error("OpenRouter 401: invalid API key")
-                return None
-            if r.status_code == 404:
-                logger.warning(
-                    "OpenRouter 404: model %s not found — skipping", model)
-                return None
-            if r.status_code == 429:
-                logger.warning(
-                    "OpenRouter 429 rate-limit (%s) — retrying once", model)
-                time.sleep(1)
-                try:
-                    r2 = requests.post(
-                        self.openrouter_url, headers=headers, json=payload, timeout=timeout
-                    )
-                    if r2.status_code == 200:
-                        content = (
-                            r2.json()
-                              .get("choices", [{}])[0]
-                              .get("message", {})
-                              .get("content")
-                        )
-                        return content.strip() if content else None
-                except Exception:
-                    pass
-                return None
-            return None
-
-        except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-            logger.warning("OpenRouter network error (%s): %s", model, e)
-            return None
-        except Exception as e:
-            logger.error("OpenRouter unexpected error (%s): %s", model, str(e))
-            return None
+            resp = requests.post(
+                "https://openrouter.ai/api/v1/chat/completions",
+                headers=headers,
+                json=data,
+                timeout=timeout
+            )
+            if resp.status_code == 200:
+                js = resp.json()
+                if "choices" in js and len(js["choices"]) > 0:
+                    return js["choices"][0]["message"]["content"]
+            elif resp.status_code in [401, 403, 429, 502, 503, 504, 500]:
+                raise ProviderError(f"OpenRouter Provider Error {resp.status_code}: {resp.text}")
+            elif resp.status_code == 400 or resp.status_code == 404:
+                raise ModelError(f"OpenRouter Model Error {resp.status_code}: {resp.text}")
+            else:
+                raise ProviderError(f"OpenRouter Error {resp.status_code}: {resp.text}")
+        except requests.exceptions.Timeout:
+            raise ProviderError("OpenRouter Timeout")
+        except requests.exceptions.RequestException as e:
+            raise ProviderError(f"OpenRouter Connection Error: {e}")
+        return None
 
     def _call_groq(
         self,
@@ -703,98 +679,70 @@ class Baymax:
         user_text:  str,
         max_tokens: int,
         task:       str = "text_chat",
+        timeout:    float = 10.0,
+        current_files: list = None,
+        api_key:    str = None,
     ) -> str | None:
-        """Send a request to the Groq chat completions API."""
         logger = LocalLoggerProxy(self)
+        import requests
+        
+        if not api_key:
+            raise ProviderError("No Groq API key provided")
+            
         headers = {
-            "Authorization": f"Bearer {self.groq_key}",
-            "Content-Type":  "application/json",
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json"
         }
+        
+        data = {
+            "model": model,
+            "messages": self._build_msg_openrouter(user_text, task),
+            "max_tokens": max_tokens,
+            "temperature": self._get_temperature(task),
+        }
+        
         try:
-            r = requests.post(
-                self.groq_url,
+            resp = requests.post(
+                "https://api.groq.com/openai/v1/chat/completions",
                 headers=headers,
-                json={
-                    "model":       model,
-                    "messages":    self._build_msg_openrouter(user_text, task),
-                    "temperature": self._get_temperature(task),
-                    "max_tokens":  max_tokens,
-                    "top_p":       0.9,
-                },
-                timeout=5,
+                json=data,
+                timeout=timeout
             )
-            logger.debug("Groq %s → HTTP %d", model, r.status_code)
-
-            if r.status_code == 200:
-                content = (
-                    r.json()
-                     .get("choices", [{}])[0]
-                     .get("message", {})
-                     .get("content")
-                )
-                return content.strip() if content else None
-            if r.status_code == 401:
-                logger.error("Groq 401: invalid API key")
-                raise GroqProviderError("Invalid API key")
-            if r.status_code == 429:
-                logger.warning("Groq 429: rate limit / traffic")
-                raise GroqProviderError("Rate limit / traffic")
-            if r.status_code in [500, 502, 503, 504]:
-                logger.warning("Groq 5xx: %d", r.status_code)
-                raise GroqProviderError(f"Server error: {r.status_code}")
-            if r.status_code == 400:
-                logger.warning("Groq 400: Bad Request")
-                raise GroqModelError("Bad Request")
-            if r.status_code == 404:
-                logger.warning("Groq 404: Model not found")
-                raise GroqModelError("Model not found")
-            raise GroqProviderError(f"HTTP {r.status_code}")
-
-        except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-            logger.warning("Groq network error (%s): %s", model, e)
-            raise GroqProviderError(f"Network error: {e}")
-        except Exception as e:
-            if isinstance(e, (GroqProviderError, GroqModelError)):
-                raise e
-            logger.error("Groq unexpected error (%s): %s", model, str(e))
-            raise GroqProviderError(f"Unexpected error: {e}")
-
-    # =========================================================================
-    # UNIFIED DISPATCHER & FALLBACK ORCHESTRATION (unchanged logic)
-    # =========================================================================
+            if resp.status_code == 200:
+                js = resp.json()
+                if "choices" in js and len(js["choices"]) > 0:
+                    return js["choices"][0]["message"]["content"]
+            elif resp.status_code in [401, 403, 429, 502, 503, 504, 500]:
+                raise ProviderError(f"Groq Provider Error {resp.status_code}: {resp.text}")
+            elif resp.status_code == 400 or resp.status_code == 404:
+                raise ModelError(f"Groq Model Error {resp.status_code}: {resp.text}")
+            else:
+                raise ProviderError(f"Groq Error {resp.status_code}: {resp.text}")
+        except requests.exceptions.Timeout:
+            raise ProviderError("Groq Timeout")
+        except requests.exceptions.RequestException as e:
+            raise ProviderError(f"Groq Connection Error: {e}")
+        return None
 
     def _call(
         self,
         model:      str,
-        user_text:  str,
+        text:       str,
         max_tokens: int,
         task:       str = "text_chat",
         current_files: list = None,
+        provider:   str = None,
+        api_key:    str = None,
     ) -> str | None:
-        """Route to the correct provider based on the model name."""
-        if model.lower().startswith("gemini-"):
-            return self._call_gemini(model, user_text, max_tokens, task, current_files=current_files)
-        return self._call_openrouter(model, user_text, max_tokens, task)
-
-    def _log_initial_steps(self, task: str):
-        if getattr(self, "_initial_steps_logged", False):
-            return
-        self._initial_steps_logged = True
-        self.t_start = time.time()
-
-        # 1. DB lookup
-        logger.info("DB lookup: %.3fs", getattr(self, "db_lookup_time", 0.0))
-
-        # 2. Which model
-        model_name = "Baymax"
-        if task.startswith("zeno"):
-            model_name = "Zeno (Baymax)"
-        logger.info("Model: %s | temporary=%s | superuser=%s | raw_history_len=%d",
-                    model_name, self.temporary, self.is_superuser, len(self.chat_history))
-
-        # 3. Which task
-        active_history = self._get_limited_history(task)
-        logger.info("Task: %s | active_history=%d", task, len(active_history))
+        # Route to appropriate internal method
+        if provider == "gemini":
+            return self._call_gemini(model, text, max_tokens, task, 10.0, current_files, api_key)
+        elif provider == "openrouter":
+            return self._call_openrouter(model, text, max_tokens, task, 15.0, current_files, api_key)
+        elif provider == "groq":
+            return self._call_groq(model, text, max_tokens, task, 10.0, current_files, api_key)
+        else:
+            raise ProviderError("Unknown provider")
 
     def _with_concurrent_fallback(
         self,
@@ -892,6 +840,13 @@ To start chatting, please configure your API Keys in your Heros profile settings
             return result
         return "All models failed. Please try again later."
 
+    def _log_initial_steps(self, task: str):
+        import logging
+        import time
+        logger = logging.getLogger("hero_ai.baymax")
+        logger.info(f"Starting task: {task}")
+        self.t_start = time.time()
+
     def _with_fallback(
         self,
         primary_model: str,
@@ -901,90 +856,94 @@ To start chatting, please configure your API Keys in your Heros profile settings
         task:          str = "text_chat",
         current_files: list = None,
     ) -> str:
-        """Try the primary model, then Gemini fallbacks, then OpenRouter fallbacks."""
-        No_API = """
-🔑 **API Key Configuration Required**
-
-To start chatting, please configure your API Keys in your Heros profile settings:
-1. Log in to your Heros account website.
-2. Go to **Profile** / **API Keys**.
-3. Add your key (Gemini, OpenRouter, or Groq) and save.
-
-*Your API keys are encrypted and stored securely on the server—they are never exposed to the browser.*
-"""
-        if primary_model.lower().startswith("gemini-"):
-            has_gemini = self.gemini_key or (
-                hasattr(self, 'gemini_keys') and self.gemini_keys)
-            if not has_gemini:
-                from django.conf import settings
-                if not getattr(settings, "GEMINI_API_KEY", None):
-                    return "🔑 **Gemini API Key Required**\n\nPlease configure your Gemini API Key in your profile to chat.\n" + No_API
-        else:
-            if not self.openrouter_key:
-                return "🔑 **OpenRouter API Key Required**\n\nPlease configure your OpenRouter API Key in your profile to chat.\n" + No_API
-
         self._log_initial_steps(task)
-        # 6. Primary LLM model name
-        logger.info("Primary LLM model name: %s", primary_model)
-
-        result = self._call(primary_model, text, max_tokens,
-                            task, current_files=current_files)
-        if result:
-            logger.info("Winner: %s | status code: 200", primary_model)
-            elapsed = time.time() - self.t_start
-            logger.info("Total time taken: %.3fs", elapsed)
-            logger.info(
-                "----------------------------------------------------------")
-            return result
-
-        logger.info("Primary model failed. Fallback LLM model names:")
-        fallback_models = []
-        if self.gemini_key:
-            fallback_models.extend(self.models.get("fallback_with_gemini", []))
-        if self.openrouter_key:
-            fallback_models.extend(self.models.get(fallback_key, []))
-
-        for m in fallback_models:
-            logger.info(" - %s", m)
-
-        winner = None
-        for model in self.models.get(fallback_key, []):
-            if not self.openrouter_key:
-                break
-            logger.info("Trying OpenRouter fallback: %s", model)
-            result = self._call(model, text, max_tokens,
-                                task, current_files=current_files)
-            if result:
-                logger.info(
-                    "Winner: fallback model: %s | status code: 200", model)
-                winner = model
-                break
+        import logging
+        logger = logging.getLogger("hero_ai.baymax")
+        
+        is_router = "CRITICAL INSTRUCTION: If the user's query requires current" in text
+        
+        # Determine provider and key pairs
+        # Build the exact fallback lists based on user rules
+        from django.conf import settings
+        
+        env_gemini = getattr(settings, "GEMINI_API_KEY", None)
+        env_or = getattr(settings, "OPENROUTER_API_KEY", None)
+        env_groq = getattr(settings, "GROQ_API_KEY", None)
+        
+        user_gemini = self.gemini_key or (self.gemini_keys[0] if hasattr(self, 'gemini_keys') and self.gemini_keys else None)
+        user_or = self.openrouter_key
+        user_groq = self.groq_key
+        
+        # Lists of models
+        list_gemini = self.models.get("fallback_with_gemini", [])
+        list_or = self.models.get(fallback_key, [])
+        list_groq = self.models.get("fallback_with_groq", [])
+        
+        sequence = []
+        
+        if is_router:
+            logger.info("ROUTER MODE Fallback Sequence Initiated")
+            if not user_groq:
+                # 1. OpenRouter user, 2. Gemini user, 3. Groq env, 4. OpenRouter env, 5. Gemini env
+                if user_or: sequence.append(("openrouter", list_or, user_or, "USER"))
+                if user_gemini: sequence.append(("gemini", list_gemini, user_gemini, "USER"))
+                if env_groq: sequence.append(("groq", list_groq, env_groq, "ENV"))
+                if env_or: sequence.append(("openrouter", list_or, env_or, "ENV"))
+                if env_gemini: sequence.append(("gemini", list_gemini, env_gemini, "ENV"))
             else:
-                logger.info(
-                    "OpenRouter fallback model %s failed | status code: error/timeout", model)
-
-        if not winner:
-            for model in self.models.get("fallback_with_gemini", []):
-                if not self.gemini_key:
+                if user_groq: sequence.append(("groq", list_groq, user_groq, "USER"))
+                if user_or: sequence.append(("openrouter", list_or, user_or, "USER"))
+                if user_gemini: sequence.append(("gemini", list_gemini, user_gemini, "USER"))
+                if env_groq: sequence.append(("groq", list_groq, env_groq, "ENV"))
+                if env_or: sequence.append(("openrouter", list_or, env_or, "ENV"))
+                if env_gemini: sequence.append(("gemini", list_gemini, env_gemini, "ENV"))
+        else:
+            logger.info("FINAL TASK MODE Fallback Sequence Initiated")
+            # 1. Primary Task Model + user
+            # Find provider of primary model
+            if primary_model.startswith("gemini"):
+                primary_prov = "gemini"
+                primary_key = user_gemini
+            elif "llama" in primary_model.lower() or "mixtral" in primary_model.lower(): # assuming groq
+                # This is a bit tricky, if primary is groq
+                primary_prov = "groq" if primary_model in list_groq else "openrouter"
+                primary_key = user_groq if primary_prov == "groq" else user_or
+            else:
+                primary_prov = "openrouter"
+                primary_key = user_or
+                
+            if primary_key:
+                sequence.append((primary_prov, [primary_model], primary_key, "USER"))
+                
+            if user_or: sequence.append(("openrouter", list_or, user_or, "USER"))
+            if user_gemini: sequence.append(("gemini", list_gemini, user_gemini, "USER"))
+            if env_groq: sequence.append(("groq", list_groq, env_groq, "ENV"))
+            if env_or: sequence.append(("openrouter", list_or, env_or, "ENV"))
+            if env_gemini: sequence.append(("gemini", list_gemini, env_gemini, "ENV"))
+            
+        for provider, models, api_key, key_type in sequence:
+            for model in models:
+                try:
+                    logger.info(f"[{'Router' if is_router else 'Final'}] {provider.capitalize()} | {key_type}_KEY | model={model}")
+                    t_start = time.time()
+                    res = self._call(model, text, max_tokens, task, current_files, provider, api_key)
+                    if res:
+                        resp_time = time.time() - t_start
+                        logger.info(f"[{'Router' if is_router else 'Final'}] SUCCESS | {provider.capitalize()} | {model} | {resp_time:.2f}s")
+                        return res
+                except ModelError as e:
+                    logger.info(f"[{'Router' if is_router else 'Final'}] ERROR | model_error | {e}")
+                    # Continue to next model in same provider
+                    continue
+                except ProviderError as e:
+                    logger.info(f"[{'Router' if is_router else 'Final'}] ERROR | provider_error | {e}")
+                    logger.info(f"[{'Router' if is_router else 'Final'}] SWITCH -> next provider layer")
+                    # Break out of inner loop to skip remaining models for this provider/key combination
                     break
-                logger.info("Trying Gemini fallback: %s", model)
-                result = self._call(model, text, max_tokens,
-                                    task, current_files=current_files)
-                if result:
-                    logger.info(
-                        "Winner: fallback model: %s | status code: 200", model)
-                    winner = model
+                except Exception as e:
+                    logger.info(f"[{'Router' if is_router else 'Final'}] ERROR | unknown | {e}")
                     break
-                else:
-                    logger.info(
-                        "Gemini fallback model %s failed | status code: error/timeout", model)
-
-        elapsed = time.time() - self.t_start
-        logger.info("Total time taken: %.3fs", elapsed)
-        logger.info(
-            "----------------------------------------------------------")
-        if winner and result:
-            return result
+                    
         return "All models failed. Please try again later."
 
     # =========================================================================
@@ -993,239 +952,149 @@ To start chatting, please configure your API Keys in your Heros profile settings
     # formatting to _safe_error() so the right level of detail is shown.
     # =========================================================================
 
-    def _enrich_with_web_search(self, text: str, task: str) -> str:
-        import concurrent.futures
-        from backend.models_task.web_search import _search_duckduckgo, _search_wikipedia, _summarise_with_gemini, _plain_summary
-        from backend.models_task.query_rewriter import rewrite_query_for_search
-
-        gemini_key = getattr(self, "gemini_key", "") or ""
-        chat_history = self._get_limited_history(task)
-
-        timeout_val = 4.0 if getattr(self, "is_fast", False) else 10.0
-
-        ddg_results = []
-        wiki_summary = ""
-        rewritten_query = text
-
-        # Start 3 parallel tasks
-        with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
-            future_ddg = executor.submit(_search_duckduckgo, text, 5)
-            future_wiki = executor.submit(_search_wikipedia, text, 5)
-            future_preprocess = executor.submit(
-                rewrite_query_for_search, text, chat_history, gemini_key)
-
-            try:
-                ddg_results = future_ddg.result(timeout=timeout_val)
-            except Exception as e:
-                logger.error("[web_search_enrich] DDG failed: %s", e)
-
-            try:
-                wiki_summary = future_wiki.result(timeout=timeout_val)
-            except Exception as e:
-                logger.error("[web_search_enrich] Wiki failed: %s", e)
-
-            try:
-                rewritten_query = future_preprocess.result(timeout=timeout_val)
-            except Exception as e:
-                logger.error("[web_search_enrich] Preprocess failed: %s", e)
-                rewritten_query = text
-
-        # Merge available results using the summarizer
-        if gemini_key:
-            try:
-                answer = _summarise_with_gemini(
-                    rewritten_query, ddg_results, wiki_summary, gemini_key)
-            except Exception as e:
-                logger.error(
-                    "[web_search_enrich] Gemini summary failed: %s", e)
-                answer = _plain_summary(
-                    rewritten_query, ddg_results, wiki_summary)
-        else:
-            answer = _plain_summary(rewritten_query, ddg_results, wiki_summary)
-
-        if answer and not answer.startswith("No results"):
-            system_note = (
-                "System Instruction: Below is some retrieved Live Data related to the user query.\n"
-                "1. If the user message needs live or current data, use this Live Data to answer.\n"
-                "2. Otherwise, ignore the Live Data and reply normally.\n"
-                "3. If you use the Live Data, do NOT mention 'Wikipedia', 'DuckDuckGo', search results, or provide any URLs/links unless the user explicitly asks for them."
-            )
-            return f"{system_note}\n\nLive Data:\n{answer}\n\nUser Message: {text}"
-
-        return text
-
-    def _agentic_search_check(self, user_text: str) -> str | None:
-        """
-        Ultra-fast Pre-Router / Orchestrator.
-        Uses the fastest available model to determine if the query needs a web search.
-        Returns the specific search query if needed, else None.
-        """
-        from backend.utils import is_greeting_or_smalltalk
-        if is_greeting_or_smalltalk(user_text):
-            return None
-
-        keys_to_try = []
-        if getattr(self, "groq_key", None):
-            keys_to_try.append(("groq", self.groq_key))
-        if getattr(self, "gemini_key", None):
-            keys_to_try.append(("gemini", self.gemini_key))
-        if getattr(self, "openrouter_key", None):
-            keys_to_try.append(("openrouter", self.openrouter_key))
-
-        if not keys_to_try:
-            return None
-
-        prompt = (
-            "You are an intent classification engine. Read the user's message.\n"
-            "Does the user's message require a live web search to answer accurately (e.g., latest news, current events, recent releases, live prices, or real-time facts)?\n"
-            "If YES: Output ONLY the exact search query you would use. Do not explain.\n"
-            "If NO: Output exactly the word 'NONE'."
-        )
-
-        provider, key = keys_to_try[0]
-        try:
-            if provider == "groq":
-                import requests
-                r = requests.post(
-                    "https://api.groq.com/openai/v1/chat/completions",
-                    headers={"Authorization": f"Bearer {key}",
-                             "Content-Type": "application/json"},
-                    json={
-                        "model": "openai/gpt-oss-20b",
-                        "messages": [
-                            {"role": "system", "content": prompt},
-                            {"role": "user", "content": user_text}
-                        ],
-                        "temperature": 0.0,
-                        "max_tokens": 50,
-                    },
-                    timeout=2.0
-                )
-                if r.status_code == 200:
-                    ans = r.json()["choices"][0]["message"]["content"].strip()
-                    return ans if ans.upper() != "NONE" else None
-            elif provider == "gemini":
-                from google import genai
-                client = genai.Client(api_key=key)
-                r = client.models.generate_content(
-                    model="gemini-3.5-flash-lite",
-                    contents=[
-                        {"role": "user", "parts": [
-                            {"text": prompt + "\n\nUser Message: " + user_text}]}
-                    ],
-                    config={"temperature": 0.0, "max_output_tokens": 50}
-                )
-                ans = r.text.strip() if r.text else "NONE"
-                return ans if ans.upper() != "NONE" else None
-            elif provider == "openrouter":
-                import requests
-                r = requests.post(
-                    "https://openrouter.ai/api/v1/chat/completions",
-                    headers={"Authorization": f"Bearer {key}",
-                             "Content-Type": "application/json"},
-                    json={
-                        "model": "meta-llama/llama-3-8b-instruct:free",
-                        "messages": [
-                            {"role": "system", "content": prompt},
-                            {"role": "user", "content": user_text}
-                        ],
-                        "temperature": 0.0,
-                        "max_tokens": 50,
-                    },
-                    timeout=3.0
-                )
-                if r.status_code == 200:
-                    ans = r.json()["choices"][0]["message"]["content"].strip()
-                    return ans if ans.upper() != "NONE" else None
-        except Exception as e:
-            logger.warning(f"Orchestrator failed: {e}")
-            return None
-        return None
-
     def handle_text(self, text: str) -> str:
-        """Handle general text chat with NLP-adaptive token budget."""
+        """Handle general text chat. Uses Query Router logic to minimize AI calls."""
         try:
-            # 1. Agentic Orchestrator Check
-            search_query = self._agentic_search_check(text)
-            if search_query:
-                logger.info(
-                    f"Agentic Orchestrator triggered search: {search_query}")
-                return self.handle_websearch(text, search_query=search_query)
-
-            enriched_text = text
+            router_instruction = (
+                "CRITICAL INSTRUCTION: If the user's query requires current, live, or real-time web data "
+                "(like news, weather, live prices, or recent events that you don't know), "
+                "you MUST NOT attempt to answer. Instead, output ONLY exactly this format: SEARCH_REQUIRED: [your optimized search query]. "
+                "If the query does NOT require live data, answer it directly and normally."
+            )
+            enriched_text = f"{router_instruction}\n\nUser Message: {text}"
+            
             max_tok = self._smart_token_budget("text_chat")
+            
             if getattr(self, 'is_fast', False):
                 from backend.fast import run_fast_route
-                return run_fast_route(self, enriched_text, max_tokens=max_tok, task="text_chat")
-            return self._with_fallback(
-                self.models["text_chat"],
-                enriched_text,
-                max_tokens=max_tok,
-                task="text_chat",
-            )
+                response = run_fast_route(self, enriched_text, max_tokens=max_tok, task="text_chat")
+            else:
+                response = self._with_fallback(
+                    self.models["text_chat"],
+                    enriched_text,
+                    max_tokens=max_tok,
+                    task="text_chat",
+                )
+            
+            if response and "SEARCH_REQUIRED:" in response:
+                search_query = response.split("SEARCH_REQUIRED:")[1].strip()
+                import logging
+                logger = logging.getLogger("hero_ai.baymax")
+                logger.info(f"Query Router triggered search: {search_query}")
+                return self.handle_websearch(text, search_query=search_query)
+
+            return response
         except Exception as e:
             return self._safe_error(e, "handle_text")
 
     def handle_coding(self, text: str) -> str:
         """Handle coding/programming requests with full token budget."""
         try:
+            router_instruction = (
+                "CRITICAL INSTRUCTION: If the user's query requires current, live, or real-time web data "
+                "(like news, weather, live prices, or recent events that you don't know), "
+                "you MUST NOT attempt to answer. Instead, output ONLY exactly this format: SEARCH_REQUIRED: [your optimized search query]. "
+                "If the query does NOT require live data, answer it directly and normally."
+            )
+            enriched_text = f"{router_instruction}\n\nUser Message: {text}"
+            
             if getattr(self, 'is_fast', False):
                 from backend.fast import run_fast_route
-                return run_fast_route(self, text, max_tokens=self._TOKEN_BUDGETS["coding"], task="coding")
-            return self._with_fallback(
-                self.models["coding"],
-                text,
-                max_tokens=self._TOKEN_BUDGETS["coding"],
-                task="coding",
-            )
+                response = run_fast_route(self, enriched_text, max_tokens=self._TOKEN_BUDGETS["coding"], task="coding")
+            else:
+                response = self._with_fallback(
+                    self.models["coding"],
+                    enriched_text,
+                    max_tokens=self._TOKEN_BUDGETS["coding"],
+                    task="coding",
+                )
+            
+            if response and "SEARCH_REQUIRED:" in response:
+                search_query = response.split("SEARCH_REQUIRED:")[1].strip()
+                import logging
+                logger = logging.getLogger("hero_ai.baymax")
+                logger.info(f"Query Router triggered search: {search_query}")
+                return self.handle_websearch(text, search_query=search_query)
+
+            return response
         except Exception as e:
             return self._safe_error(e, "handle_coding")
 
     def handle_voice_chat(self, text: str) -> str:
         """Handle full voice conversation with short, spoken-word-friendly replies."""
         try:
-            enriched_text = text
+            router_instruction = (
+                "CRITICAL INSTRUCTION: If the user's query requires current, live, or real-time web data "
+                "(like news, weather, live prices, or recent events that you don't know), "
+                "you MUST NOT attempt to answer. Instead, output ONLY exactly this format: SEARCH_REQUIRED: [your optimized search query]. "
+                "If the query does NOT require live data, answer it directly and normally."
+            )
+            enriched_text = f"{router_instruction}\n\nUser Message: {text}"
+            
             max_tok = self._smart_token_budget("voice")
             if getattr(self, 'is_fast', False):
                 from backend.fast import run_fast_route
-                return run_fast_route(self, enriched_text, max_tokens=max_tok, task="voice")
-            return self._with_fallback(
-                self.models["voice_chat"],
-                enriched_text,
-                max_tokens=max_tok,
-                task="voice",
-            )
+                response = run_fast_route(self, enriched_text, max_tokens=max_tok, task="voice")
+            else:
+                response = self._with_fallback(
+                    self.models["voice_chat"],
+                    enriched_text,
+                    max_tokens=max_tok,
+                    task="voice",
+                )
+                
+            if response and "SEARCH_REQUIRED:" in response:
+                search_query = response.split("SEARCH_REQUIRED:")[1].strip()
+                import logging
+                logger = logging.getLogger("hero_ai.baymax")
+                logger.info(f"Query Router triggered search: {search_query}")
+                return self.handle_websearch(text, search_query=search_query)
+
+            return response
         except Exception as e:
             return self._safe_error(e, "handle_voice_chat")
 
     def handle_voice_message(self, text: str) -> str:
         """Handle inline mic voice messages routed through the normal chat thread."""
         try:
-            enriched_text = text
+            router_instruction = (
+                "CRITICAL INSTRUCTION: If the user's query requires current, live, or real-time web data "
+                "(like news, weather, live prices, or recent events that you don't know), "
+                "you MUST NOT attempt to answer. Instead, output ONLY exactly this format: SEARCH_REQUIRED: [your optimized search query]. "
+                "If the query does NOT require live data, answer it directly and normally."
+            )
+            enriched_text = f"{router_instruction}\n\nUser Message: {text}"
+            
             max_tok = self._smart_token_budget("voice")
             if getattr(self, 'is_fast', False):
                 from backend.fast import run_fast_route
-                return run_fast_route(self, enriched_text, max_tokens=max_tok, task="voice")
-            return self._with_fallback(
-                self.models["voice_chat"],
-                enriched_text,
-                max_tokens=max_tok,
-                task="voice",
-            )
+                response = run_fast_route(self, enriched_text, max_tokens=max_tok, task="voice")
+            else:
+                response = self._with_fallback(
+                    self.models["voice_chat"],
+                    enriched_text,
+                    max_tokens=max_tok,
+                    task="voice",
+                )
+                
+            if response and "SEARCH_REQUIRED:" in response:
+                search_query = response.split("SEARCH_REQUIRED:")[1].strip()
+                import logging
+                logger = logging.getLogger("hero_ai.baymax")
+                logger.info(f"Query Router triggered search: {search_query}")
+                return self.handle_websearch(text, search_query=search_query)
+
+            return response
         except Exception as e:
             return self._safe_error(e, "handle_voice_message")
 
     def handle_websearch(self, text: str, search_query: str = None) -> str:
         """
-        Web search handler.
-
-        Flow:
-          1. perform_web_search() fetches DuckDuckGo + Wikipedia results
-             and asks Gemini to summarise them into a clean answer.
-          2. On failure (no keys / network error / no results) fall back
-             to a plain LLM call with the WEB_SEARCH_PROMPT.
+        Web search handler. Now takes the raw context directly and summarizes it in the final AI call.
         """
         try:
+            import logging
+            logger = logging.getLogger("hero_ai.baymax")
             query_to_search = search_query if search_query else text
             logger.info("[handle_websearch] query=%r", query_to_search[:80])
 
@@ -1241,27 +1110,62 @@ To start chatting, please configure your API Keys in your Heros profile settings
                     self.models["text_chat"], text, max_tokens=max_tok, task="text_chat"
                 )
 
-            chat_history = self._get_limited_history("web_search")
-            answer, rewritten_query = perform_web_search(
-                query_to_search,
-                gemini_key=self.gemini_key or "",
-                chat_history=chat_history,
-                groq_key=self.groq_key or ""
-            )
+            from backend.models_task.web_search import perform_web_search
+            raw_context = perform_web_search(query_to_search)
+            self.latest_web_evidence = raw_context
 
-            if answer and not answer.startswith("No results"):
+            if raw_context:
                 logger.info(
                     "[handle_websearch] Web search successfully retrieved context")
-                enriched_text = f"Web Search Results:\n{answer}\n\nUser Query: {rewritten_query}"
+                grounding_rules = """CURRENT / LIVE INFORMATION RULE:
+
+When web or live data is provided, treat the retrieved evidence as the
+factual boundary of your answer.
+
+Use only facts that are explicitly supported by the retrieved evidence.
+
+Do not use pretrained knowledge to fill, complete, infer, estimate,
+reconstruct, or guess missing information.
+
+Do not invent or infer names, dates, numbers, prices, statistics,
+measurements, events, quotes, or other factual details that are not
+supported by the retrieved evidence.
+
+Every factual claim about current or live information must be traceable
+to the provided web evidence.
+
+If the retrieved evidence is insufficient to answer the question,
+clearly state that the information could not be verified from the
+available sources.
+
+If the evidence only partially answers the question, provide only the
+supported information and clearly state what could not be verified.
+
+If sources disagree, mention the disagreement instead of choosing an
+answer based on pretrained knowledge.
+
+If the evidence is outdated or does not establish that something is
+currently true, do not present it as current fact.
+
+For current/live information, prefer recent retrieved evidence over
+pretrained knowledge.
+
+IMPORTANT:
+Do not present information outside the provided web evidence as verified
+current information."""
+
+                enriched_text = (
+                    f"USER QUESTION:\n{text}\n\n"
+                    f"RETRIEVED WEB EVIDENCE:\n{raw_context}\n\n"
+                    f"GROUNDING INSTRUCTIONS:\n{grounding_rules}"
+                )
             else:
                 logger.info(
                     "[handle_websearch] Web search returned no results")
-                enriched_text = rewritten_query
+                enriched_text = text
 
             max_tok = self._smart_token_budget("web_search")
-            if getattr(self, 'is_fast', False):
-                from backend.fast import run_fast_route
-                return run_fast_route(self, enriched_text, max_tokens=max_tok, task="web_search")
+
             return self._with_fallback(
                 self.models["web_search"], enriched_text, max_tokens=max_tok, task="web_search"
             )
@@ -1270,130 +1174,116 @@ To start chatting, please configure your API Keys in your Heros profile settings
 
     def handle_zeno_plus(self, text: str) -> str:
         try:
-            logger.info("[handle_zeno_plus] query=%r", text[:80])
-
-            from backend.utils import is_greeting_or_smalltalk
-            if is_greeting_or_smalltalk(text):
-                logger.info(
-                    "[handle_zeno_plus] query is greeting/small talk. Bypassing search.")
-                enriched_text = text
-            else:
-                logger.info(
-                    "[handle_zeno_plus] Executing web search task internally...")
-                chat_history = self._get_limited_history("web_search")
-                answer, rewritten_query = perform_web_search(
-                    text,
-                    gemini_key=self.gemini_key or "",
-                    chat_history=chat_history,
-                    groq_key=self.groq_key or ""
-                )
-                if answer and not answer.startswith("No results"):
-                    logger.info(
-                        "[handle_zeno_plus] Web search successfully retrieved context")
-                    enriched_text = f"Web Search Results:\n{answer}\n\nUser Query: {rewritten_query}"
-                else:
-                    logger.info(
-                        "[handle_zeno_plus] Web search returned no results")
-                    enriched_text = rewritten_query
-
+            router_instruction = (
+                "CRITICAL INSTRUCTION: If the user's query requires current, live, or real-time web data "
+                "(like news, weather, live prices, or recent events that you don't know), "
+                "you MUST NOT attempt to answer. Instead, output ONLY exactly this format: SEARCH_REQUIRED: [your optimized search query]. "
+                "If the query does NOT require live data, answer it directly and normally."
+            )
+            enriched_text = f"{router_instruction}\n\nUser Message: {text}"
             max_tok = self._smart_token_budget("zeno_plus")
-
-            # Detect selected text or page/shadow context
+            
             is_selected_text = "---\nSelected Text:\n" in text or "Selected Text:\n" in text
             is_page_context = "---\nWeb Page Content:\n" in text or "Web Page Content:\n" in text
 
             if is_selected_text or is_page_context:
-                logger.info(
-                    "[handle_zeno_plus] Selected text or page context detected. Using basic Baymax backend.")
-                return self._with_fallback(
+                response = self._with_fallback(
                     self.models["zeno_plus"], enriched_text, max_tokens=max_tok, task="zeno_plus"
                 )
+            else:
+                from backend.fast import run_fast_route
+                response = run_fast_route(self, enriched_text, max_tokens=max_tok, task="zeno_plus")
+                
+            if response and "SEARCH_REQUIRED:" in response:
+                search_query = response.split("SEARCH_REQUIRED:")[1].strip()
+                import logging
+                logger = logging.getLogger("hero_ai.baymax")
+                logger.info(f"Query Router triggered search: {search_query}")
+                return self.handle_websearch(text, search_query=search_query)
 
-            from backend.fast import run_fast_route
-            return run_fast_route(self, enriched_text, max_tokens=max_tok, task="zeno_plus")
+            return response
         except Exception as e:
             return self._safe_error(e, "handle_zeno_plus")
 
     def handle_zeno_eco(self, text: str) -> str:
         try:
-            logger.info("[handle_zeno_eco] query=%r", text[:80])
-
-            from backend.utils import is_greeting_or_smalltalk
-            if is_greeting_or_smalltalk(text):
-                logger.info(
-                    "[handle_zeno_eco] query is greeting/small talk. Bypassing search.")
-                enriched_text = text
-            else:
-                logger.info(
-                    "[handle_zeno_eco] Executing web search task internally...")
-                chat_history = self._get_limited_history("web_search")
-                answer, rewritten_query = perform_web_search(
-                    text,
-                    gemini_key=self.gemini_key or "",
-                    chat_history=chat_history,
-                    groq_key=self.groq_key or ""
-                )
-                if answer and not answer.startswith("No results"):
-                    logger.info(
-                        "[handle_zeno_eco] Web search successfully retrieved context")
-                    enriched_text = f"Web Search Results:\n{answer}\n\nUser Query: {rewritten_query}"
-                else:
-                    logger.info(
-                        "[handle_zeno_eco] Web search returned no results")
-                    enriched_text = rewritten_query
-
+            router_instruction = (
+                "CRITICAL INSTRUCTION: If the user's query requires current, live, or real-time web data "
+                "(like news, weather, live prices, or recent events that you don't know), "
+                "you MUST NOT attempt to answer. Instead, output ONLY exactly this format: SEARCH_REQUIRED: [your optimized search query]. "
+                "If the query does NOT require live data, answer it directly and normally."
+            )
+            enriched_text = f"{router_instruction}\n\nUser Message: {text}"
             max_tok = self._smart_token_budget("zeno_eco")
-            return self._with_fallback(
+            
+            response = self._with_fallback(
                 self.models["zeno_eco"], enriched_text, max_tokens=max_tok, task="zeno_eco"
             )
+            
+            if response and "SEARCH_REQUIRED:" in response:
+                search_query = response.split("SEARCH_REQUIRED:")[1].strip()
+                import logging
+                logger = logging.getLogger("hero_ai.baymax")
+                logger.info(f"Query Router triggered search: {search_query}")
+                return self.handle_websearch(text, search_query=search_query)
+
+            return response
         except Exception as e:
             return self._safe_error(e, "handle_zeno_eco")
 
     def handle_zeno_voice(self, text: str) -> str:
         try:
-            logger.info("[handle_zeno_voice] query=%r", text[:80])
+            router_instruction = (
+                "CRITICAL INSTRUCTION: If the user's query requires current, live, or real-time web data "
+                "(like news, weather, live prices, or recent events that you don't know), "
+                "you MUST NOT attempt to answer. Instead, output ONLY exactly this format: SEARCH_REQUIRED: [your optimized search query]. "
+                "If the query does NOT require live data, answer it directly and normally."
+            )
+            enriched_text = f"{router_instruction}\n\nUser Message: {text}"
             max_tok = self._smart_token_budget("zeno_voice")
+            
             if getattr(self, 'is_fast', False):
                 from backend.fast import run_fast_route
-                return run_fast_route(self, text, max_tokens=max_tok, task="zeno_voice")
-            return self._with_fallback(
-                self.models["zeno_voice"], text, max_tokens=max_tok, task="zeno_voice"
-            )
+                response = run_fast_route(self, enriched_text, max_tokens=max_tok, task="zeno_voice")
+            else:
+                response = self._with_fallback(
+                    self.models["zeno_voice"], enriched_text, max_tokens=max_tok, task="zeno_voice"
+                )
+                
+            if response and "SEARCH_REQUIRED:" in response:
+                search_query = response.split("SEARCH_REQUIRED:")[1].strip()
+                import logging
+                logger = logging.getLogger("hero_ai.baymax")
+                logger.info(f"Query Router triggered search: {search_query}")
+                return self.handle_websearch(text, search_query=search_query)
+
+            return response
         except Exception as e:
             return self._safe_error(e, "handle_zeno_voice")
 
     def handle_zeno_shadow(self, text: str) -> str:
         try:
-            logger.info("[handle_zeno_shadow] query=%r", text[:80])
-
-            from backend.utils import is_greeting_or_smalltalk
-            if is_greeting_or_smalltalk(text):
-                logger.info(
-                    "[handle_zeno_shadow] query is greeting/small talk. Bypassing search.")
-                enriched_text = text
-            else:
-                logger.info(
-                    "[handle_zeno_shadow] Executing web search task internally...")
-                chat_history = self._get_limited_history("web_search")
-                answer, rewritten_query = perform_web_search(
-                    text,
-                    gemini_key=self.gemini_key or "",
-                    chat_history=chat_history,
-                    groq_key=self.groq_key or ""
-                )
-                if answer and not answer.startswith("No results"):
-                    logger.info(
-                        "[handle_zeno_shadow] Web search successfully retrieved context")
-                    enriched_text = f"Web Search Results:\n{answer}\n\nUser Query: {rewritten_query}"
-                else:
-                    logger.info(
-                        "[handle_zeno_shadow] Web search returned no results")
-                    enriched_text = rewritten_query
-
+            router_instruction = (
+                "CRITICAL INSTRUCTION: If the user's query requires current, live, or real-time web data "
+                "(like news, weather, live prices, or recent events that you don't know), "
+                "you MUST NOT attempt to answer. Instead, output ONLY exactly this format: SEARCH_REQUIRED: [your optimized search query]. "
+                "If the query does NOT require live data, answer it directly and normally."
+            )
+            enriched_text = f"{router_instruction}\n\nUser Message: {text}"
             max_tok = self._smart_token_budget("zeno_shadow")
-            return self._with_fallback(
+            
+            response = self._with_fallback(
                 self.models["zeno_shadow"], enriched_text, max_tokens=max_tok, task="zeno_shadow"
             )
+            
+            if response and "SEARCH_REQUIRED:" in response:
+                search_query = response.split("SEARCH_REQUIRED:")[1].strip()
+                import logging
+                logger = logging.getLogger("hero_ai.baymax")
+                logger.info(f"Query Router triggered search: {search_query}")
+                return self.handle_websearch(text, search_query=search_query)
+
+            return response
         except Exception as e:
             return self._safe_error(e, "handle_zeno_shadow")
 

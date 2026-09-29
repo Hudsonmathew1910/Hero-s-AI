@@ -1,36 +1,23 @@
 """
 web_search.py (FIXED)
 ─────────────────────────────────────────────
-Searches DuckDuckGo and Wikipedia directly,
-then sends the raw results to Gemini for a clean summarised answer.
-Includes context-aware query rewriting and rate limit handling.
+Searches DuckDuckGo, Wikipedia, Serpstack, and Serply.
+Returns raw context for the Query Router / Final Model.
 
 Dependencies:
     pip install ddgs wikipedia requests lxml beautifulsoup4
 """
 
 import logging
+import concurrent.futures
+import trafilatura
+import os
 import requests
-import time
-from bs4 import BeautifulSoup
-
-try:
-    from .query_rewriter import rewrite_query_for_search
-except ImportError:
-    # Fallback for direct execution/testing
-    try:
-        from query_rewriter import rewrite_query_for_search
-    except ImportError:
-        def rewrite_query_for_search(query, chat_history, gemini_key=None):
-            return query
 
 logger = logging.getLogger("hero_ai.web_search")
 
 
 # ── DuckDuckGo ────────────────────────────────────────────────────────────────
-
-import concurrent.futures
-import trafilatura
 
 def _scrape_page(url: str) -> str:
     """Fetch and extract readable text from a URL, truncated to 3000 chars."""
@@ -46,13 +33,14 @@ def _scrape_page(url: str) -> str:
     return ""
 
 def _search_duckduckgo(query: str, max_results: int = 5) -> list[dict]:
-    """Return a list of {title, url, snippet} dicts from DuckDuckGo, with deep read for top 2."""
+    """Return a list of {source, title, url, snippet} dicts from DuckDuckGo."""
     try:
         from ddgs import DDGS
         results = []
         with DDGS() as ddgs:
             for r in ddgs.text(query, max_results=max_results):
                 results.append({
+                    "source": "DuckDuckGo",
                     "title":   r.get("title", ""),
                     "url":     r.get("href",  ""),
                     "snippet": r.get("body",  ""),
@@ -98,250 +86,178 @@ def _search_wikipedia(query: str, sentences: int = 5) -> str:
         return ""
 
 
-# ── Gemini summariser ─────────────────────────────────────────────────────────
+# ── Serpstack ─────────────────────────────────────────────────────────────────
 
-def _summarise_with_gemini(
-    query: str,
-    ddg_results: list[dict],
-    wiki_summary: str,
-    gemini_key: str,
-) -> str | None:
-    """Feed raw search data into Gemini and return a clean answer."""
-    from backend.hero_model import Baymax
-
-    context_parts = []
-
-    if wiki_summary:
-        context_parts.append(f"=== Wikipedia ===\n{wiki_summary}")
-
-    if ddg_results:
-        lines = []
-        for i, r in enumerate(ddg_results, 1):
-            lines.append(
-                f"{i}. {r['title']}\n   {r['snippet']}\n   Source: {r['url']}"
-            )
-        context_parts.append("=== Web Results (DuckDuckGo) ===\n" + "\n\n".join(lines))
-
-    if not context_parts:
-        return "No search results were found for your query."
-
-    context = "\n\n".join(context_parts)
-
-    prompt = (
-        f"You are Baymax, an expert research assistant specializing in information synthesis.\n\n"
-        f"User Query: \"{query}\"\n\n"
-        f"SEARCH RESULTS:\n{context}\n\n"
-        f"INSTRUCTIONS:\n"
-        f"1. **Strict Search Result Fidelity**: Base your answer ONLY and DIRECTLY on the provided SEARCH RESULTS above. Do not use your own training data or general knowledge for facts. If the search results contain the answer, summarize it accurately.\n"
-        f"2. **Handle Conflicts**: If there are conflicting facts in the search results, present the most recent and reliable source (e.g. incumbent status or dates).\n"
-        f"3. **Direct Output**: Do NOT use conversational preambles like 'Based on the search results...' or 'Here is the answer'. Start your answer immediately and naturally.\n"
-        f"4. **Citations**: Always list the URLs or titles of the sources you used from the SEARCH RESULTS at the very end of your response.\n\n"
-        f"Deliver a professional response that directly answers the user query using only the provided search results.\n"
-        f"{Baymax.HERO_AI_UNIVERSE}"
-    )
-
-    import os
-    gemini_keys = []
-    if gemini_key:
-        gemini_keys.append(gemini_key.strip("'\" "))
-    
-    gk1 = os.environ.get("Gemini_K1")
-    gk2 = os.environ.get("Gemini_K2")
-    if gk1:
-        gemini_keys.append(gk1.strip("'\" "))
-    if gk2:
-        gemini_keys.append(gk2.strip("'\" "))
-
-    for idx, gk in enumerate(gemini_keys):
-        if not gk:
-            continue
+def _search_serpstack(query: str, max_results: int = 5) -> list[dict]:
+    api_key = os.getenv("Serpstack")
+    if not api_key:
+        logger.error("[web_search] Serpstack API key not found in env.")
+        return None
         
-        url = (
-            "https://generativelanguage.googleapis.com/v1beta/models/"
-            f"gemini-3.5-flash-lite:generateContent?key={gk}"
-        )
-
-        try:
-            logger.info(f"[web_search] Attempting Gemini summarization with key index {idx}")
-            r = requests.post(
-                url,
-                headers={"Content-Type": "application/json"},
-                json={
-                    "contents": [{"role": "user", "parts": [{"text": prompt}]}],
-                    "generationConfig": {
-                        "temperature": 0.4,
-                        "maxOutputTokens": 1024,
-                        "topP": 0.9,
-                    },
-                },
-                timeout=15,
-            )
-            if r.status_code == 200:
-                text = r.json()["candidates"][0]["content"]["parts"][0]["text"]
-                return text.strip()
-            else:
-                logger.error(f"[web_search] Gemini summarization key index {idx} failed with status {r.status_code}")
-        except Exception as e:
-            logger.error(f"[web_search] Gemini summarization error with key index {idx}: {e}")
-
-    return None
-
-def _summarise_with_groq(
-    query: str,
-    ddg_results: list[dict],
-    wiki_summary: str,
-    groq_key: str = "",
-) -> str | None:
-    """Fallback summarizer using Groq when Gemini is unavailable."""
-    context_parts = []
-    if wiki_summary:
-        context_parts.append(f"=== Wikipedia ===\n{wiki_summary}")
-    if ddg_results:
-        lines = []
-        for i, r in enumerate(ddg_results, 1):
-            lines.append(f"{i}. {r['title']}\n   {r['snippet']}\n   Source: {r['url']}")
-        context_parts.append("=== Web Results ===\n" + "\n\n".join(lines))
-    if not context_parts:
+    try:
+        params = {
+            'access_key': api_key,
+            'query': query,
+            'num': max_results
+        }
+        response = requests.get('http://api.serpstack.com/search', params=params, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+        
+        if 'error' in data:
+            logger.error(f"[web_search] Serpstack returned error: {data['error']}")
+            return None
+            
+        results = []
+        for r in data.get("organic_results", [])[:max_results]:
+            results.append({
+                "source": "Serpstack",
+                "title": r.get("title", ""),
+                "url": r.get("url", ""),
+                "snippet": r.get("snippet", ""),
+                "published_at": r.get("displayed_link", "")
+            })
+        return results
+    except Exception as e:
+        logger.error(f"[web_search] Serpstack error: {e}")
         return None
 
-    context = "\n\n".join(context_parts)
-    from backend.hero_model import Baymax
-    prompt = (
-        f"You are Baymax, an expert research assistant specializing in information synthesis.\n\n"
-        f"User Query: \"{query}\"\n\n"
-        f"SEARCH RESULTS:\n{context}\n\n"
-        f"INSTRUCTIONS:\n"
-        f"1. **Strict Search Result Fidelity**: Base your answer ONLY and DIRECTLY on the provided SEARCH RESULTS above. Do not use your own training data or general knowledge for facts. If the search results contain the answer, summarize it accurately.\n"
-        f"2. **Handle Conflicts**: If there are conflicting facts in the search results, present the most recent and reliable source (e.g. incumbent status or dates).\n"
-        f"3. **Direct Output**: Do NOT use preambles like 'Based on the search results...' or 'Here is the answer'. Start your answer immediately and naturally.\n"
-        f"4. **Citations**: Always list the URLs or titles of the sources you used from the SEARCH RESULTS at the very end of your response.\n\n"
-        f"Deliver a professional response that directly answers the user query using only the provided search results.\n"
-        f"{Baymax.HERO_AI_UNIVERSE}"
-    )
 
-    import os
-    groq_keys = []
-    if groq_key:
-        groq_keys.append(groq_key.strip("'\" "))
-    
-    g1 = os.environ.get("Groq_1")
-    g2 = os.environ.get("Groq_2")
-    g_default = os.environ.get("GROQ_API_KEY")
-    
-    if g1:
-        groq_keys.append(g1.strip("'\" "))
-    if g2:
-        groq_keys.append(g2.strip("'\" "))
-    if g_default:
-        groq_keys.append(g_default.strip("'\" "))
+# ── Serply ─────────────────────────────────────────────────────────────────
 
-    for i, gk in enumerate(groq_keys):
-        if not gk:
-            continue
-        try:
-            logger.info(f"[web_search] Attempting Groq summarization with key index {i}")
-            r = requests.post(
-                "https://api.groq.com/openai/v1/chat/completions",
-                headers={
-                    "Authorization": f"Bearer {gk}",
-                    "Content-Type": "application/json"
-                },
-                json={
-                    "model": "openai/gpt-oss-20b",
-                    "messages": [{"role": "user", "content": prompt}],
-                    "max_tokens": 1024,
-                    "temperature": 0.4
-                },
-                timeout=15,
-            )
-            if r.status_code == 200:
-                text = r.json().get("choices", [{}])[0].get("message", {}).get("content", "").strip()
-                if text:
-                    logger.info(f"[web_search] Groq summarization successful with key index {i}")
-                    return text
-            else:
-                logger.error(f"[web_search] Groq summarization key index {i} failed: {r.status_code}")
-        except Exception as e:
-            logger.error(f"[web_search] Groq summarization error with key index {i}: {e}")
-
-    return None
-
-def _plain_summary(query: str, ddg_results: list[dict], wiki_summary: str) -> str:
-    """Fallback plain-text answer when Gemini and Groq are unavailable."""
-    parts = [f"Here is what I found for: {query}\n"]
-    if wiki_summary:
-        parts.append(f"Wikipedia:\n{wiki_summary}\n")
-    for r in ddg_results[:3]:
-        parts.append(f"• {r['title']}\n  {r['snippet']}\n  {r['url']}")
-    return "\n".join(parts) if len(parts) > 1 else "No results found."
-
-def perform_web_search(
-    query: str,
-    gemini_key: str = "",
-    chat_history: list = None,
-    groq_key: str = "",
-) -> tuple:
-    """
-    Search DuckDuckGo + Wikipedia, then summarise with Gemini or Groq.
-    Returns (answer, rewritten_query). If search is not needed, answer is None.
-    """
-    need_live_data = True
-    rewritten_query = query
-    
+def _search_serply(query: str, max_results: int = 5) -> list[dict]:
+    api_key = os.getenv("Serply")
+    if not api_key:
+        logger.error("[web_search] Serply API key not found in env.")
+        return []
+        
     try:
-        log_query = query.split('\n')[0]
-        if len(log_query) > 100:
-            log_query = log_query[:100] + "..."
-        logger.info(f"[web_search] Analyzing and rewriting query: {log_query!r}")
-        need_live_data, rewritten_query = rewrite_query_for_search(
-            query=query, 
-            chat_history=chat_history, 
-            gemini_key=gemini_key,
-            groq_key=groq_key
-        )
+        headers = {
+            'X-Api-Key': api_key,
+            'Content-Type': 'application/json'
+        }
+        url = f"https://api.serply.io/v1/search/q={requests.utils.quote(query)}"
+        response = requests.get(url, headers=headers, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+        
+        results = []
+        for r in data.get("results", [])[:max_results]:
+            results.append({
+                "source": "Serply",
+                "title": r.get("title", ""),
+                "url": r.get("link", ""),
+                "snippet": r.get("snippet", "") or r.get("description", ""),
+            })
+        return results
     except Exception as e:
-        logger.error(f"[web_search] Query analysis/rewrite failed: {e}")
-        need_live_data = True
-        rewritten_query = query
+        logger.error(f"[web_search] Serply error: {e}")
+        return []
 
-    if not need_live_data:
-        logger.info(f"[web_search] Query does not require live data. Bypassing search task.")
-        return None, rewritten_query
+def _search_serpstack_with_fallback(query: str, max_results: int = 3) -> tuple:
+    results = _search_serpstack(query, max_results)
+    if results is None:
+        return (True, _search_serply(query, max_results))
+    return (False, results)
 
-    logger.info(f"[web_search] Query requires live data. Executing search for: {rewritten_query!r}")
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
-        future_ddg = executor.submit(_search_duckduckgo, rewritten_query, 5)
-        future_wiki = executor.submit(_search_wikipedia, rewritten_query, 5)
+def _clean_and_dedupe(results: list, seen_urls: set, max_length: int = 1000) -> list:
+    cleaned = []
+    for r in results:
+        url = r.get("url", "").strip()
+        if not url or url in seen_urls:
+            continue
+            
+        snippet = r.get("snippet", "").strip()
+        if not snippet:
+            continue
+            
+        # Basic cleanup: remove extra whitespace, trim length
+        snippet = " ".join(snippet.split())
+        if len(snippet) > max_length:
+            snippet = snippet[:max_length] + "..."
+            
+        seen_urls.add(url)
+        r["snippet"] = snippet
+        cleaned.append(r)
+        
+        if len(cleaned) >= 3:
+            break
+    return cleaned
+
+# ── Raw Search Fetcher ───────────────────────────────────────────────────────
+
+def perform_web_search(query: str) -> str:
+    """
+    Search DuckDuckGo + Wikipedia + (Serpstack -> Serply) and return the raw text context.
+    """
+    with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
+        future_ddg = executor.submit(_search_duckduckgo, query, 5)
+        future_wiki = executor.submit(_search_wikipedia, query, 5)
+        future_serp = executor.submit(_search_serpstack_with_fallback, query, 5)
         
         try:
-            ddg_results = future_ddg.result()
-        except Exception as e:
-            logger.error("[web_search] Concurrent DDG search failed: %s", e)
-            ddg_results = []
+            ddg_raw = future_ddg.result() or []
+        except Exception:
+            ddg_raw = []
             
         try:
             wiki_summary = future_wiki.result()
-        except Exception as e:
-            logger.error("[web_search] Concurrent Wiki search failed: %s", e)
+        except Exception:
             wiki_summary = ""
 
-    answer = None
-    if gemini_key:
         try:
-            answer = _summarise_with_gemini(rewritten_query, ddg_results, wiki_summary, gemini_key)
-        except Exception as e:
-            logger.error(f"[web_search] Gemini summarization failed: {e}")
-            answer = None
+            serpstack_failed, serp_raw = future_serp.result()
+            if serp_raw is None:
+                serp_raw = []
+        except Exception:
+            serpstack_failed = True
+            serp_raw = []
 
-    if not answer:
-        try:
-            answer = _summarise_with_groq(rewritten_query, ddg_results, wiki_summary, groq_key)
-        except Exception as e:
-            logger.error(f"[web_search] Groq summarization fallback failed: {e}")
-            answer = None
-
-    if not answer:
-        answer = _plain_summary(rewritten_query, ddg_results, wiki_summary)
+    # Status Logging
+    wiki_status = "1 RESULTS" if wiki_summary else "NO RESULTS"
+    print(f"[WebSearch] Wikipedia: {wiki_status}")
     
-    return answer, rewritten_query
+    ddg_status = f"{len(ddg_raw)} RESULTS" if ddg_raw else "NO RESULTS"
+    print(f"[WebSearch] DuckDuckGo: {ddg_status}")
+    
+    if serpstack_failed:
+        print("[WebSearch] Serpstack: FAILED")
+        serply_status = f"{len(serp_raw)} RESULTS" if serp_raw else "NO RESULTS"
+        print(f"[WebSearch] Serply: {serply_status}")
+    else:
+        serpstack_status = f"{len(serp_raw)} RESULTS" if serp_raw else "NO RESULTS"
+        print(f"[WebSearch] Serpstack: {serpstack_status}")
+
+    # Formatting and Cleanup
+    context_parts = []
+    seen_urls = set()
+    
+    if wiki_summary:
+        wiki_title = query.title() + " - Wikipedia"
+        wiki_url = f"https://en.wikipedia.org/wiki/{requests.utils.quote(query)}"
+        wiki_text = f"=== Wikipedia ===\nTitle: {wiki_title}\nURL: {wiki_url}\nContent:\n{wiki_summary}"
+        context_parts.append(wiki_text)
+        
+    ddg_cleaned = _clean_and_dedupe(ddg_raw, seen_urls)
+    if ddg_cleaned:
+        lines = ["=== DuckDuckGo ==="]
+        for i, r in enumerate(ddg_cleaned, 1):
+            source_txt = f"Result {i}\nTitle: {r.get('title', '')}\nURL: {r.get('url', '')}\nContent:\n{r.get('snippet', '')}"
+            if r.get("published_at"):
+                source_txt += f"\nPublished: {r.get('published_at')}"
+            lines.append(source_txt)
+        context_parts.append("\n\n".join(lines))
+        
+    serp_cleaned = _clean_and_dedupe(serp_raw, seen_urls)
+    if serp_cleaned:
+        provider_name = "Serply" if serpstack_failed else "Serpstack"
+        lines = [f"=== {provider_name} ==="]
+        for i, r in enumerate(serp_cleaned, 1):
+            source_txt = f"Result {i}\nTitle: {r.get('title', '')}\nURL: {r.get('url', '')}\nContent:\n{r.get('snippet', '')}"
+            if r.get("published_at"):
+                source_txt += f"\nPublished: {r.get('published_at')}"
+            lines.append(source_txt)
+        context_parts.append("\n\n".join(lines))
+        
+    return "\n\n".join(context_parts)

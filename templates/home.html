@@ -408,7 +408,7 @@
             </div>
 
             <!-- "Heros Powered" text -->
-            <span class="intro-logo-text" style="margin-bottom: 12px;">Heros Powered</span>
+            <span class="intro-logo-text" style="margin-bottom: 12px;">Powered by</span>
 
             <!-- Animated Heros letters -->
             <div class="hero-intro-loader" style="margin-bottom: 24px;">
@@ -461,7 +461,12 @@
         <div class="messages" id="messages" style="display: none"></div>
 
           <!-- Input bar -->
-          <div class="input-wrap">
+          <div class="input-wrap" style="position: relative;">
+            
+            <!-- Scroll Down Button -->
+            <button id="scrollDownBtn" class="scroll-down-btn" onclick="scrollToBottom()" style="display: none; position: absolute; top: -50px; left: 50%; transform: translateX(-50%); z-index: 100; background: var(--bg); border: 1px solid rgba(255,255,255,0.1); color: var(--text-dim); border-radius: 50%; width: 36px; height: 36px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.5); align-items: center; justify-content: center; transition: all 0.2s ease;" onmouseover="this.style.color='var(--text)'; this.style.borderColor='rgba(255,255,255,0.2)';" onmouseout="this.style.color='var(--text-dim)'; this.style.borderColor='rgba(255,255,255,0.1)';">
+              <i class="fa-solid fa-arrow-down"></i>
+            </button>
             <div class="attach-preview-row" id="attachPreviewRow"></div>
 
             <div class="input-row-outer">
@@ -583,7 +588,7 @@
                       onchange="onModelChange()"
                       style="border: none; background: transparent; height: 100%; box-shadow: none; outline: none; padding-right: 20px; font-size: 0.76rem; color: var(--text-muted); margin: 0; align-self: center;"
                     >
-                      <option value="Baymax">Baymax 4</option>
+                      <option value="Baymax">Baymax 4.5</option>
                       <option value="Halo" selected>Halo 3.6</option>
                       <option value="ZORVIN">ZORVIN</option>
                     </select>
@@ -859,8 +864,17 @@
             <i class="fa-solid fa-robot"></i> Custom Instructions
           </div>
           <div class="settings-nav-section-label" style="margin-top: 10px;">More</div>
+          <div class="settings-nav-item" onclick="switchSettingsNav('account')" id="snav-account">
+            <i class="fa-regular fa-id-card"></i> Account
+          </div>
           <div class="settings-nav-item" onclick="switchSettingsNav('apikeys')" id="snav-apikeys">
             <i class="fa-solid fa-key"></i> API Keys
+          </div>
+          <div class="settings-nav-item" onclick="switchSettingsNav('apps')" id="snav-apps">
+            <i class="fa-solid fa-layer-group"></i> Apps &amp; Tools
+          </div>
+          <div class="settings-nav-item" onclick="switchSettingsNav('privacy')" id="snav-privacy">
+            <i class="fa-solid fa-shield-halved"></i> Privacy
           </div>
           <div class="settings-nav-item" onclick="switchSettingsNav('about')" id="snav-about">
             <i class="fa-solid fa-circle-info"></i> About Heros
@@ -992,29 +1006,127 @@
             </div>
           </div>
 
+          
+          <!-- Account Panel -->
+          <div class="settings-panel" id="spanel-account">
+            <div class="settings-panel-title">Account Info</div>
+            <div class="modal-section">
+              <div style="margin-top: 20px; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 20px;">
+                <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 20px;">
+                  <div style="width: 50px; height: 50px; border-radius: 50%; background: var(--surface-light, rgba(255,255,255,0.05)); border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: var(--text-color, #fff);">
+                    <i class="fa-solid fa-user"></i>
+                  </div>
+                  <div>
+                    <div style="font-size: 1.2rem; font-weight: 600; color: white;">{{ username|default:"Not set" }}</div>
+                    <div style="font-size: 0.9rem; color: var(--text-muted);">{{ email|default:"Not set" }}</div>
+                  </div>
+                </div>
+                
+                <div style="display: flex; flex-direction: column; gap: 12px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0;">
+                    <span style="color: var(--text-muted);"><i class="fa-solid fa-id-badge" style="width: 20px;"></i> User ID</span>
+                    <span style="font-family: monospace; background: rgba(0,0,0,0.2); padding: 4px 8px; border-radius: 4px; font-size: 0.85rem;">{{ request.session.user_id|default:"Guest" }}</span>
+                  </div>
+                  <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0;">
+                    <span style="color: var(--text-muted);"><i class="fa-solid fa-circle-check" style="width: 20px; color: var(--accent, #fff);"></i> Status</span>
+                    <span style="color: var(--text-color, #fff); font-weight: 500; font-size: 0.9rem;">Active</span>
+                  </div>
+                  <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0;">
+                    <span style="color: var(--text-muted);"><i class="fa-solid fa-crown" style="width: 20px;"></i> Subscription</span>
+                    <span style="font-weight: 600; font-size: 0.9rem; color: var(--text-color, #fff); background: var(--surface-light, rgba(255,255,255,0.05)); padding: 4px 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.08);">Heros 5 free plan</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div style="margin-top: 15px;">
+              <button onclick="handleLogout()" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid rgba(255, 77, 79, 0.3); background: rgba(255, 77, 79, 0.05); color: #ff4d4f; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px;" onmouseover="this.style.background='rgba(255, 77, 79, 0.15)'" onmouseout="this.style.background='rgba(255, 77, 79, 0.05)'">
+                <i class="fa-solid fa-arrow-right-from-bracket"></i> Log Out
+              </button>
+            </div>
+          </div>
+
+          <!-- Apps & Tools Panel -->
+          <div class="settings-panel" id="spanel-apps">
+            <div class="settings-panel-title">Apps &amp; Tools</div>
+            <p style="color: var(--text-muted); margin-bottom: 20px;">Explore the full Heros ecosystem.</p>
+            
+            <div class="help-item" style="align-items: center;">
+              <div class="help-icon"><i class="fa-brands fa-chrome"></i></div>
+              <div class="help-text-group" style="flex:1;">
+                <div class="help-title">Zeno Pro 3.5</div>
+                <div class="help-desc">Your mini AI assistant Chrome extension for instant chatting.</div>
+              </div>
+              <a href="https://github.com/Hudsonmathew1910/Hero-s-AI/releases/download/Heros_5th_Gen/Zeno_Pro_3.5.zip" target="_blank" class="modal-save-btn" style="padding: 6px 12px; font-size: 0.85rem; text-decoration: none; width: auto; margin: 0;">Download</a>
+            </div>
+
+            <div class="help-item" style="align-items: center;">
+              <div class="help-icon"><i class="fa-solid fa-music"></i></div>
+              <div class="help-text-group" style="flex:1;">
+                <div class="help-title">Zuno 2.1</div>
+                <div class="help-desc">Intelligent voice-controlled music assistant integrated into Zeno.</div>
+              </div>
+              <a href="{% url 'zuno_index' %}" target="_blank" class="modal-save-btn" style="padding: 6px 12px; font-size: 0.85rem; text-decoration: none; width: auto; margin: 0;">Launch</a>
+            </div>
+
+            <div class="help-item" style="align-items: center;">
+              <div class="help-icon"><i class="fa-solid fa-chart-pie"></i></div>
+              <div class="help-text-group" style="flex:1;">
+                <div class="help-title">Infinsight AI Analyst</div>
+                <div class="help-desc">Upload datasets to generate interactive visualizations and insights.</div>
+              </div>
+              <a href="{% url 'infinsight_home' %}" target="_blank" class="modal-save-btn" style="padding: 6px 12px; font-size: 0.85rem; text-decoration: none; width: auto; margin: 0;">Launch</a>
+            </div>
+          </div>
+
+          <!-- Privacy Panel -->
+          <div class="settings-panel" id="spanel-privacy">
+            <div class="settings-panel-title">Privacy &amp; Security</div>
+            
+            <div class="modal-section">
+              <div class="modal-section-label"><i class="fa-solid fa-shield-halved"></i> Data Collection &amp; Usage</div>
+              <p style="color: var(--text-muted); line-height: 1.6; margin-bottom: 15px;">
+                Your privacy is our top priority. We firmly believe that your data belongs to you. Heros does <strong>not</strong> collect personal conversation data to train our AI models. Any queries you make are processed strictly for generating your immediate response.
+              </p>
+            </div>
+            
+            <div class="modal-section">
+              <div class="modal-section-label"><i class="fa-solid fa-key"></i> API Key Encryption</div>
+              <p style="color: var(--text-muted); line-height: 1.6; margin-bottom: 15px;">
+                All API keys (Gemini, Groq, OpenRouter, Hugging Face) you provide are immediately encrypted locally using industry-standard AES-256 encryption before being stored on the server. The raw keys are <strong>never</strong> exposed back to the frontend browser, ensuring they cannot be intercepted by malicious extensions.
+              </p>
+            </div>
+
+            <div class="modal-section">
+              <div class="modal-section-label"><i class="fa-solid fa-memory"></i> Ephemeral Sessions (Zeno)</div>
+              <p style="color: var(--text-muted); line-height: 1.6;">
+                When you use "Temporary Chat" modes (like the Zeno Extension), your entire chat history is maintained completely in-memory during the active session. Once you close the session, the data is instantly discarded without ever touching our database.
+              </p>
+            </div>
+          </div>
+
           <div class="settings-panel" id="spanel-about">
             <div class="settings-panel-title">About Heros</div>
             <div class="about-logo-wrap">
           <img src="{% static 'images/Hero_ai.png' %}" alt="Heros" />
         </div>
         <div class="about-title">Heros</div>
-        <div class="about-badge">V3.6 · Plus</div>
+        <div class="about-badge">Heros 5th Gen</div>
         <p class="about-desc">
           Heros is your intelligent personal assistant — built for code,
           creativity, conversations, and everything in between. Powered by
-          Baymax and the ZORVIN engine.
+          Baymax 4.5 and Halo 3.6.
         </p>
-        <div class="about-coming-soon">
+                  <div class="about-coming-soon">
           <i class="fa-solid fa-sparkles"></i>
-          <h3>What's New in Heros</h3>
+          <h3>What's New in Heros 5th Gen</h3>
           <p style="margin-bottom: 10px;">
-            <strong>Zeno Extension:</strong> Meet Zeno, your mini AI assistant Chrome extension. Enjoy instant text and voice chats right from your browser, powered by our intelligent NLP routing (Plus & Eco modes).
+            <strong>Fast Mode Routing:</strong> Heros now dynamically races Gemini, Groq, and OpenRouter in parallel, returning the fastest available response to ensure you never face 503 downtimes.
           </p>
           <p style="margin-bottom: 10px;">
-            <strong>Infinsight (AI Analyst):</strong> Deep dive into your data with our powerful data visualization and analysis tool.
+            <strong>Zeno Pro 3.5 & Zuno 2.1:</strong> Redesigned Zuno interface to match Heros ecosystem, with completely overhauled fallback models for Zeno Extension to prevent hallucinations.
           </p>
           <p>
-            <strong>Advanced NLP Pipeline:</strong> Heros automatically routes your prompts (Coding, Web Search, Text) to the best model—like Groq for lightning-fast answers, or Gemini for complex tasks.
+            <strong>Deep Web Search:</strong> Upgraded scraping pipeline using DuckDuckGo, Wikipedia, Serply and Serpstack concurrently.
           </p>
         </div>
         <div style="margin-bottom: 24px; display: flex; justify-content: center;">
@@ -1036,10 +1148,17 @@
               </div>
             </div>
             <div class="help-item">
-              <div class="help-icon"><i class="fa-solid fa-plus"></i></div>
+              <div class="help-icon"><i class="fa-solid fa-paperclip"></i></div>
               <div class="help-text-group">
-                <div class="help-title">+ Menu</div>
-                <div class="help-desc">Click + in the input to attach files, enable Coding mode, or activate Web Search.</div>
+                <div class="help-title">Attach files</div>
+                <div class="help-desc">Click the pin icon in the input field to upload and attach files for analysis.</div>
+              </div>
+            </div>
+            <div class="help-item">
+              <div class="help-icon"><i class="fa-solid fa-sliders"></i></div>
+              <div class="help-text-group">
+                <div class="help-title">Input Controls</div>
+                <div class="help-desc">Toggle Coding mode, Web Search, Fast mode, or switch AI models directly from the controls below the text box.</div>
               </div>
             </div>
             <div class="help-item">
@@ -1053,21 +1172,21 @@
               <div class="help-icon"><i class="fa-solid fa-robot"></i></div>
               <div class="help-text-group">
                 <div class="help-title">Switch AI model</div>
-                <div class="help-desc">Use the model selector to switch between Baymax, Halo, and ZORVIN. Enable the Developer Option in Settings to access the Developer mode!</div>
+                <div class="help-desc">Use the model selector to switch between Baymax 4.5 and Halo 3.6. Enable the Developer Option in Settings to access the Developer mode!</div>
               </div>
             </div>
             <div class="help-item">
               <div class="help-icon"><i class="fa-brands fa-chrome"></i></div>
               <div class="help-text-group">
                 <div class="help-title">Zeno Chrome Extension</div>
-                <div class="help-desc">Install the Zeno extension to chat with Heros from anywhere on the web. Try Eco mode for fast text, or Plus mode for full NLP coding/search capabilities.</div>
+                <div class="help-desc">Install the Zeno Pro 3.5 extension to chat with Heros from anywhere on the web. Try Eco mode for fast text, or Plus mode for full NLP coding/search capabilities.</div>
               </div>
             </div>
             <div class="help-item">
               <div class="help-icon"><i class="fa-solid fa-chart-line"></i></div>
               <div class="help-text-group">
                 <div class="help-title">AI Analyst (Infinsight)</div>
-                <div class="help-desc">Click the + menu and select AI Analyst to upload data and get intelligent insights and graphs.</div>
+                <div class="help-desc">Launch AI Analyst from your Settings > Apps &amp; Tools panel to upload data and get intelligent insights and graphs.</div>
               </div>
             </div>
             <div class="help-item">
@@ -1313,23 +1432,23 @@
           <img src="{% static 'images/Hero_ai.png' %}" alt="Heros" />
         </div>
         <div class="about-title">Heros</div>
-        <div class="about-badge">V3.6 · Plus</div>
+        <div class="about-badge">Heros 5th Gen</div>
         <p class="about-desc">
           Heros is your intelligent personal assistant — built for code,
           creativity, conversations, and everything in between. Powered by
-          Baymax and the ZORVIN engine.
+          Baymax 4.5 and Halo 3.6.
         </p>
-        <div class="about-coming-soon">
+                  <div class="about-coming-soon">
           <i class="fa-solid fa-sparkles"></i>
-          <h3>What's New in Heros</h3>
+          <h3>What's New in Heros 5th Gen</h3>
           <p style="margin-bottom: 10px;">
-            <strong>Zeno Extension:</strong> Meet Zeno, your mini AI assistant Chrome extension. Enjoy instant text and voice chats right from your browser, powered by our intelligent NLP routing (Plus & Eco modes).
+            <strong>Fast Mode Routing:</strong> Heros now dynamically races Gemini, Groq, and OpenRouter in parallel, returning the fastest available response to ensure you never face 503 downtimes.
           </p>
           <p style="margin-bottom: 10px;">
-            <strong>Infinsight (AI Analyst):</strong> Deep dive into your data with our powerful data visualization and analysis tool.
+            <strong>Zeno Pro 3.5 & Zuno 2.1:</strong> Redesigned Zuno interface to match Heros ecosystem, with completely overhauled fallback models for Zeno Extension to prevent hallucinations.
           </p>
           <p>
-            <strong>Advanced NLP Pipeline:</strong> Heros automatically routes your prompts (Coding, Web Search, Text) to the best model—like Groq for lightning-fast answers, or Gemini for complex tasks.
+            <strong>Deep Web Search:</strong> Upgraded scraping pipeline using DuckDuckGo, Wikipedia, Serply and Serpstack concurrently.
           </p>
         </div>
         <div style="margin-bottom: 24px; display: flex; justify-content: center;">
@@ -1374,12 +1493,20 @@
           </div>
         </div>
         <div class="help-item">
-          <div class="help-icon"><i class="fa-solid fa-plus"></i></div>
+          <div class="help-icon"><i class="fa-solid fa-paperclip"></i></div>
           <div class="help-text-group">
-            <div class="help-title">+ Menu</div>
+            <div class="help-title">Attach files</div>
             <div class="help-desc">
-              Click + in the input to attach files, enable Coding mode, or
-              activate Web Search.
+              Click the pin icon in the input field to upload and attach files for analysis.
+            </div>
+          </div>
+        </div>
+        <div class="help-item">
+          <div class="help-icon"><i class="fa-solid fa-sliders"></i></div>
+          <div class="help-text-group">
+            <div class="help-title">Input Controls</div>
+            <div class="help-desc">
+              Toggle Coding mode, Web Search, Fast mode, or switch AI models directly from the controls below the text box.
             </div>
           </div>
         </div>
@@ -1398,7 +1525,7 @@
           <div class="help-text-group">
             <div class="help-title">Switch AI model</div>
             <div class="help-desc">
-              Use the model selector to switch between Baymax, Halo, and ZORVIN. Enable the Developer Option in Settings to access the Developer mode!
+              Use the model selector to switch between Baymax 4.5 and Halo 3.6. Enable the Developer Option in Settings to access the Developer mode!
             </div>
           </div>
         </div>
@@ -1407,7 +1534,7 @@
           <div class="help-text-group">
             <div class="help-title">Zeno Chrome Extension</div>
             <div class="help-desc">
-              Install the Zeno extension to chat with Heros from anywhere on the web. Try Eco mode for fast text, or Plus mode for full NLP coding/search capabilities.
+              Install the Zeno Pro 3.5 extension to chat with Heros from anywhere on the web. Try Eco mode for fast text, or Plus mode for full NLP coding/search capabilities.
             </div>
           </div>
         </div>
@@ -1416,7 +1543,7 @@
           <div class="help-text-group">
             <div class="help-title">AI Analyst (Infinsight)</div>
             <div class="help-desc">
-              Click the + menu and select AI Analyst to upload data and get intelligent insights and graphs.
+              Launch AI Analyst from your Settings > Apps &amp; Tools panel to upload data and get intelligent insights and graphs.
             </div>
           </div>
         </div>

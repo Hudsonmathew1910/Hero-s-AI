@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terms & Privacy Policy — Heros AI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #09090b;
+            --bg-card: #121215;
+            --border-color: #27272a;
+            --accent-color: #10b981;
+            --text-main: #f4f4f5;
+            --text-muted: #a1a1aa;
+        }
+
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+            font-family: 'Inter', sans-serif; 
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
+        }
+
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.16); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.32); }
+        ::-webkit-scrollbar-corner { background: transparent; }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            line-height: 1.6;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #10b981, #60a5fa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .header p { color: var(--text-muted); font-size: 0.95rem; }
+
+        .tabs {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 30px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 12px;
+            overflow-x: auto;
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .tab-btn:hover { border-color: var(--text-muted); color: #fff; }
+        .tab-btn.active {
+            background: var(--accent-color);
+            border-color: var(--accent-color);
+            color: #000;
+            font-weight: 600;
+        }
+
+        .content-panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 40px;
+        }
+
+        h2 { font-size: 1.4rem; color: #fff; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; }
+        h3 { font-size: 1.05rem; color: #fff; margin: 18px 0 8px; }
+        p { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 14px; }
+        ul { margin-left: 24px; color: var(--text-muted); font-size: 0.9rem; margin-bottom: 14px; }
+        li { margin-bottom: 6px; }
+        a { color: var(--accent-color); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        .footer {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin-top: 40px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>Heros AI — Terms & Policies</h1>
+        <p>Legal agreements, privacy practices, and acceptable use guidelines.</p>
+    </div>
+
+    <div class="tabs">
+        <button class="tab-btn active" onclick="showTab('tos')">Terms of Service</button>
+        <button class="tab-btn" onclick="showTab('privacy')">Privacy Policy</button>
+        <button class="tab-btn" onclick="showTab('cookies')">Cookie Policy</button>
+        <button class="tab-btn" onclick="showTab('aup')">Acceptable Use</button>
+    </div>
+
+    <!-- TERMS OF SERVICE -->
+    <div id="tos" class="content-panel">
+        <h2>Terms of Service</h2>
+        <p><em>Last Updated: October 8, 2026</em></p>
+
+        <p>Welcome to Heros. By accessing or using our website, platform, services, browser extension, or APIs, you agree to these Terms of Service.</p>
+
+        <h3>1. Acceptance of Terms</h3>
+        <p>By using Heros, you confirm that you have read, understood, and agree to be bound by these terms. If you do not agree, you must not use the platform.</p>
+
+        <h3>2. Service Description</h3>
+        <p>Heros provides an AI assistant platform with chat, file analysis, voice processing, search, and related productivity tools. The platform combines multiple third-party AI providers (Gemini, OpenRouter, Groq) using an intelligent routing engine called Baymax.</p>
+
+        <h3>3. User Responsibilities</h3>
+        <ul>
+            <li>Use the service legally and in good faith.</li>
+            <li>Not misuse the platform for unlawful, harmful, or abusive activity.</li>
+            <li>Not attempt to bypass, reverse engineer, or exploit service protections.</li>
+            <li>Maintain the confidentiality of your account credentials.</li>
+        </ul>
+
+        <h3>4. API Keys & Third-Party Services</h3>
+        <p>Users may provide their own API keys or use platform-managed services. You are responsible for the validity, security, and payment obligations associated with any third-party AI providers you use.</p>
+
+        <h3>5. Limitation of Liability</h3>
+        <p>Heros is provided "as is" and "as available". We do not guarantee uninterrupted or error-free service. We are not liable for indirect or consequential damages arising from service usage.</p>
+
+        <h3>6. Contact Information</h3>
+        <p>For questions regarding these Terms, contact: <a href="mailto:huddy1910@gmail.com">huddy1910@gmail.com</a>.</p>
+    </div>
+
+    <!-- PRIVACY POLICY -->
+    <div id="privacy" class="content-panel" style="display: none;">
+        <h2>Privacy Policy</h2>
+        <p><em>Last Updated: October 8, 2026</em></p>
+
+        <p>Your privacy matters to us. This Privacy Policy explains how Heros collects, uses, stores, and protects information when you use our platform, website, and services.</p>
+
+        <h3>1. Information We Collect</h3>
+        <ul>
+            <li>Account details such as name and email address</li>
+            <li>Chat messages and session history</li>
+            <li>Uploaded files and associated content</li>
+            <li>API keys provided for AI services (stored using Fernet symmetric encryption)</li>
+            <li>Usage statistics and service performance data</li>
+        </ul>
+
+        <h3>2. Data Storage & Security</h3>
+        <p>We use reasonable technical and organizational safeguards to protect user data. Sensitive information, including API keys, is encrypted before storage. Developers can execute a <strong>Log Purge</strong> or <strong>Permanent Account Deletion</strong> at any time directly from their platform dashboard.</p>
+
+        <h3>3. AI Processing</h3>
+        <p>Some data may be sent to third-party AI providers (Gemini, OpenRouter, Groq) to process requests. By using Heros, you acknowledge that user-submitted prompts or files may be processed by AI service providers.</p>
+
+        <h3>4. Contact</h3>
+        <p>For privacy requests or questions: <a href="mailto:huddy1910@gmail.com">huddy1910@gmail.com</a>.</p>
+    </div>
+
+    <!-- COOKIE POLICY -->
+    <div id="cookies" class="content-panel" style="display: none;">
+        <h2>Cookie Policy</h2>
+        <p><em>Last Updated: October 8, 2026</em></p>
+
+        <p>We use cookies and similar technologies to operate and improve Heros.</p>
+
+        <h3>What cookies do we use?</h3>
+        <ul>
+            <li><strong>Authentication Cookies:</strong> Keep you signed in securely.</li>
+            <li><strong>Session Cookies:</strong> Maintain active playground and chat state.</li>
+            <li><strong>Preference Cookies:</strong> Store dark mode and UI layout settings.</li>
+            <li><strong>Security Cookies:</strong> Protect against CSRF and unauthorized requests.</li>
+        </ul>
+    </div>
+
+    <!-- ACCEPTABLE USE POLICY -->
+    <div id="aup" class="content-panel" style="display: none;">
+        <h2>Acceptable Use Policy</h2>
+        <p><em>Last Updated: October 8, 2026</em></p>
+
+        <p>Heros must be used responsibly. Users agree not to:</p>
+        <ul>
+            <li>Upload harmful, malicious, or illegal content.</li>
+            <li>Distribute malware, spam, or phishing content.</li>
+            <li>Attempt to reverse engineer or exploit system vulnerabilities.</li>
+            <li>Bypass rate limits or authentication systems.</li>
+            <li>Process confidential or regulated data without proper permission.</li>
+        </ul>
+        <p>Violations may lead to account suspension or termination.</p>
+    </div>
+
+    <div class="footer">
+        &copy; 2026 Heros AI. All rights reserved. | <a href="/platform">Go to Developer Dashboard &rarr;</a>
+    </div>
+</div>
+
+<script>
+function showTab(tabId) {
+    document.querySelectorAll('.content-panel').forEach(el => el.style.display = 'none');
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+    
+    document.getElementById(tabId).style.display = 'block';
+    event.target.classList.add('active');
+}
+</script>
+</body>
+</html>

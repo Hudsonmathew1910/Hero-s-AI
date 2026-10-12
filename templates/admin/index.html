@@ -1,0 +1,348 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static jazzmin %}
+
+{% block bodyclass %}{{ block.super }} dashboard{% endblock %}
+
+{% block content_title %} Heros AI Executive Command Center {% endblock %}
+
+{% block content %}
+<style>
+    /* Custom Scrollbars */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.16); border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.32); }
+    ::-webkit-scrollbar-corner { background: transparent; }
+    * { scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.16) transparent; }
+
+    .kpi-card {
+        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 12px;
+        padding: 20px;
+        color: #f8fafc;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+        transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+    .kpi-card:hover {
+        transform: translateY(-3px);
+        border-color: #6366f1;
+    }
+    .kpi-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+    }
+    .kpi-value {
+        font-size: 2rem;
+        font-weight: 700;
+        letter-spacing: -0.5px;
+        margin: 8px 0 2px 0;
+    }
+    .kpi-sub {
+        font-size: 0.825rem;
+        color: #94a3b8;
+    }
+    .bg-indigo-glow { background: rgba(99, 102, 241, 0.15); color: #818cf8; }
+    .bg-emerald-glow { background: rgba(16, 185, 129, 0.15); color: #34d399; }
+    .bg-amber-glow { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
+    .bg-rose-glow { background: rgba(244, 63, 94, 0.15); color: #fb7185; }
+
+    .custom-panel {
+        background: #1e293b;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 24px;
+    }
+    .panel-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        padding-bottom: 12px;
+        margin-bottom: 16px;
+    }
+    .panel-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #f1f5f9;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .badge-soft-success { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .badge-soft-info { background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); }
+    .badge-soft-warning { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+
+    .table-dark-custom {
+        color: #cbd5e1;
+    }
+    .table-dark-custom th {
+        border-top: none;
+        border-bottom: 2px solid rgba(255, 255, 255, 0.08);
+        color: #94a3b8;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .table-dark-custom td {
+        border-top: 1px solid rgba(255, 255, 255, 0.05);
+        vertical-align: middle;
+        font-size: 0.875rem;
+    }
+</style>
+
+<div class="container-fluid">
+
+    <!-- Top Command Header Banner -->
+    <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between mb-4 p-4 rounded-3" style="background: linear-gradient(135deg, #312e81 0%, #1e1b4b 100%); border: 1px solid rgba(129, 140, 248, 0.3);">
+        <div>
+            <h2 class="fw-bold text-white mb-1" style="letter-spacing: -0.5px;">⚡ Heros AI Platform Headquarters</h2>
+            <p class="text-indigo-200 mb-0" style="color: #c7d2fe;">Real-time infrastructure performance, developer usage telemetry, and customer broadcast engine.</p>
+        </div>
+        <div class="mt-3 mt-md-0 d-flex gap-2">
+            <a href="{% url 'admin:backend_broadcastmessage_add' %}" class="btn btn-primary px-3 py-2 fw-semibold shadow-sm" style="background: #6366f1; border: none;">
+                <i class="fas fa-paper-plane mr-2"></i> Send Email Broadcast
+            </a>
+            <a href="{% url 'admin:backend_user_changelist' %}" class="btn btn-outline-light px-3 py-2 fw-semibold">
+                <i class="fas fa-users-cog mr-2"></i> Manage Developers
+            </a>
+        </div>
+    </div>
+
+    <!-- KPI Metric Cards Grid -->
+    <div class="row g-3 mb-4">
+        <!-- Card 1: Developers -->
+        <div class="col-12 col-sm-6 col-xl-3 mb-3">
+            <div class="kpi-card">
+                <div class="d-flex align-items-center justify-content-between">
+                    <span class="text-uppercase font-weight-bold" style="font-size: 0.75rem; color: #94a3b8;">Total Developers</span>
+                    <div class="kpi-icon bg-indigo-glow">
+                        <i class="fas fa-users"></i>
+                    </div>
+                </div>
+                <div class="kpi-value">{{ kpi_total_users }}</div>
+                <div class="kpi-sub"><span class="text-emerald-400 font-weight-bold" style="color: #34d399;">{{ kpi_active_users_24h }} active</span> in last 24h</div>
+            </div>
+        </div>
+
+        <!-- Card 2: Tokens Processed -->
+        <div class="col-12 col-sm-6 col-xl-3 mb-3">
+            <div class="kpi-card">
+                <div class="d-flex align-items-center justify-content-between">
+                    <span class="text-uppercase font-weight-bold" style="font-size: 0.75rem; color: #94a3b8;">Tokens Processed</span>
+                    <div class="kpi-icon bg-emerald-glow">
+                        <i class="fas fa-microchip"></i>
+                    </div>
+                </div>
+                <div class="kpi-value">{{ kpi_total_tokens }}</div>
+                <div class="kpi-sub"><span class="text-info font-weight-bold" style="color: #38bdf8;">+{{ kpi_tokens_24h }} tokens</span> in past 24h</div>
+            </div>
+        </div>
+
+        <!-- Card 3: Total Requests -->
+        <div class="col-12 col-sm-6 col-xl-3 mb-3">
+            <div class="kpi-card">
+                <div class="d-flex align-items-center justify-content-between">
+                    <span class="text-uppercase font-weight-bold" style="font-size: 0.75rem; color: #94a3b8;">API Requests</span>
+                    <div class="kpi-icon bg-amber-glow">
+                        <i class="fas fa-bolt"></i>
+                    </div>
+                </div>
+                <div class="kpi-value">{{ kpi_total_requests }}</div>
+                <div class="kpi-sub"><span class="text-warning font-weight-bold" style="color: #fbbf24;">{{ kpi_reqs_24h }} requests</span> in past 24h</div>
+            </div>
+        </div>
+
+        <!-- Card 4: System Latency & Keys -->
+        <div class="col-12 col-sm-6 col-xl-3 mb-3">
+            <div class="kpi-card">
+                <div class="d-flex align-items-center justify-content-between">
+                    <span class="text-uppercase font-weight-bold" style="font-size: 0.75rem; color: #94a3b8;">Avg Execution Latency</span>
+                    <div class="kpi-icon bg-rose-glow">
+                        <i class="fas fa-stopwatch"></i>
+                    </div>
+                </div>
+                <div class="kpi-value">{{ kpi_avg_latency }} <span style="font-size: 1rem; font-weight: normal; color: #cbd5e1;">ms</span></div>
+                <div class="kpi-sub"><span class="text-light font-weight-bold">{{ kpi_active_keys }}</span> active developer API keys</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Engine & Subscribers Summary -->
+    <div class="row mb-4">
+        <div class="col-12 col-lg-7 mb-3 mb-lg-0">
+            <div class="custom-panel h-100">
+                <div class="panel-header">
+                    <h5 class="panel-title"><i class="fas fa-envelope-open-text text-indigo-400" style="color: #818cf8;"></i> Email Broadcast & Notification Subscribers</h5>
+                    <a href="{% url 'admin:backend_broadcastmessage_changelist' %}" class="btn btn-sm btn-outline-secondary">View Broadcast History</a>
+                </div>
+                <div class="row g-3">
+                    <div class="col-4 text-center p-3 rounded" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05);">
+                        <div class="h3 font-weight-bold text-info mb-1" style="color: #38bdf8;">{{ sub_product_updates }}</div>
+                        <div class="small text-muted text-uppercase" style="font-size: 0.7rem;">Product Release</div>
+                    </div>
+                    <div class="col-4 text-center p-3 rounded" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05);">
+                        <div class="h3 font-weight-bold text-success mb-1" style="color: #34d399;">{{ sub_daily_usage }}</div>
+                        <div class="small text-muted text-uppercase" style="font-size: 0.7rem;">Daily Summaries</div>
+                    </div>
+                    <div class="col-4 text-center p-3 rounded" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05);">
+                        <div class="h3 font-weight-bold text-warning mb-1" style="color: #fbbf24;">{{ sub_quota_alerts }}</div>
+                        <div class="small text-muted text-uppercase" style="font-size: 0.7rem;">Quota Alerts</div>
+                    </div>
+                </div>
+                <div class="mt-4 pt-3 border-top border-secondary d-flex align-items-center justify-content-between">
+                    <span class="small text-muted">Send announcement emails directly to developers according to their preferred toggles.</span>
+                    <a href="{% url 'admin:backend_broadcastmessage_add' %}" class="btn btn-sm btn-success px-3">
+                        <i class="fas fa-paper-plane mr-1"></i> Compose Announcement
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-lg-5">
+            <div class="custom-panel h-100">
+                <div class="panel-header d-flex justify-content-between align-items-center">
+                    <h5 class="panel-title"><i class="fas fa-history text-warning" style="color: #fbbf24;"></i> Recent Email Broadcasts</h5>
+                    <a href="{% url 'admin:backend_broadcastmessage_changelist' %}" class="btn btn-sm btn-outline-danger px-2 py-1" style="font-size: 0.75rem;"><i class="fas fa-trash-alt me-1"></i> Manage / Delete</a>
+                </div>
+                {% if recent_broadcasts %}
+                    <div class="table-responsive">
+                        <table class="table table-dark-custom mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Subject</th>
+                                    <th>Audience</th>
+                                    <th>Sent</th>
+                                    <th>Date</th>
+                                    <th class="text-end">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for b in recent_broadcasts %}
+                                <tr>
+                                    <td class="font-weight-bold text-truncate" style="max-width: 130px;">{{ b.subject }}</td>
+                                    <td><span class="badge badge-soft-info" style="font-size: 0.7rem;">{{ b.get_audience_display }}</span></td>
+                                    <td><span class="badge badge-soft-success">{{ b.recipients_count }}</span></td>
+                                    <td class="small text-muted">{{ b.created_at|date:"M d, H:i" }}</td>
+                                    <td class="text-end">
+                                        <a href="{% url 'admin:backend_broadcastmessage_delete' b.id %}" class="btn btn-xs btn-outline-danger px-2 py-0" title="Delete Broadcast Log" style="font-size: 0.7rem;"><i class="fas fa-trash-alt"></i></a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted small my-3">No broadcast emails sent yet. Use the Compose button to send your first platform update!</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Live Telemetry Stream & Security Activity Logs -->
+    <div class="row mb-4">
+        <!-- Live API Requests Stream -->
+        <div class="col-12 col-xl-7 mb-4 mb-xl-0">
+            <div class="custom-panel">
+                <div class="panel-header">
+                    <h5 class="panel-title"><i class="fas fa-stream text-emerald-400" style="color: #34d399;"></i> Live API Traffic Stream</h5>
+                    <a href="{% url 'admin:backend_apiusagetracking_changelist' %}" class="btn btn-sm btn-outline-secondary">View All Telemetry</a>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-dark-custom mb-0">
+                        <thead>
+                            <tr>
+                                <th>Developer</th>
+                                <th>Model</th>
+                                <th>Tokens</th>
+                                <th>Latency</th>
+                                <th>Status</th>
+                                <th>Time</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for u in recent_api_usage %}
+                            <tr>
+                                <td class="font-weight-bold text-truncate" style="max-width: 140px;">
+                                    {% if u.user %}{{ u.user.email }}{% else %}Anonymous API{% endif %}
+                                </td>
+                                <td><span class="badge badge-secondary">{{ u.model_used }}</span></td>
+                                <td>{{ u.tokens_used }}</td>
+                                <td>{{ u.latency_ms }} ms</td>
+                                <td>
+                                    {% if u.status_code == 200 %}
+                                        <span class="badge badge-soft-success">200 OK</span>
+                                    {% else %}
+                                        <span class="badge badge-soft-warning">{{ u.status_code }}</span>
+                                    {% endif %}
+                                </td>
+                                <td class="small text-muted">{{ u.timestamp|date:"H:i:s" }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-muted text-center py-3">No API usage recorded yet. Calls from developer keys will stream here in real-time.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Security & Audit Log Stream -->
+        <div class="col-12 col-xl-5">
+            <div class="custom-panel">
+                <div class="panel-header">
+                    <h5 class="panel-title"><i class="fas fa-shield-alt text-danger" style="color: #fb7185;"></i> System Security Audit Log</h5>
+                    <a href="{% url 'admin:backend_activitylog_changelist' %}" class="btn btn-sm btn-outline-secondary">Full Audit Log</a>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-dark-custom mb-0">
+                        <thead>
+                            <tr>
+                                <th>Action</th>
+                                <th>User</th>
+                                <th>Time</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for log in recent_activity_logs %}
+                            <tr>
+                                <td><span class="badge badge-soft-info">{{ log.action }}</span></td>
+                                <td class="small text-truncate" style="max-width: 120px;">{% if log.user %}{{ log.user.email }}{% else %}System{% endif %}</td>
+                                <td class="small text-muted">{{ log.timestamp|date:"M d, H:i" }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="text-muted text-center py-3">No security logs recorded yet.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Default Jazzmin App List & Models Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="custom-panel">
+                <div class="panel-header mb-3">
+                    <h5 class="panel-title"><i class="fas fa-th-list text-primary"></i> Database Models & Management Tables</h5>
+                </div>
+                {% include "admin/app_list.html" with app_list=app_list %}
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

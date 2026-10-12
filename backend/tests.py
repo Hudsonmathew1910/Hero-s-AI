@@ -186,20 +186,10 @@ class HeroModelFastRoutingTests(TestCase):
 
 class HaloUsageLimitTests(TestCase):
     def setUp(self):
-        from backend.usage_tracker import STATS_FILE
-        self.stats_file = STATS_FILE
-        if os.path.exists(self.stats_file):
-            try:
-                os.remove(self.stats_file)
-            except Exception:
-                pass
+        pass
 
     def tearDown(self):
-        if os.path.exists(self.stats_file):
-            try:
-                os.remove(self.stats_file)
-            except Exception:
-                pass
+        pass
 
     def test_increment_and_check_usage(self):
         from backend.usage_tracker import get_halo_usage, increment_halo_usage
@@ -298,4 +288,126 @@ class HaloUsageLimitTests(TestCase):
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertIn("maximum message limit for Baymax", data.get("reply", ""))
+
+
+from django.test import TestCase, TransactionTestCase
+
+
+class UsageTrackingIsolationTests(TransactionTestCase):
+    @patch('backend.hero_model.Baymax.handle_text')
+    def test_web_ui_chat_api_bypasses_usage_tracking_and_rate_limits(self, mock_handle_text):
+        mock_handle_text.return_value = "Hello from Baymax UI"
+        from django.test import Client
+        from backend.models import User, ApiUsageTracking, UserDailyQuota
+        
+        user = User.objects.create(email="testui@example.com", name="Test UI User")
+        client = Client()
+        
+        # Simulate session login
+        session = client.session
+        session['user_id'] = str(user.user_id)
+        session.save()
+
+        initial_log_count = ApiUsageTracking.objects.filter(user=user).count()
+
+        import uuid
+        test_session_id = str(uuid.uuid4())
+
+        # Call web chat endpoint (/api/chat)
+        response = client.post(
+            '/api/chat',
+            data=json.dumps({
+                'message': 'Hello from playground',
+                'model': 'Baymax',
+                'mode': 'text',
+                'session_id': test_session_id,
+                'temporary_chat': True,
+            }),
+            content_type='application/json'
+        )
+
+        self.assertEqual(response.status_code, 200)
+        
+        # Ensure NO ApiUsageTracking record was created for web chat
+        final_log_count = ApiUsageTracking.objects.filter(user=user).count()
+        self.assertEqual(final_log_count, initial_log_count)
+
+        # Ensure NO UserDailyQuota record was created or incremented
+        quota_exists = UserDailyQuota.objects.filter(user=user).exists()
+        self.assertFalse(quota_exists)
+
+    @patch('backend.hero_model.Baymax.handle_developer_api')
+    def test_developer_api_tracks_usage_and_rate_limits(self, mock_handle_dev):
+        mock_handle_dev.return_value = "Hello from Developer API"
+        from django.test import Client
+        from backend.models import User, DeveloperApiKey, ApiUsageTracking, UserDailyQuota
+        import hashlib
+
+        user = User.objects.create(email="testdev@example.com", name="Test Dev User")
+        raw_key = "heros_test_api_key_12345"
+        key_hash = hashlib.sha256(raw_key.encode()).hexdigest()
+        DeveloperApiKey.objects.create(user=user, key=key_hash, name="Test Key", is_active=True)
+
+        client = Client()
+
+        # Call developer completions endpoint (/api/v1/chat/completions)
+        response = client.post(
+            '/api/v1/chat/completions',
+            data=json.dumps({
+                'model': 'baymax-4.5',
+                'messages': [{'role': 'user', 'content': 'Hello dev API'}],
+            }),
+            content_type='application/json',
+            HTTP_AUTHORIZATION=f"Bearer {raw_key}"
+        )
+
+        self.assertEqual(response.status_code, 200)
+
+        # Ensure ApiUsageTracking WAS logged for developer API key request
+        log_entry = ApiUsageTracking.objects.filter(user=user, request_source='developer_api').first()
+        self.assertIsNotNone(log_entry)
+        self.assertEqual(log_entry.endpoint, "/api/v1/chat/completions")
+
+        # Ensure UserDailyQuota WAS updated for developer API key request
+        quota = UserDailyQuota.objects.filter(user=user).first()
+        self.assertIsNotNone(quota)
+        self.assertGreaterEqual(quota.requests_count, 1)
+
+    def test_read_only_key_scope_enforcement(self):
+        from django.test import Client
+        from backend.models import User, DeveloperApiKey, ApiUsageTracking
+        import hashlib
+
+        user = User.objects.create(email="readonly@example.com", name="Readonly User")
+        raw_key = "heros_test_readonly_key_99999"
+        key_hash = hashlib.sha256(raw_key.encode()).hexdigest()
+        DeveloperApiKey.objects.create(user=user, key=key_hash, name="Readonly Key", scope="read", is_active=True)
+
+        client = Client()
+
+        # 1. Read-only key MUST be denied on chat completions (403 Forbidden)
+        response_comp = client.post(
+            '/api/v1/chat/completions',
+            data=json.dumps({
+                'model': 'baymax-4.5',
+                'messages': [{'role': 'user', 'content': 'Hello'}],
+            }),
+            content_type='application/json',
+            HTTP_AUTHORIZATION=f"Bearer {raw_key}"
+        )
+        self.assertEqual(response_comp.status_code, 403)
+        self.assertIn("Read-only API keys cannot make chat completion requests", response_comp.json().get("error", {}).get("message", ""))
+
+        # 2. Read-only key CAN access usage telemetry (200 OK)
+        response_usage = client.get(
+            '/api/v1/usage',
+            HTTP_AUTHORIZATION=f"Bearer {raw_key}"
+        )
+        self.assertEqual(response_usage.status_code, 200)
+        data = response_usage.json()
+        self.assertEqual(data.get("status"), "success")
+        self.assertEqual(data.get("key", {}).get("scope"), "read")
+        self.assertIn("quota", data)
+        self.assertIn("today_usage", data)
+
 

@@ -28,6 +28,7 @@ pdfplumber>=0.11.0
 python-docx>=1.1.0
 
 # Project Utilities
+django-jazzmin>=3.0.0
 django-ratelimit>=4.0.0
 django-cryptography>=1.1
 django-cors-headers>=4.3.1
@@ -46,3 +47,4 @@ ytmusicapi>=1.5.4
 
 # Text to Speech
 edge-tts>=7.0.0
+gTTS>=2.5.0

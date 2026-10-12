@@ -179,6 +179,7 @@ function _loadDisplaySettings() {
   userSettings.syntaxHighlighting       = JSON.parse(localStorage.getItem('hero-syntax-highlight') ?? 'true');
   userSettings.enableCustomInstructions = JSON.parse(localStorage.getItem('hero-custom-inst')      ?? 'true');
   userSettings.developerOption          = JSON.parse(localStorage.getItem('hero-developer-option') ?? 'false');
+  userSettings.useHerosDefaultKey       = JSON.parse(localStorage.getItem('hero-use-heros-default-key') ?? 'false');
   
   isMuted = !userSettings.autoReadResponses;
   _syncMuteBtn();
@@ -193,6 +194,7 @@ function _syncSettingsUI() {
     'syntaxHighlighting':      'syntaxHighlighting',
     'enableCustomInstructions':'enableCustomInstructions',
     'developerOption':         'developerOption',
+    'useHerosDefaultKey':      'useHerosDefaultKey',
   };
   Object.entries(map).forEach(([attr, key]) => {
     const btn = document.querySelector(`[data-setting="${attr}"]`);
@@ -266,6 +268,7 @@ function _getSettingLabel(key) {
     'syntaxHighlighting':      'Syntax highlighting',
     'enableCustomInstructions':'Custom instructions',
     'developerOption':         'Developer option',
+    'useHerosDefaultKey':      'Heros default API key',
   };
   return labels[key] || key;
 }
@@ -656,7 +659,7 @@ async function saveApiKeys() {
       if (saveBtn) {
         const orig = saveBtn.innerHTML;
         saveBtn.innerHTML = '<i class="fa-solid fa-check"></i> Saved Successfully!';
-        saveBtn.style.background = 'linear-gradient(135deg, #0f8a55, var(--accent))';
+        saveBtn.style.background = 'var(--accent)';
         setTimeout(() => {
           saveBtn.innerHTML = orig; saveBtn.style.background = '';
           closeModal('personalizationModal');
@@ -707,7 +710,7 @@ async function savePersonalization() {
     });
     const data = await getJsonResponse(res);
     if (data.status === 'success') {
-      if (saveBtn) { saveBtn.innerHTML = '<i class="fa-solid fa-check"></i> Saved!'; saveBtn.style.background = 'linear-gradient(135deg, #0f8a55, #19c37d)'; }
+      if (saveBtn) { saveBtn.innerHTML = '<i class="fa-solid fa-check"></i> Saved!'; saveBtn.style.background = 'var(--accent)'; }
       showNotification('Settings saved successfully!', 'success');
       setTimeout(() => {
         if (saveBtn) { saveBtn.disabled = false; saveBtn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Save Settings'; saveBtn.style.background = ''; }
@@ -819,13 +822,9 @@ function toggleFastModeBtn(btn) {
 function updateFastModeDefault() {
   const fastBtn = $('fastModeBtn');
   if (fastBtn) {
-    if (hasGroqKey) {
-      isFastMode = true;
-      fastBtn.classList.add('active');
-    } else {
-      isFastMode = false;
-      fastBtn.classList.remove('active');
-    }
+    // Default fast mode to OFF. User must manually toggle it ON.
+    isFastMode = false;
+    fastBtn.classList.remove('active');
   }
 }
 
@@ -1050,11 +1049,11 @@ function renderMessage(msg) {
       const btnRow = document.createElement('div');
       btnRow.style.cssText = 'display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;';
       btnRow.innerHTML = `
-        <a href="/" style="display:inline-flex;align-items:center;gap:6px;padding:7px 18px;border-radius:30px;background:linear-gradient(135deg,#7b2cbf,#c77dff);color:#fff;font-size:0.9rem;font-weight:600;text-decoration:none;transition:transform 0.2s,box-shadow 0.2s;box-shadow:0 4px 14px rgba(123,44,191,0.35);" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 22px rgba(123,44,191,0.5)'" onmouseout="this.style.transform='';this.style.boxShadow='0 4px 14px rgba(123,44,191,0.35)'">
+        <a href="/" style="display:inline-flex;align-items:center;gap:6px;padding:7px 18px;border-radius:30px;background:var(--accent);color:#fff;font-size:0.9rem;font-weight:600;text-decoration:none;transition:transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M8.354 1.146a.5.5 0 0 0-.708 0l-6 6A.5.5 0 0 0 1.5 7.5v7a.5.5 0 0 0 .5.5h4.5a.5.5 0 0 0 .5-.5v-4h2v4a.5.5 0 0 0 .5.5H14a.5.5 0 0 0 .5-.5v-7a.5.5 0 0 0-.146-.354L13 5.793V2.5a.5.5 0 0 0-.5-.5h-1a.5.5 0 0 0-.5.5v1.293L8.354 1.146z"/></svg>
           Go to Home
         </a>
-        <a href="http://127.0.0.1:8000/" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:7px 18px;border-radius:30px;background:transparent;color:#c77dff;font-size:0.9rem;font-weight:600;text-decoration:none;border:1.5px solid #c77dff;transition:transform 0.2s,background 0.2s;" onmouseover="this.style.transform='translateY(-2px)';this.style.background='rgba(199,125,255,0.1)'" onmouseout="this.style.transform='';this.style.background='transparent'">
+        <a href="http://127.0.0.1:8000/" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:7px 18px;border-radius:30px;background:transparent;color:#c77dff;font-size:0.9rem;font-weight:600;text-decoration:none;border:1.5px solid #c77dff;transition:transform 0.2s,background 0.2s;" onmouseover="this.style.transform='translateY(-2px)';this.style.background='rgba(255, 255, 255, 0.08)'" onmouseout="this.style.transform='';this.style.background='transparent'">
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8zm7.5-6.923c-.67.204-1.335.82-1.887 1.855A7.97 7.97 0 0 0 5.145 4H7.5V1.077zM4.09 4a9.267 9.267 0 0 1 .64-1.539 6.7 6.7 0 0 1 .597-.933A7.025 7.025 0 0 0 2.255 4H4.09zm-.582 3.5c.03-.877.138-1.718.312-2.5H1.674a6.958 6.958 0 0 0-.656 2.5h2.49zM4.847 5a12.5 12.5 0 0 0-.338 2.5H7.5V5H4.847zM8.5 5v2.5h2.99a12.495 12.495 0 0 0-.337-2.5H8.5zM4.51 8.5a12.5 12.5 0 0 0 .337 2.5H7.5V8.5H4.51zm3.99 0V11h2.653c.187-.765.306-1.608.338-2.5H8.5zM5.145 12c.138.386.295.744.468 1.068.552 1.035 1.218 1.65 1.887 1.855V12H5.145zm.182 2.472a6.696 6.696 0 0 1-.597-.933A9.268 9.268 0 0 1 4.09 12H2.255a7.024 7.024 0 0 0 3.072 2.472zM3.82 11a13.652 13.652 0 0 1-.312-2.5h-2.49c.062.89.291 1.733.656 2.5H3.82zm6.853 3.472A7.024 7.024 0 0 0 13.745 12H11.91a9.27 9.27 0 0 1-.64 1.539 6.688 6.688 0 0 1-.597.933zM8.5 12v2.923c.67-.204 1.335-.82 1.887-1.855.173-.324.33-.682.468-1.068H8.5zm3.68-1h2.146c.365-.767.594-1.61.656-2.5h-2.49a13.65 13.65 0 0 1-.312 2.5zm2.802-3.5a6.959 6.959 0 0 0-.656-2.5H11.68c.174.782.282 1.623.312 2.5h2.49zM11.27 2.461c.247.464.462.98.64 1.539h1.835a7.024 7.024 0 0 0-3.072-2.472c.218.284.418.598.597.933zM10.855 4a7.966 7.966 0 0 0-.468-1.068C9.835 1.897 9.17 1.282 8.5 1.077V4h2.355z"/></svg>
           Go to Localhost
         </a>`;
@@ -1499,6 +1498,57 @@ function switchSettingsNav(name) {
   }
 }
 
+async function sendHomeSupportMessage() {
+  const catEl = document.getElementById('home-help-category');
+  const subjEl = document.getElementById('home-help-subject');
+  const msgEl = document.getElementById('home-help-message');
+  const btnEl = document.getElementById('home-help-submit-btn');
+
+  const category = catEl ? catEl.value : 'General Support';
+  const rawSubject = subjEl ? subjEl.value.trim() : '';
+  const message = msgEl ? msgEl.value.trim() : '';
+
+  if (!message) {
+    showNotification('Please enter a message before sending your support request.', 'error');
+    return;
+  }
+
+  const subject = rawSubject ? `[${category}] ${rawSubject}` : `[${category}] Support Inquiry`;
+
+  if (btnEl) {
+    btnEl.disabled = true;
+    btnEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Sending...';
+  }
+
+  try {
+    const res = await fetch('/api/platform/help/send', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': getCsrfToken()
+      },
+      credentials: 'include',
+      body: JSON.stringify({ subject, message })
+    });
+    const data = await getJsonResponse(res);
+    if (res.ok && data.success) {
+      showNotification(data.message || 'Support message submitted successfully!', 'success');
+      if (subjEl) subjEl.value = '';
+      if (msgEl) msgEl.value = '';
+    } else {
+      showNotification(data.error || 'Failed to send support message.', 'error');
+    }
+  } catch (err) {
+    console.error('Support message error:', err);
+    showNotification('Network error while sending support message.', 'error');
+  } finally {
+    if (btnEl) {
+      btnEl.disabled = false;
+      btnEl.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Submit Support Message';
+    }
+  }
+}
+
 /* Legacy tab switcher kept for any old references */
 function switchPTab(name, btn) {
   const map = { interface: 'general', about: 'personalization', instructions: 'instructions' };
@@ -1637,7 +1687,7 @@ function toggleSendBtn() {
     btn.disabled = false;
   } else {
     btn.className = inlineMicOn ? 'mic-btn listening' : 'mic-btn';
-    btn.style.background = inlineMicOn ? 'rgba(25,195,125,0.15)' : 'transparent';
+    btn.style.background = inlineMicOn ? 'rgba(255, 255, 255, 0.08)' : 'transparent';
     btn.style.color = inlineMicOn ? 'var(--accent)' : 'var(--text-muted)';
     btn.title = inlineMicOn ? 'Listening...' : 'Talk to AI';
     icon.className = 'fa-solid fa-microphone';
@@ -1842,7 +1892,7 @@ function _showTranscript(userText, aiText) {
   }
   
   if (aiText && !isInline) {
-    html += `<div style="padding:0.6rem 0.85rem;background:rgba(25,195,125,0.07);border-radius:8px;">
+    html += `<div style="padding:0.6rem 0.85rem;background:rgba(255, 255, 255, 0.07);border-radius:8px;">
       <div style="font-size:0.72rem;color:var(--accent);font-weight:600;margin-bottom:3px;">Heros</div>
       <div style="font-size:0.9rem;">${formatContent(aiText)}</div></div>`;
   }
@@ -1858,7 +1908,7 @@ function _showInterim(text) {
   if (isInline) {
     el.innerHTML = `<div style="font-size:0.95rem;color:var(--text-dim);">${escHtml(text)}</div>`;
   } else {
-    el.innerHTML = `<div style="padding:0.6rem 0.85rem;border-radius:8px;border:0.5px dashed rgba(25,195,125,0.3);">
+    el.innerHTML = `<div style="padding:0.6rem 0.85rem;border-radius:8px;border:0.5px dashed rgba(255, 255, 255, 0.08);">
       <div style="font-size:0.72rem;color:var(--accent);font-weight:600;margin-bottom:3px;">YOU</div>
       <div style="font-size:0.9rem;color:var(--text-dim);">${escHtml(text)}</div></div>`;
   }
@@ -2865,7 +2915,7 @@ function showWebEvidenceModal(btn) {
         <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 16px; transition: transform 0.2s, background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)';this.style.borderColor='rgba(255,255,255,0.15)'" onmouseout="this.style.background='rgba(255,255,255,0.03)';this.style.borderColor='rgba(255,255,255,0.08)'">
           <div style="font-weight: 600; color: var(--text); font-size: 1rem; margin-bottom: 6px;">${safeTitle}</div>
           ${safeUrl ? `<div style="margin-bottom: 10px; font-size: 0.85rem; word-break: break-all;">
-            <a href="${safeUrl}" target="_blank" style="color: var(--accent); text-decoration: none; display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px; background: rgba(25, 195, 125, 0.1); border-radius: 6px; transition: background 0.2s;" onmouseover="this.style.background='rgba(25, 195, 125, 0.2)'" onmouseout="this.style.background='rgba(25, 195, 125, 0.1)'">
+            <a href="${safeUrl}" target="_blank" style="color: var(--accent); text-decoration: none; display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px; background: rgba(255, 255, 255, 0.08); border-radius: 6px; transition: background 0.2s;" onmouseover="this.style.background='rgba(255, 255, 255, 0.08)'" onmouseout="this.style.background='rgba(255, 255, 255, 0.08)'">
               <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 0.75rem;"></i> Visit Source
             </a>
             <span style="color: var(--text-dim); margin-left: 8px; font-family: monospace;">${safeUrl}</span>

@@ -18,7 +18,7 @@
       sizes="128x128"
     />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Syne:wght@700;800&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
     <link
@@ -80,7 +80,6 @@
       }
       .fast-btn.active {
         color: #f5a623;
-        text-shadow: 0 0 10px rgba(245, 166, 35, 0.5);
       }
       
       #voiceTranscript.inline-mode {
@@ -363,7 +362,9 @@
             <div class="user-menu-item" onclick="openSettings()">
               <i class="fa-solid fa-gear"></i>Settings
             </div>
-            <!-- Removed Appearance Menu Item -->
+            <div class="user-menu-item" onclick="window.location.href='/platform/'">
+              <i class="fa-solid fa-terminal"></i>Platform
+            </div>
             <div class="user-menu-divider"></div>
             <div class="user-menu-item danger" onclick="handleLogout()">
               <i class="fa-solid fa-right-from-bracket"></i>Log out
@@ -511,6 +512,13 @@
                       onkeydown="handleKey(event)"
                       oninput="autoResize(this); toggleSendBtn();"
                       style="width: 100%;"
+                      autocomplete="off"
+                      autocorrect="off"
+                      autocapitalize="off"
+                      spellcheck="false"
+                      data-lpignore="true"
+                      data-1password-ignore="true"
+                      data-form-type="other"
                     ></textarea>
                   </div>
 
@@ -863,6 +871,9 @@
           <div class="settings-nav-item" id="snav-instructions" onclick="switchSettingsNav('instructions')">
             <i class="fa-solid fa-robot"></i> Custom Instructions
           </div>
+          <div class="settings-nav-item" id="snav-developer" onclick="switchSettingsNav('developer')">
+            <i class="fa-solid fa-code"></i> Developer
+          </div>
           <div class="settings-nav-section-label" style="margin-top: 10px;">More</div>
           <div class="settings-nav-item" onclick="switchSettingsNav('account')" id="snav-account">
             <i class="fa-regular fa-id-card"></i> Account
@@ -875,6 +886,9 @@
           </div>
           <div class="settings-nav-item" onclick="switchSettingsNav('privacy')" id="snav-privacy">
             <i class="fa-solid fa-shield-halved"></i> Privacy
+          </div>
+          <div class="settings-nav-item" onclick="switchSettingsNav('terms')" id="snav-terms">
+            <i class="fa-solid fa-file-contract"></i> Terms &amp; Policies
           </div>
           <div class="settings-nav-item" onclick="switchSettingsNav('about')" id="snav-about">
             <i class="fa-solid fa-circle-info"></i> About Heros
@@ -889,18 +903,46 @@
           <div class="settings-panel" id="spanel-apikeys">
             <div class="settings-panel-title">API Keys</div>
             
-          <div class="modal-section">
+            <!-- Heros Platform API Key Card -->
+            <div class="modal-section" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <div style="width: 28px; height: 28px; border-radius: 8px; background: rgba(255,255,255,0.06); display: flex; align-items: center; justify-content: center; color: var(--accent);">
+                    <i class="fa-solid fa-bolt"></i>
+                  </div>
+                  <div>
+                    <strong style="font-size: 0.95rem; color: #fff;">Heros Platform API Key</strong>
+                    <span style="font-size: 0.72rem; color: var(--accent); background: rgba(255,255,255,0.05); padding: 2px 8px; border-radius: 4px; margin-left: 6px; font-weight: 600;">sk-hero-...</span>
+                  </div>
+                </div>
+                <a href="/platform/?tab=apikeys" class="modal-save-btn" style="padding: 7px 14px; font-size: 0.82rem; text-decoration: none; width: auto; margin: 0; background: var(--accent); color: #fff;">
+                  <i class="fa-solid fa-key"></i> Get Heros API Key
+                </a>
+              </div>
+              <p style="font-size: 0.82rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 0;">
+                Generate secret API keys from the developer console to access Heros AI endpoints, track usage tokens, and manage dedicated project workspaces.
+              </p>
+            </div>
+
+            <div class="modal-section">
             <div class="modal-section-label">
               <i class="fa-solid fa-star"></i> Gemini API Key
               <span class="required-badge">Required </span>
             </div>
             <input
               class="auth-input"
-              type="password"
+              type="text"
               id="geminiApiKey"
               placeholder="Enter your Gemini API key"
-              autocomplete="new-password"
-              style="width: 100%"
+              autocomplete="off"
+              autocorrect="off"
+              autocapitalize="off"
+              spellcheck="false"
+              data-lpignore="true"
+              data-1password-ignore="true"
+              data-form-type="other"
+              name="gemini_key_no_autofill"
+              style="width: 100%; -webkit-text-security: disc; -moz-text-security: disc;"
             />
             <div class="field-hint">
               <i class="fa-solid fa-circle-info"></i> Get your Gemini API key:
@@ -919,11 +961,18 @@
             </div>
             <input
               class="auth-input"
-              type="password"
+              type="text"
               id="openrouterApiKey"
               placeholder="Enter your OpenRouter API key"
-              autocomplete="new-password"
-              style="width: 100%"
+              autocomplete="off"
+              autocorrect="off"
+              autocapitalize="off"
+              spellcheck="false"
+              data-lpignore="true"
+              data-1password-ignore="true"
+              data-form-type="other"
+              name="openrouter_key_no_autofill"
+              style="width: 100%; -webkit-text-security: disc; -moz-text-security: disc;"
             />
             <div class="field-hint">
               <i class="fa-solid fa-circle-info"></i> Get your OpenRouter API
@@ -943,11 +992,18 @@
             </div>
             <input
               class="auth-input"
-              type="password"
+              type="text"
               id="groqApiKey"
               placeholder="Enter your Groq API key for better performance (optional for fast experience)"
-              autocomplete="new-password"
-              style="width: 100%"
+              autocomplete="off"
+              autocorrect="off"
+              autocapitalize="off"
+              spellcheck="false"
+              data-lpignore="true"
+              data-1password-ignore="true"
+              data-form-type="other"
+              name="groq_key_no_autofill"
+              style="width: 100%; -webkit-text-security: disc; -moz-text-security: disc;"
             />
             <div class="field-hint">
               <i class="fa-solid fa-circle-info"></i> Get your Groq API key:
@@ -957,10 +1013,6 @@
                 style="color: var(--accent)"
                 >Groq Console</a
               >
-              {% comment %} <br /><em
-                >Note: Groq is used as a fallback model for enhanced
-                reliability.<br />Currently in development status</em
-              > {% endcomment %}
             </div>
           </div>
           <div class="modal-section">
@@ -970,11 +1022,18 @@
             </div>
             <input
               class="auth-input"
-              type="password"
+              type="text"
               id="huggingfaceApiKey"
               placeholder="Enter your Hugging Face API key (optional for Halo model)"
-              autocomplete="new-password"
-              style="width: 100%"
+              autocomplete="off"
+              autocorrect="off"
+              autocapitalize="off"
+              spellcheck="false"
+              data-lpignore="true"
+              data-1password-ignore="true"
+              data-form-type="other"
+              name="hf_key_no_autofill"
+              style="width: 100%; -webkit-text-security: disc; -moz-text-security: disc;"
             />
             <div class="field-hint">
               <i class="fa-solid fa-circle-info"></i> Get your Hugging Face token:
@@ -1033,7 +1092,7 @@
                   </div>
                   <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0;">
                     <span style="color: var(--text-muted);"><i class="fa-solid fa-crown" style="width: 20px;"></i> Subscription</span>
-                    <span style="font-weight: 600; font-size: 0.9rem; color: var(--text-color, #fff); background: var(--surface-light, rgba(255,255,255,0.05)); padding: 4px 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.08);">Heros 5 free plan</span>
+                    <span style="font-weight: 600; font-size: 0.9rem; color: var(--text-color, #fff); background: var(--surface-light, rgba(255,255,255,0.05)); padding: 4px 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.08);">Heros 5 Free</span>
                   </div>
                 </div>
               </div>
@@ -1075,6 +1134,24 @@
                 <div class="help-desc">Upload datasets to generate interactive visualizations and insights.</div>
               </div>
               <a href="{% url 'infinsight_home' %}" target="_blank" class="modal-save-btn" style="padding: 6px 12px; font-size: 0.85rem; text-decoration: none; width: auto; margin: 0;">Launch</a>
+            </div>
+
+            <div class="help-item" style="align-items: center;">
+              <div class="help-icon"><i class="fa-solid fa-terminal"></i></div>
+              <div class="help-text-group" style="flex:1;">
+                <div class="help-title">Platform</div>
+                <div class="help-desc">Manage API keys, projects, rate limits, and live metrics dashboard.</div>
+              </div>
+              <a href="{% url 'platform' %}" class="modal-save-btn" style="padding: 6px 12px; font-size: 0.85rem; text-decoration: none; width: auto; margin: 0;">Open</a>
+            </div>
+
+            <div class="help-item" style="align-items: center;">
+              <div class="help-icon"><i class="fa-solid fa-compass"></i></div>
+              <div class="help-text-group" style="flex:1;">
+                <div class="help-title">Discover Heros</div>
+                <div class="help-desc">Explore Heros AI architecture, model comparisons, and showcase.</div>
+              </div>
+              <a href="{% url 'landing' %}" class="modal-save-btn" style="padding: 6px 12px; font-size: 0.85rem; text-decoration: none; width: auto; margin: 0;">Explore</a>
             </div>
           </div>
 
@@ -1129,9 +1206,12 @@
             <strong>Deep Web Search:</strong> Upgraded scraping pipeline using DuckDuckGo, Wikipedia, Serply and Serpstack concurrently.
           </p>
         </div>
-        <div style="margin-bottom: 24px; display: flex; justify-content: center;">
-          <a href="{% url 'landing' %}" class="modal-save-btn" style="text-decoration: none; max-width: 280px; width: 100%;">
+        <div style="margin-bottom: 24px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+          <a href="{% url 'landing' %}" class="modal-save-btn" style="text-decoration: none; flex: 1; min-width: 140px; max-width: 200px;">
             <i class="fa-solid fa-compass"></i> Discover Heros
+          </a>
+          <a href="/platform/?tab=docs_heros" class="modal-save-btn" style="text-decoration: none; flex: 1; min-width: 140px; max-width: 200px; background: var(--surface2); color: var(--text); border: 1px solid var(--border);">
+            <i class="fa-solid fa-book"></i> Heros Docs
           </a>
         </div>
         <div class="about-version">
@@ -1193,7 +1273,44 @@
               <div class="help-icon"><i class="fa-regular fa-envelope"></i></div>
               <div class="help-text-group">
                 <div class="help-title">Contact support</div>
-                <div class="help-desc">Reach us at <strong style="color: var(--accent)">huddy1910@gmail.com</strong></div>
+                <div class="help-desc">Reach us directly at <strong style="color: var(--accent)">huddy1910@gmail.com</strong></div>
+              </div>
+            </div>
+
+            <!-- Send Support Message Form (Matching Platform) -->
+            <div class="modal-section" style="margin-top: 24px; padding: 18px; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px;">
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                <i class="fa-solid fa-envelope" style="color: var(--accent);"></i>
+                <h3 style="font-size: 1rem; font-weight: 600; color: #fff; margin: 0;">Send Support Message</h3>
+              </div>
+              <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 16px; line-height: 1.5;">
+                Need custom assistance, want to report a bug, or inquire about enterprise tiers? Send our engineering team a direct message.
+              </p>
+              
+              <div style="display: flex; flex-direction: column; gap: 12px;">
+                <div>
+                  <div class="modal-section-label" style="margin-bottom: 6px;"><i class="fa-solid fa-tag"></i> Category</div>
+                  <select id="home-help-category" class="auth-input" style="width: 100%; cursor: pointer;">
+                    <option value="General Support">General Support Inquiry</option>
+                    <option value="Bug Report">Bug Report</option>
+                    <option value="Quota Increase">Quota Increase Request</option>
+                    <option value="API Key Issue">API Key &amp; Authentication</option>
+                    <option value="Billing & Tier">Billing &amp; Enterprise Tier</option>
+                  </select>
+                </div>
+                <div>
+                  <div class="modal-section-label" style="margin-bottom: 6px;"><i class="fa-solid fa-heading"></i> Subject</div>
+                  <input type="text" id="home-help-subject" class="auth-input" placeholder="e.g. Issue with response formatting" style="width: 100%;" />
+                </div>
+                <div>
+                  <div class="modal-section-label" style="margin-bottom: 6px;"><i class="fa-solid fa-comment-dots"></i> Message</div>
+                  <textarea id="home-help-message" class="modal-textarea" rows="4" placeholder="Describe your issue or request in detail..." style="min-height: 90px;"></textarea>
+                </div>
+                <div style="margin-top: 4px;">
+                  <button type="button" class="modal-save-btn" id="home-help-submit-btn" onclick="sendHomeSupportMessage()">
+                    <i class="fa-solid fa-paper-plane"></i> Submit Support Message
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -1284,6 +1401,94 @@
               <button class="modal-save-btn" onclick="savePersonalization()">
                 <i class="fa-solid fa-floppy-disk"></i> Save
               </button>
+            </div>
+          </div>
+
+          <!-- Developer Panel -->
+          <div class="settings-panel" id="spanel-developer">
+            <div class="settings-panel-title">Developer Platform</div>
+            <p style="color: var(--text-muted); font-size: 0.88rem; line-height: 1.6; margin-bottom: 20px;">
+              Build intelligent applications, agents, and backend workflows with Heros high-speed fallback inference engine and developer tools.
+            </p>
+
+            <div class="modal-section" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                <div style="font-weight: 600; font-size: 0.95rem; color: #fff; display: flex; align-items: center; gap: 8px;">
+                  <i class="fa-solid fa-code" style="color: var(--accent);"></i> OpenAI SDK Compatible
+                </div>
+                <span style="font-size: 0.72rem; color: var(--accent); background: rgba(255,255,255,0.06); padding: 2px 8px; border-radius: 4px; font-weight: 600;">v1/chat/completions</span>
+              </div>
+              <p style="font-size: 0.82rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 10px;">
+                Drop Heros base URL and secret API key straight into any official OpenAI Python or Node.js library without rewriting code.
+              </p>
+              <div style="background: var(--surface2, rgba(0,0,0,0.3)); border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; font-family: monospace; font-size: 0.78rem; color: var(--text-muted); word-break: break-all;">
+                POST https://hero-s-ai.alwaysdata.net/api/v1/chat/completions
+              </div>
+            </div>
+
+            <div class="modal-section" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+              <div style="font-weight: 600; font-size: 0.95rem; color: #fff; display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                <i class="fa-solid fa-microchip" style="color: var(--accent);"></i> Models &amp; Multimodal Endpoints
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 8px; font-size: 0.82rem; color: var(--text-muted); line-height: 1.5;">
+                <div>• <strong>Baymax 4.5:</strong> High-speed reasoning with real-time web search retrieval grounding.</div>
+                <div>• <strong>Halo 2.0 / 3.6:</strong> Multimodal deep analytical thinking &amp; code generation.</div>
+                <div>• <strong>Speech Audio APIs:</strong> High-accuracy Whisper transcription (<code style="color:var(--accent);">/api/transcribe</code>) and TTS stream generation (<code style="color:var(--accent);">/api/tts</code>).</div>
+                <div>• <strong>Project Sandboxing:</strong> Organize secret keys, isolate environments, and monitor usage metrics.</div>
+              </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 20px;">
+              <a href="{% url 'platform' %}" class="modal-save-btn" style="text-decoration: none; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                <i class="fa-solid fa-terminal"></i> Open Developer Platform
+              </a>
+              <a href="/platform/?tab=docs_heros" class="modal-save-btn" style="text-decoration: none; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; background: var(--surface2); color: var(--text); border: 1px solid var(--border);">
+                <i class="fa-solid fa-book"></i> Browse Developer Documentation
+              </a>
+            </div>
+          </div>
+
+          <!-- Terms & Policies Panel -->
+          <div class="settings-panel" id="spanel-terms">
+            <div class="settings-panel-title">Terms &amp; Policies</div>
+            <p style="color: var(--text-muted); font-size: 0.88rem; line-height: 1.6; margin-bottom: 20px;">
+              Review the legal terms, privacy standards, and data governance policies governing the Heros ecosystem.
+            </p>
+
+            <div class="modal-section" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 16px; margin-bottom: 14px;">
+              <div style="font-weight: 600; font-size: 0.95rem; color: #fff; display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                <i class="fa-solid fa-scale-balanced" style="color: var(--accent);"></i> Terms of Service
+              </div>
+              <p style="font-size: 0.82rem; color: var(--text-muted); line-height: 1.5; margin: 0;">
+                By using Heros, you agree to lawful and responsible use of our AI inference services, respect API rate limits, and maintain the confidentiality of your secret credentials.
+              </p>
+            </div>
+
+            <div class="modal-section" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 16px; margin-bottom: 14px;">
+              <div style="font-weight: 600; font-size: 0.95rem; color: #fff; display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                <i class="fa-solid fa-shield-halved" style="color: var(--accent);"></i> Privacy &amp; Zero Training
+              </div>
+              <p style="font-size: 0.82rem; color: var(--text-muted); line-height: 1.5; margin: 0;">
+                Heros enforces a strict zero model training policy on user chat prompts, API payloads, and uploaded documents. All third-party provider keys are encrypted locally using AES-256 before storage.
+              </p>
+            </div>
+
+            <div class="modal-section" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+              <div style="font-weight: 600; font-size: 0.95rem; color: #fff; display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                <i class="fa-solid fa-lock" style="color: var(--accent);"></i> Data Governance &amp; Controls
+              </div>
+              <p style="font-size: 0.82rem; color: var(--text-muted); line-height: 1.5; margin: 0;">
+                You retain complete ownership over your data. You can perform real-time request log purges or permanently delete your developer account and workspaces at any time.
+              </p>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 20px;">
+              <a href="{% url 'terms' %}" target="_blank" class="modal-save-btn" style="text-decoration: none; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                <i class="fa-solid fa-arrow-up-right-from-square"></i> Read Full Terms &amp; Privacy Policy
+              </a>
+              <a href="/platform/?tab=terms" class="modal-save-btn" style="text-decoration: none; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; background: var(--surface2); color: var(--text); border: 1px solid var(--border);">
+                <i class="fa-solid fa-file-shield"></i> View Platform Legal &amp; Acceptable Use
+              </a>
             </div>
           </div>
         </div>
@@ -1451,9 +1656,12 @@
             <strong>Deep Web Search:</strong> Upgraded scraping pipeline using DuckDuckGo, Wikipedia, Serply and Serpstack concurrently.
           </p>
         </div>
-        <div style="margin-bottom: 24px; display: flex; justify-content: center;">
-          <a href="{% url 'landing' %}" class="modal-save-btn" style="text-decoration: none; max-width: 280px; width: 100%;">
+        <div style="margin-bottom: 24px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+          <a href="{% url 'landing' %}" class="modal-save-btn" style="text-decoration: none; flex: 1; min-width: 140px; max-width: 200px;">
             <i class="fa-solid fa-compass"></i> Discover Heros
+          </a>
+          <a href="/platform/?tab=docs_heros" class="modal-save-btn" style="text-decoration: none; flex: 1; min-width: 140px; max-width: 200px; background: var(--surface2); color: var(--text); border: 1px solid var(--border);">
+            <i class="fa-solid fa-book"></i> Heros Docs
           </a>
         </div>
         <div class="about-version">

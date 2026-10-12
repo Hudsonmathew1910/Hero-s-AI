@@ -605,7 +605,7 @@ function startPolling(sessionId) {
       if (data.session_status === "ready") {
         stopPolling();
         if (banner) banner.classList.remove("visible");
-        notify("✅ File indexed! You can now ask questions.", "success");
+        notify("File indexed! You can now ask questions.", "success");
         // Refresh sessions list
         await loadSessions();
         renderSessionsList();
@@ -614,7 +614,7 @@ function startPolling(sessionId) {
       } else if (data.session_status === "error") {
         stopPolling();
         if (banner) banner.classList.remove("visible");
-        notify("❌ Indexing failed: " + (data.error || "Unknown error"), "error");
+        notify("Indexing failed: " + (data.error || "Unknown error"), "error");
       }
     } catch (e) {}
   }, 4000);
@@ -860,7 +860,7 @@ async function sendInsMessage() {
 
     if (!res.ok) {
       removeTyping();
-      appendMessage("ai", "⚠️ HTTP Error " + res.status);
+      appendMessage("ai", "HTTP Error " + res.status);
       scrollToBottom();
       return;
     }
@@ -887,7 +887,7 @@ async function sendInsMessage() {
             } else if (data.type === "final") {
               removeTyping();
               if (data.error && data.error !== "session_not_ready") {
-                 appendMessage("ai", "⚠️ " + data.reply);
+                 appendMessage("ai", "" + data.reply);
               } else {
                  appendMessage("ai", data.reply, data.model);
               }
@@ -907,7 +907,7 @@ async function sendInsMessage() {
     }
   } catch (e) {
     removeTyping();
-    appendMessage("ai", "⚠️ Network error. Please try again.");
+    appendMessage("ai", "Network error. Please try again.");
     scrollToBottom();
   }
 }

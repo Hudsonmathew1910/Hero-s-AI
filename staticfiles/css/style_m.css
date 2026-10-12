@@ -215,7 +215,7 @@
   .input-box {
     padding: 8px;
     gap: 4px;
-    border-radius: 12px;
+    border-radius: var(--radius-lg);
   }
   #chatInput {
     font-size: var(--font-body-size);
@@ -325,7 +325,7 @@
     max-width: calc(100% - 2 * var(--modal-side-gap));
     width: calc(100% - 2 * var(--modal-side-gap));
     margin: 0 auto;
-    border-radius: 18px;
+    border-radius: var(--radius-xl);
   }
   .modal-overlay {
     padding: var(--modal-side-gap);
@@ -334,13 +334,13 @@
     max-width: calc(100% - 2 * var(--modal-side-gap));
     width: calc(100% - 2 * var(--modal-side-gap));
     padding: 24px 20px;
-    border-radius: 18px;
+    border-radius: var(--radius-xl);
   }
   .about-card {
     max-width: calc(100% - 2 * var(--modal-side-gap));
     width: calc(100% - 2 * var(--modal-side-gap));
     padding: 28px 20px;
-    border-radius: 18px;
+    border-radius: var(--radius-xl);
   }
   .help-item {
     gap: 10px;
@@ -358,7 +358,7 @@
     padding: 28px 20px 24px;
     max-width: calc(100% - 2 * var(--modal-side-gap));
     width: 100%;
-    border-radius: 18px;
+    border-radius: var(--radius-xl);
   }
   .auth-tabs {
     gap: 2px;
@@ -685,7 +685,7 @@
   /* Auth card — extra compact */
   .auth-card {
     padding: 22px 16px 20px;
-    border-radius: 16px;
+    border-radius: var(--radius-lg);
   }
   .auth-logo {
     font-size: 1.15rem;
@@ -704,7 +704,7 @@
   .modal-card,
   .help-card,
   .about-card {
-    border-radius: 14px;
+    border-radius: var(--radius-lg);
   }
   .modal-header {
     padding: 18px 16px 0;

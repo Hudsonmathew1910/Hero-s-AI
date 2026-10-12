@@ -50,10 +50,12 @@ SESSION_COOKIE_SAMESITE = "None" if not DEBUG else "Lax" # 🔥 Lax in developme
 CSRF_COOKIE_SAMESITE = "None" if not DEBUG else "Lax"    # 🔥 Lax in development, None in production
 
 # SITE_URL for dynamic origin trust
-SITE_URL = os.getenv('SITE_URL', 'http://localhost:8000')
+SITE_URL = os.getenv('SITE_URL', 'https://hero-s-ai.alwaysdata.net')
 
 # CSRF settings
 CSRF_TRUSTED_ORIGINS = [
+    "https://hero-s-ai.alwaysdata.net",
+    "https://www.hero-s-ai.alwaysdata.net",
     "https://hero-s-ai.onrender.com",
     SITE_URL
 ]
@@ -76,7 +78,9 @@ AUTH_USER_MODEL = 'auth.User'  # Use default Django user model
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-fallback-key-change-in-production')
 
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '127.0.0.1,localhost').split(',')
+ALLOWED_HOSTS = [h.strip() for h in os.getenv('ALLOWED_HOSTS', '127.0.0.1,localhost,hero-s-ai.alwaysdata.net,www.hero-s-ai.alwaysdata.net').split(',') if h.strip()]
+if 'hero-s-ai.alwaysdata.net' not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append('hero-s-ai.alwaysdata.net')
 if os.getenv('RENDER_EXTERNAL_URL'):
     from urllib.parse import urlparse
     render_host = urlparse(os.getenv('RENDER_EXTERNAL_URL')).hostname
@@ -87,6 +91,7 @@ if os.getenv('RENDER_EXTERNAL_URL'):
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 INSTALLED_APPS = [
+    'jazzmin',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -308,3 +313,94 @@ LOGGING = {
         },
     },
 }
+# SMTP Email Settings
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
+
+if EMAIL_HOST_USER and EMAIL_HOST_PASSWORD:
+    EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.smtp.EmailBackend')
+else:
+    # In dev without SMTP credentials, print emails to terminal console
+    EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
+
+EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
+EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True').lower() == 'true'
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER or 'noreply@heros.ai'
+
+# Jazzmin Admin UI Settings
+JAZZMIN_SETTINGS = {
+    "site_title": "Heros AI Admin",
+    "site_header": "Heros AI",
+    "site_brand": "Heros Dashboard",
+    "welcome_sign": "Welcome to the Heros AI Admin Portal",
+    "copyright": "Heros AI Ltd",
+    "search_model": ["backend.User", "backend.DeveloperApiKey", "infinsight.InfinsightModel"],
+    "topmenu_links": [
+        {"name": "Home", "url": "admin:index", "permissions": ["auth.view_user"]},
+        {"name": "Developer Platform", "url": "/platform", "new_window": True},
+        {"name": "Documentation", "url": "/docs", "new_window": True},
+    ],
+    "show_sidebar": True,
+    "navigation_expanded": True,
+    "hide_apps": [],
+    "hide_models": [],
+    "icons": {
+        "auth": "fas fa-users-cog",
+        "auth.user": "fas fa-user-shield",
+        "auth.group": "fas fa-users",
+        "backend.User": "fas fa-user-circle",
+        "backend.DeveloperApiKey": "fas fa-key",
+        "backend.ApiUsageTracking": "fas fa-chart-line",
+        "backend.ProjectSession": "fas fa-folder-open",
+        "backend.SessionMessage": "fas fa-comments",
+        "backend.CustomPrompt": "fas fa-terminal",
+        "backend.SystemAnnouncement": "fas fa-bullhorn",
+        "backend.Feedback": "fas fa-comment-dots",
+        "infinsight.InfinsightModel": "fas fa-brain",
+        "infinsight.InfinsightQueryLog": "fas fa-list-alt",
+        "infinsight.InfinsightModelPricing": "fas fa-tags",
+        "infinsight.InfinsightKnowledgeBase": "fas fa-book",
+        "infinsight.InfinsightSystemMetric": "fas fa-tachometer-alt",
+    },
+    "default_icon_parents": "fas fa-chevron-circle-right",
+    "default_icon_children": "fas fa-circle",
+    "related_modal_active": True,
+    "custom_css": None,
+    "custom_js": None,
+    "use_google_fonts_boilerplates": True,
+    "changeform_format": "horizontal_tabs",
+    "changeform_format_overrides": {
+        "auth.user": "collapsible",
+        "auth.group": "vertical_tabs",
+    },
+}
+
+JAZZMIN_UI_TWEAKS = {
+    "navbar_small_text": False,
+    "footer_small_text": False,
+    "body_small_text": False,
+    "brand_small_text": False,
+    "brand_colour": "navbar-dark",
+    "accent": "accent-primary",
+    "navbar": "navbar-dark navbar-dark",
+    "no_navbar_border": False,
+    "navbar_fixed": True,
+    "layout_boxed": False,
+    "footer_fixed": False,
+    "sidebar_fixed": True,
+    "sidebar": "sidebar-dark-primary",
+    "sidebar_nav_small_text": False,
+    "theme": "darkly",
+    "default_theme_mode": "dark",
+    "button_classes": {
+        "primary": "btn-primary",
+        "secondary": "btn-secondary",
+        "info": "btn-info",
+        "warning": "btn-warning",
+        "danger": "btn-danger",
+        "success": "btn-success"
+    }
+}
+
+

@@ -354,7 +354,7 @@ def resolve_mode(preprocessed: PreprocessedInput, current_mode: str) -> str:
     clean_text = preprocessed["clean_text"].lower()
     
     # 1. Explicit user command (Persistent modes beat NLP)
-    persistent_modes = ("coding", "websearch", "Voice Chat", "voice_file", "voice_message", "file_handle", "live_display", "zeno_eco", "search_code", "search_file", "code_file", "search_code_file")
+    persistent_modes = ("coding", "websearch", "Voice Chat", "voice_file", "voice_message", "file_handle", "live_display", "zeno_eco", "search_code", "search_file", "code_file", "search_code_file", "infinsight")
     if current_mode in persistent_modes:
         return current_mode
 
@@ -369,7 +369,7 @@ def resolve_mode(preprocessed: PreprocessedInput, current_mode: str) -> str:
     ]
     for pattern in safety_chat_patterns:
         if re.search(pattern, clean_text):
-            return current_mode if current_mode in ("zeno_plus", "zeno_eco") else "text"
+            return current_mode if current_mode in ("zeno_plus", "zeno_eco", "infinsight") else "text"
 
     # Anti-WebSearch Guard: if NLP suggested web_search but it's a broad conversational question
     if intent == "web_search":

@@ -22,7 +22,7 @@ import re
 import time
 import requests
 import traceback
-from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
 
 from concurrent.futures import ThreadPoolExecutor
 from functools import wraps
@@ -216,6 +216,15 @@ def login_required_json(f):
                     if uid:
                         request.session = s
                         break
+        # Fallback to standard Django authentication if logged in via Admin
+        if not uid and getattr(request, 'user', None) and request.user.is_authenticated:
+            try:
+                request._cached_user = User.objects.get(email=request.user.email)
+                request.user_obj = request._cached_user
+                return f(request, *args, **kwargs)
+            except User.DoesNotExist:
+                pass
+
         if not uid:
             return JsonResponse({"status": "fail", "message": "Authentication required"}, status=401)
         try:
@@ -257,37 +266,43 @@ def optional_login_json(f):
         return f(request, *args, **kwargs)
     return wrapper
 
+from django.shortcuts import redirect
+
+@ensure_csrf_cookie
+def platform_view(request):
+    """
+    Renders the Developer Platform dashboard HTML template with logged in user and setting context.
+    """
+    uid = request.session.get('user_id')
+    user = None
+    if uid:
+        try:
+            user = User.objects.get(user_id=uid)
+        except User.DoesNotExist:
+            pass
+    if not user:
+        return redirect('/')
+    
+    setting, _ = Setting.objects.get_or_create(user=user)
+    
+    from backend.models import Project
+    projects = Project.objects.filter(user=user).order_by('created_at')
+    if not projects.exists():
+        Project.objects.create(user=user, name="Default Project")
+        projects = Project.objects.filter(user=user).order_by('created_at')
+        
+    return render(request, 'platform.html', {
+        'user': user, 
+        'setting': setting,
+        'projects': projects
+    })
+
 def privacy_view(request):
     """
-    Simple privacy policy view for the extension submission.
+    Renders the terms of service and privacy policy page.
     """
-    html = '''
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>Privacy Policy - Heros</title>
-        <link rel="icon" type="image/png" href="/static/images/Hero_ai.png">
-    </head>
-    <body style="font-family: sans-serif; max-width: 800px; margin: 40px auto; line-height: 1.6;">
-        <h1>Privacy Policy</h1>
-        <p><strong>Effective Date:</strong> July 2026</p>
-        
-        <h2>Zeno Extension</h2>
-        <p>The Zeno browser extension acts as a mini AI assistant powered by Heros. To provide its core functionality, the extension requires access to certain data:</p>
-        <ul>
-            <li><strong>Website Content:</strong> When you use the "Ask Zeno Plus" right-click context menu, the text you have highlighted on the page is temporarily collected and sent to our servers to generate an AI response.</li>
-            <li><strong>Personal Communications:</strong> Chat messages you type into the Zeno popup are transmitted to our servers to communicate with the AI.</li>
-        </ul>
-        <p>We do not collect any browsing history, location data, or keystrokes outside of the explicit text you submit to the AI.</p>
-        
-        <h2>Data Usage & Protection</h2>
-        <p>Your data is strictly used to process and return AI responses. We do not sell your personal data or chat queries to third-party data brokers, nor do we use it for unrelated advertising purposes.</p>
-        
-        <p>If you have any questions, please contact us at support@hero-ai.com.</p>
-    </body>
-    </html>
-    '''
-    return HttpResponse(html)
+    return render(request, 'terms_and_privacy.html')
+
 
 
 def json_only(f):
@@ -363,6 +378,8 @@ def signup_view(request):
             'user_name': user.name,
         })
         request.session.set_expiry(1209600)
+        from backend.usage_tracker import log_activity
+        log_activity(user=user, action="ACCOUNT_CREATED", details=f"User signed up: {user.email}", request=request)
         return JsonResponse({
             "status": "success",
             "message": "Account created",
@@ -402,6 +419,8 @@ def login_view(request):
             'user_name':  user.name,
         })
         request.session.set_expiry(1209600)
+        from backend.usage_tracker import log_activity
+        log_activity(user=user, action="LOGIN_SUCCESS", details=f"User logged in: {user.email}", request=request)
         has_keys = Api.objects.filter(user=user, model_name__in=['Gemini', 'OpenRouter']).exists()
         has_groq = Api.objects.filter(user=user, model_name='Groq').exists()
         return JsonResponse({
@@ -705,12 +724,19 @@ def chat_api(request):
     if not raw_message and files:
         raw_message = "Read and wait for user Query about the file"
 
+    # Note: Usage limits and tracking are strictly reserved for Heros API Key requests (/api/v1/chat/completions),
+    # not for web interface/playground requests (/api/chat).
+
+
+
+    custom_temp = d.get('temperature')
+    custom_tokens = d.get('max_tokens')
 
     try:
         # ── Developer Bypass ──────────────────────────────────────────────────
         if is_developer:
             from .hero_model import Developer
-            dev_client = Developer(request.user_obj, dev_provider, dev_model_name)
+            dev_client = Developer(request.user_obj, dev_provider, dev_model_name, temperature=custom_temp, max_tokens=custom_tokens)
             
             clean_history = []
             if isinstance(send_history, list):
@@ -721,7 +747,11 @@ def chat_api(request):
             # Limit history to match Baymax's standard text behavior (10 messages = 5 turns)
             clean_history = clean_history[-10:]
             
-            system_prompt = dev_client.build_system_prompt(mode)
+            custom_sys = d.get('system_prompt', '').strip()
+            if custom_sys:
+                system_prompt = custom_sys
+            else:
+                system_prompt = dev_client.build_system_prompt(mode)
             messages_payload = [{"role": "system", "content": system_prompt}] + clean_history
             messages_payload.append({"role": "user", "content": raw_message})
             
@@ -746,9 +776,9 @@ def chat_api(request):
                 active_buffer = active_buffer[-10:]
                 cache.set(f"history_{chat_session.session_id}", active_buffer, timeout=3600 * 2)
                 
-                # Force mode to developer for the database record
                 _save_chat_async(request.user_obj, chat_session, 'developer', dev_model_name, raw_message, reply)
                 
+
             return JsonResponse({
                 "status": "success",
                 "reply": reply,
@@ -829,6 +859,10 @@ def chat_api(request):
             gemini_key, openrouter_key, groq_key = None, None, None
             user_settings = {}
             chat_session, is_new_session = None, True
+
+        custom_sys = d.get('system_prompt', '').strip()
+        if custom_sys:
+            user_settings['user_instruction'] = custom_sys
 
         if mode == 'zeno_plus' and not groq_key:
             return JsonResponse({
@@ -998,6 +1032,8 @@ def chat_api(request):
                     is_superuser=is_superuser,
                     is_fast=is_fast,
                     db_lookup_time=db_lookup_time,
+                    custom_temperature=custom_temp,
+                    custom_max_tokens=custom_tokens,
                 )
         except ImportError as e:
             missing = str(e).replace("No module named ", "").strip("'")
@@ -1045,6 +1081,7 @@ def chat_api(request):
                 'voice_code_file': lambda: mt.handle_code_file(message, d.get('files', [])),
                 'voice_search_code': lambda: mt.handle_search_code(message),
                 'voice_search_code_file': lambda: mt.handle_search_code_file(message, d.get('files', [])),
+                'infinsight':    lambda: __import__('infinsight.Llm', fromlist=['']).generate_analyst_response(message, [], gemini_key, chat_history)[0],
             }
             reply = handlers.get(mode, lambda: baymax.handle_text(message))()
         except ImportError as e:
@@ -1174,18 +1211,28 @@ def get_user_profile(request):
 def save_user_settings(request):
     d = request.json_data
     try:
+        # Update User model name if provided
+        new_name = d.get('name') or d.get('user_name')
+        if new_name and new_name.strip():
+            request.user_obj.name = new_name.strip()
+            request.user_obj.save()
+
         s, _ = Setting.objects.get_or_create(user=request.user_obj)
-        s.user_instruction            = d.get('user_instruction', '').strip()  or None
-        s.user_about_me               = d.get('user_about_me', '').strip()     or None
-        s.user_name                   = d.get('user_name', '').strip()         or None
-        s.user_role                   = d.get('user_role', '').strip()         or None
-        s.user_interests              = d.get('user_interests', '').strip()    or None
-        s.enable_custom_instructions  = d.get('enable_custom_instructions', True)
+        if 'user_instruction' in d: s.user_instruction = d.get('user_instruction', '').strip() or None
+        if 'user_about_me' in d: s.user_about_me = d.get('user_about_me', '').strip() or None
+        if 'user_name' in d or 'name' in d: s.user_name = (d.get('user_name') or d.get('name') or '').strip() or None
+        if 'user_role' in d: s.user_role = d.get('user_role', '').strip() or None
+        if 'company_name' in d: s.company_name = d.get('company_name', '').strip() or None
+        if 'user_interests' in d: s.user_interests = d.get('user_interests', '').strip() or None
+        if 'enable_custom_instructions' in d: s.enable_custom_instructions = d.get('enable_custom_instructions', True)
+        if 'notify_daily_usage' in d: s.notify_daily_usage = bool(d.get('notify_daily_usage'))
+        if 'notify_quota_alerts' in d: s.notify_quota_alerts = bool(d.get('notify_quota_alerts'))
+        if 'notify_product_updates' in d: s.notify_product_updates = bool(d.get('notify_product_updates'))
         s.save()
         
         cache.delete(f"settings_{request.user_obj.user_id}")
         
-        return JsonResponse({"status": "success", "message": "Settings saved successfully"})
+        return JsonResponse({"status": "success", "message": "Settings saved successfully", "user_name": request.user_obj.name})
     except Exception as e:
         return safe_error_response(request, logger, "save_user_settings", e)
 

@@ -22,12 +22,6 @@ from backend.Nlp import PreprocessedInput
 logger = logging.getLogger("hero_ai.baymax")
 
 
-
-
-
-
-
-
 class LocalLoggerProxy:
     def __init__(self, inst):
         self.inst = inst
@@ -49,12 +43,13 @@ class LocalLoggerProxy:
             logger.error(msg, *args, **kwargs)
 
 
-
 class ProviderError(Exception):
     pass
 
+
 class ModelError(Exception):
     pass
+
 
 class Baymax:
     # ── System prompt constants ──────────────────────────────────
@@ -80,6 +75,22 @@ class Baymax:
                     7. Multi-turn Context & Memory: Correctly track the latest facts and state across the conversation history. Do not revert to older, outdated information.
                     8. Prioritization: Always focus immediately on what matters most to the user's explicit request. Do not bury the main answer.
                     9. Adaptive Conversation: Make the interaction feel fluid, highly natural, and human-like.
+                    """
+
+    DEVELOPER_API_PROMPT = """
+                    Global Core Directives (CRITICAL for Safety and Reasoning):
+                    1. Contradiction Detection: Actively monitor for and prevent logical contradictions or reasoning failures within your own answers.
+                    2. Role & Context Stability: Never break character. Never output bizarre metadata like "User Response:" or "AI Thoughts:" in the final output unless requested.
+                    3. Assumption Handling: Never invent missing information. If you lack context, either state what you don't know or ask clarifying questions.
+                    4. Hallucination & Factual Discipline: Base your answers strictly on verified knowledge or provided context. Make answers completely trustworthy.
+                    5. Response Proportionality: Stop over-answering. Keep responses incredibly concise for simple questions, and only provide detailed structure when explicitly required.
+                    6. Technical Simplicity: Do not over-engineer solutions. Provide the simplest, most elegant answer or code that works perfectly.
+                    7. Multi-turn Context & Memory: Correctly track the latest facts and state across the conversation history. Do not revert to older, outdated information.
+                    8. Prioritization: Always focus immediately on what matters most to the user's explicit request. Do not bury the main answer.
+                    9. Adaptive Conversation: Make the interaction feel fluid, highly natural, and human-like.
+                    Conversational Style Guidelines (Human-Like, ChatGPT/Gemini/Claude style):
+                    - Respond to greetings and status queries (e.g., "is everything ok?", "how's it going?") like a real human would (e.g., "All good here!", "Yep, doing well, thanks!", "Everything is running smoothly!").
+                    - Never use robotic clichés like "My systems are optimized", "I am functioning perfectly", or "I am ready to assist you".
                     """
 
     BASIC_RULES = """You are Baymax, an LLM-powered AI assistant with advanced multi-model capabilities.
@@ -112,6 +123,15 @@ class Baymax:
                     - Do not use conversational clichés like "Sure! Here is...", "As an AI, I...", or "I'm powered up and ready to help!"
                     - Only ask follow-up questions if they are necessary to clarify or complete the task."""
 
+    DEV_TEXT_PROMPT = """You are highly helpful, balanced, and objective AI assistant for text conversations.
+                    Behavioral Guidelines (ChatGPT style):
+                    - Provide clear, direct, and well-structured responses. Use Markdown formatting (bolding, lists, subheadings) where helpful.
+                    - Start answering the user's query immediately. Avoid unnecessary opening remarks, filler words, or repeating the user's question back.
+                    - Keep responses structured, concise, and logically organized. Break down complex steps cleanly.
+                    - Adjust tone to be naturally friendly yet highly professional, objective, and constructive.
+                    - Do not use conversational clichés like "Sure! Here is...", "As an AI, I...", or "I'm powered up and ready to help!"
+                    - Only ask follow-up questions if they are necessary to clarify or complete the task."""
+
     CODING_PROMPT = """You are Baymax, an expert software architect and coding mentor.
                     Behavioral Guidelines (Claude style):
                     - Provide complete, fully functional, production-ready code blocks. Never use lazy placeholders, ellipsis (...), or leave functions to be implemented.
@@ -126,6 +146,14 @@ class Baymax:
                     - Keep explanations structured, fact-based, and highly precise."""
 
     VOICE_PROMPT = """You are Baymax, interacting via voice.
+                    Behavioral Guidelines (ChatGPT Voice style):
+                    - Keep responses extremely short, conversational, and direct (max 1-2 short sentences, under 40 words total).
+                    - Use natural everyday phrasing and contractions (e.g. "I'll", "you're").
+                    - Never use markdown formatting (no bolding, italics, or headers) and never use lists, bullet points, or complex punctuation since this will be read aloud.
+                    - If summarizing, state only the single most important point and let the user ask to go deeper.
+                    - If the user says stop, wait, hold on, or related words, reply in exactly 1-2 words (e.g. "Sure.", "Stopping.") and pause."""
+
+    DEV_VOICE_PROMPT = """You are interacting via voice.
                     Behavioral Guidelines (ChatGPT Voice style):
                     - Keep responses extremely short, conversational, and direct (max 1-2 short sentences, under 40 words total).
                     - Use natural everyday phrasing and contractions (e.g. "I'll", "you're").
@@ -204,6 +232,8 @@ class Baymax:
     }
 
     def _get_temperature(self, task: str) -> float:
+        if getattr(self, 'custom_temperature', None) is not None:
+            return float(self.custom_temperature)
         return self._TEMPERATURES.get(task, 0.7)
 
     # ── Constructor ───────────────────────────────────────────────────────────
@@ -225,7 +255,11 @@ class Baymax:
         # ── NEW: fast response mode flag ───
         is_fast:          bool = False,
         db_lookup_time:   float = 0.0,
+        custom_temperature: float | None = None,
+        custom_max_tokens:  int | None = None,
     ):
+        self.custom_temperature = custom_temperature
+        self.custom_max_tokens = custom_max_tokens
         self.db_lookup_time = db_lookup_time
         self._initial_steps_logged = False
         self.t_start = time.time()
@@ -344,6 +378,8 @@ class Baymax:
 
     def _smart_token_budget(self, task: str) -> int:
         """Return a token budget for the task, reduced for short/simple messages."""
+        if getattr(self, 'custom_max_tokens', None) is not None:
+            return int(self.custom_max_tokens)
         base = self._TOKEN_BUDGETS.get(task, 500)
         meta = self._nlp_meta()
 
@@ -388,9 +424,30 @@ class Baymax:
 
     def _build_system_prompt(self, task: str) -> str:
         """Select and build the system prompt for the given task."""
+        import datetime
+
+        if task == "developer_api":
+            prompt = self.DEVELOPER_API_PROMPT
+            req_type = getattr(self, "dev_req_type", "text")
+            if req_type == "voice":
+                prompt = prompt + "\n\n" + self.DEV_VOICE_PROMPT
+            else:
+                prompt = prompt + "\n\n" + self.DEV_TEXT_PROMPT
+
+            budget = self._smart_token_budget(
+                "voice" if req_type == "voice" else "text_chat")
+            prompt += f"\n\nResponse Budget Instruction: Your maximum response limit is {budget} tokens."
+            prompt = self._enrich_system_prompt(prompt)
+
+            dev_msg = getattr(self, "dev_system_msg", "")
+            if dev_msg:
+                prompt += f"\n\nDeveloper System Context:\n{dev_msg}"
+
+            current_date_str = datetime.datetime.now().strftime("%A, %B %d, %Y")
+            return f"Today's Date: {current_date_str}\n\n{prompt}"
+
         from django.core.cache import cache
         import hashlib
-        import datetime
 
         config_str = f"{task}_{self.user_instruction}_{self.user_about_me}_{self.user_name}_{self.nlp_result.get('intent', '')}"
         cache_key = "sysprompt_v3_" + \
@@ -581,10 +638,10 @@ class Baymax:
         logger = LocalLoggerProxy(self)
         from google import genai
         from google.genai.errors import APIError
-        
+
         if not api_key:
             raise ProviderError("No Gemini API key provided")
-            
+
         client = genai.Client(api_key=api_key)
         loop = 3 if task == "file_analysis" else 1
 
@@ -593,7 +650,8 @@ class Baymax:
                 t_start = time.time()
                 response = client.models.generate_content(
                     model=model,
-                    contents=self._build_cnt_gemini(user_text, task, current_files=current_files),
+                    contents=self._build_cnt_gemini(
+                        user_text, task, current_files=current_files),
                     config={
                         "max_output_tokens": max_tokens,
                         "temperature": self._get_temperature(task),
@@ -605,7 +663,7 @@ class Baymax:
             except APIError as e:
                 # Differentiate based on status code if possible
                 code = getattr(e, 'code', 500)
-                if code in [400, 404]: # usually model not found or bad request
+                if code in [400, 404]:  # usually model not found or bad request
                     raise ModelError(f"Gemini Model Error: {e}")
                 else:
                     raise ProviderError(f"Gemini Provider Error: {e}")
@@ -628,17 +686,17 @@ class Baymax:
     ) -> str | None:
         logger = LocalLoggerProxy(self)
         import requests
-        
+
         if not api_key:
             raise ProviderError("No OpenRouter API key provided")
-            
+
         headers = {
             "Authorization": f"Bearer {api_key}",
             "HTTP-Referer": "http://localhost:8000",
             "X-Title": "Hero AI",
             "Content-Type": "application/json"
         }
-        
+
         data = {
             "model": model,
             "messages": self._build_msg_openrouter(user_text, task),
@@ -649,7 +707,7 @@ class Baymax:
             "repetition_penalty": 1,
             "stop": ["<|endoftext|>", "</s>", "\n\n\n\n\n"]
         }
-        
+
         try:
             resp = requests.post(
                 "https://openrouter.ai/api/v1/chat/completions",
@@ -662,11 +720,14 @@ class Baymax:
                 if "choices" in js and len(js["choices"]) > 0:
                     return js["choices"][0]["message"]["content"]
             elif resp.status_code in [401, 403, 429, 502, 503, 504, 500]:
-                raise ProviderError(f"OpenRouter Provider Error {resp.status_code}: {resp.text}")
+                raise ProviderError(
+                    f"OpenRouter Provider Error {resp.status_code}: {resp.text}")
             elif resp.status_code == 400 or resp.status_code == 404:
-                raise ModelError(f"OpenRouter Model Error {resp.status_code}: {resp.text}")
+                raise ModelError(
+                    f"OpenRouter Model Error {resp.status_code}: {resp.text}")
             else:
-                raise ProviderError(f"OpenRouter Error {resp.status_code}: {resp.text}")
+                raise ProviderError(
+                    f"OpenRouter Error {resp.status_code}: {resp.text}")
         except requests.exceptions.Timeout:
             raise ProviderError("OpenRouter Timeout")
         except requests.exceptions.RequestException as e:
@@ -685,22 +746,22 @@ class Baymax:
     ) -> str | None:
         logger = LocalLoggerProxy(self)
         import requests
-        
+
         if not api_key:
             raise ProviderError("No Groq API key provided")
-            
+
         headers = {
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json"
         }
-        
+
         data = {
             "model": model,
             "messages": self._build_msg_openrouter(user_text, task),
             "max_tokens": max_tokens,
             "temperature": self._get_temperature(task),
         }
-        
+
         try:
             resp = requests.post(
                 "https://api.groq.com/openai/v1/chat/completions",
@@ -713,11 +774,14 @@ class Baymax:
                 if "choices" in js and len(js["choices"]) > 0:
                     return js["choices"][0]["message"]["content"]
             elif resp.status_code in [401, 403, 429, 502, 503, 504, 500]:
-                raise ProviderError(f"Groq Provider Error {resp.status_code}: {resp.text}")
+                raise ProviderError(
+                    f"Groq Provider Error {resp.status_code}: {resp.text}")
             elif resp.status_code == 400 or resp.status_code == 404:
-                raise ModelError(f"Groq Model Error {resp.status_code}: {resp.text}")
+                raise ModelError(
+                    f"Groq Model Error {resp.status_code}: {resp.text}")
             else:
-                raise ProviderError(f"Groq Error {resp.status_code}: {resp.text}")
+                raise ProviderError(
+                    f"Groq Error {resp.status_code}: {resp.text}")
         except requests.exceptions.Timeout:
             raise ProviderError("Groq Timeout")
         except requests.exceptions.RequestException as e:
@@ -859,44 +923,58 @@ To start chatting, please configure your API Keys in your Heros profile settings
         self._log_initial_steps(task)
         import logging
         logger = logging.getLogger("hero_ai.baymax")
-        
+
         is_router = "CRITICAL INSTRUCTION: If the user's query requires current" in text
-        
+
         # Determine provider and key pairs
         # Build the exact fallback lists based on user rules
         from django.conf import settings
-        
+
         env_gemini = getattr(settings, "GEMINI_API_KEY", None)
         env_or = getattr(settings, "OPENROUTER_API_KEY", None)
         env_groq = getattr(settings, "GROQ_API_KEY", None)
-        
-        user_gemini = self.gemini_key or (self.gemini_keys[0] if hasattr(self, 'gemini_keys') and self.gemini_keys else None)
+
+        user_gemini = self.gemini_key or (self.gemini_keys[0] if hasattr(
+            self, 'gemini_keys') and self.gemini_keys else None)
         user_or = self.openrouter_key
         user_groq = self.groq_key
-        
+
         # Lists of models
         list_gemini = self.models.get("fallback_with_gemini", [])
         list_or = self.models.get(fallback_key, [])
         list_groq = self.models.get("fallback_with_groq", [])
-        
+
         sequence = []
-        
+
         if is_router:
             logger.info("ROUTER MODE Fallback Sequence Initiated")
             if not user_groq:
                 # 1. OpenRouter user, 2. Gemini user, 3. Groq env, 4. OpenRouter env, 5. Gemini env
-                if user_or: sequence.append(("openrouter", list_or, user_or, "USER"))
-                if user_gemini: sequence.append(("gemini", list_gemini, user_gemini, "USER"))
-                if env_groq: sequence.append(("groq", list_groq, env_groq, "ENV"))
-                if env_or: sequence.append(("openrouter", list_or, env_or, "ENV"))
-                if env_gemini: sequence.append(("gemini", list_gemini, env_gemini, "ENV"))
+                if user_or:
+                    sequence.append(("openrouter", list_or, user_or, "USER"))
+                if user_gemini:
+                    sequence.append(
+                        ("gemini", list_gemini, user_gemini, "USER"))
+                if env_groq:
+                    sequence.append(("groq", list_groq, env_groq, "ENV"))
+                if env_or:
+                    sequence.append(("openrouter", list_or, env_or, "ENV"))
+                if env_gemini:
+                    sequence.append(("gemini", list_gemini, env_gemini, "ENV"))
             else:
-                if user_groq: sequence.append(("groq", list_groq, user_groq, "USER"))
-                if user_or: sequence.append(("openrouter", list_or, user_or, "USER"))
-                if user_gemini: sequence.append(("gemini", list_gemini, user_gemini, "USER"))
-                if env_groq: sequence.append(("groq", list_groq, env_groq, "ENV"))
-                if env_or: sequence.append(("openrouter", list_or, env_or, "ENV"))
-                if env_gemini: sequence.append(("gemini", list_gemini, env_gemini, "ENV"))
+                if user_groq:
+                    sequence.append(("groq", list_groq, user_groq, "USER"))
+                if user_or:
+                    sequence.append(("openrouter", list_or, user_or, "USER"))
+                if user_gemini:
+                    sequence.append(
+                        ("gemini", list_gemini, user_gemini, "USER"))
+                if env_groq:
+                    sequence.append(("groq", list_groq, env_groq, "ENV"))
+                if env_or:
+                    sequence.append(("openrouter", list_or, env_or, "ENV"))
+                if env_gemini:
+                    sequence.append(("gemini", list_gemini, env_gemini, "ENV"))
         else:
             logger.info("FINAL TASK MODE Fallback Sequence Initiated")
             # 1. Primary Task Model + user
@@ -904,46 +982,59 @@ To start chatting, please configure your API Keys in your Heros profile settings
             if primary_model.startswith("gemini"):
                 primary_prov = "gemini"
                 primary_key = user_gemini
-            elif "llama" in primary_model.lower() or "mixtral" in primary_model.lower(): # assuming groq
+            elif "llama" in primary_model.lower() or "mixtral" in primary_model.lower():  # assuming groq
                 # This is a bit tricky, if primary is groq
                 primary_prov = "groq" if primary_model in list_groq else "openrouter"
                 primary_key = user_groq if primary_prov == "groq" else user_or
             else:
                 primary_prov = "openrouter"
                 primary_key = user_or
-                
+
             if primary_key:
-                sequence.append((primary_prov, [primary_model], primary_key, "USER"))
-                
-            if user_or: sequence.append(("openrouter", list_or, user_or, "USER"))
-            if user_gemini: sequence.append(("gemini", list_gemini, user_gemini, "USER"))
-            if env_groq: sequence.append(("groq", list_groq, env_groq, "ENV"))
-            if env_or: sequence.append(("openrouter", list_or, env_or, "ENV"))
-            if env_gemini: sequence.append(("gemini", list_gemini, env_gemini, "ENV"))
-            
+                sequence.append(
+                    (primary_prov, [primary_model], primary_key, "USER"))
+
+            if user_or:
+                sequence.append(("openrouter", list_or, user_or, "USER"))
+            if user_gemini:
+                sequence.append(("gemini", list_gemini, user_gemini, "USER"))
+            if env_groq:
+                sequence.append(("groq", list_groq, env_groq, "ENV"))
+            if env_or:
+                sequence.append(("openrouter", list_or, env_or, "ENV"))
+            if env_gemini:
+                sequence.append(("gemini", list_gemini, env_gemini, "ENV"))
+
         for provider, models, api_key, key_type in sequence:
             for model in models:
                 try:
-                    logger.info(f"[{'Router' if is_router else 'Final'}] {provider.capitalize()} | {key_type}_KEY | model={model}")
+                    logger.info(
+                        f"[{'Router' if is_router else 'Final'}] {provider.capitalize()} | {key_type}_KEY | model={model}")
                     t_start = time.time()
-                    res = self._call(model, text, max_tokens, task, current_files, provider, api_key)
+                    res = self._call(model, text, max_tokens,
+                                     task, current_files, provider, api_key)
                     if res:
                         resp_time = time.time() - t_start
-                        logger.info(f"[{'Router' if is_router else 'Final'}] SUCCESS | {provider.capitalize()} | {model} | {resp_time:.2f}s")
+                        logger.info(
+                            f"[{'Router' if is_router else 'Final'}] SUCCESS | {provider.capitalize()} | {model} | {resp_time:.2f}s")
                         return res
                 except ModelError as e:
-                    logger.info(f"[{'Router' if is_router else 'Final'}] ERROR | model_error | {e}")
+                    logger.info(
+                        f"[{'Router' if is_router else 'Final'}] ERROR | model_error | {e}")
                     # Continue to next model in same provider
                     continue
                 except ProviderError as e:
-                    logger.info(f"[{'Router' if is_router else 'Final'}] ERROR | provider_error | {e}")
-                    logger.info(f"[{'Router' if is_router else 'Final'}] SWITCH -> next provider layer")
+                    logger.info(
+                        f"[{'Router' if is_router else 'Final'}] ERROR | provider_error | {e}")
+                    logger.info(
+                        f"[{'Router' if is_router else 'Final'}] SWITCH -> next provider layer")
                     # Break out of inner loop to skip remaining models for this provider/key combination
                     break
                 except Exception as e:
-                    logger.info(f"[{'Router' if is_router else 'Final'}] ERROR | unknown | {e}")
+                    logger.info(
+                        f"[{'Router' if is_router else 'Final'}] ERROR | unknown | {e}")
                     break
-                    
+
         return "All models failed. Please try again later."
 
     # =========================================================================
@@ -962,12 +1053,13 @@ To start chatting, please configure your API Keys in your Heros profile settings
                 "If the query does NOT require live data, answer it directly and normally."
             )
             enriched_text = f"{router_instruction}\n\nUser Message: {text}"
-            
+
             max_tok = self._smart_token_budget("text_chat")
-            
+
             if getattr(self, 'is_fast', False):
                 from backend.fast import run_fast_route
-                response = run_fast_route(self, enriched_text, max_tokens=max_tok, task="text_chat")
+                response = run_fast_route(
+                    self, enriched_text, max_tokens=max_tok, task="text_chat")
             else:
                 response = self._with_fallback(
                     self.models["text_chat"],
@@ -975,7 +1067,7 @@ To start chatting, please configure your API Keys in your Heros profile settings
                     max_tokens=max_tok,
                     task="text_chat",
                 )
-            
+
             if response and "SEARCH_REQUIRED:" in response:
                 search_query = response.split("SEARCH_REQUIRED:")[1].strip()
                 import logging
@@ -987,6 +1079,74 @@ To start chatting, please configure your API Keys in your Heros profile settings
         except Exception as e:
             return self._safe_error(e, "handle_text")
 
+    def handle_developer_api(self, text: str, req_type: str = "text", allow_search: bool = False, dev_system_msg: str = "") -> str:
+        """Handle Developer API requests using the robust fallback system."""
+        try:
+            self.dev_req_type = req_type
+            self.dev_system_msg = dev_system_msg
+
+            router_instruction = (
+                "CRITICAL INSTRUCTION: If the user's query requires current, live, or real-time web data "
+                "(like news, weather, live prices, or recent events that you don't know), "
+                "you MUST NOT attempt to answer. Instead, output ONLY exactly this format: SEARCH_REQUIRED: [your optimized search query]. "
+                "If the query does NOT require live data, answer it directly and normally."
+            )
+
+            enriched_text = text
+            if allow_search:
+                enriched_text = f"{router_instruction}\n\nUser Message: {text}"
+
+            model_to_use = self.models["text_chat"]
+            max_tok = self._smart_token_budget(
+                "voice" if req_type == "voice" else "text_chat")
+
+            if getattr(self, 'is_fast', False):
+                from backend.fast import run_fast_route
+                response = run_fast_route(
+                    self, enriched_text, max_tokens=max_tok, task="developer_api")
+            else:
+                response = self._with_fallback(
+                    model_to_use,
+                    enriched_text,
+                    max_tokens=max_tok,
+                    task="developer_api",
+                )
+
+            if allow_search and response and "SEARCH_REQUIRED:" in response:
+                search_query = response.split("SEARCH_REQUIRED:")[1].strip()
+                import logging
+                logger = logging.getLogger("hero_ai.baymax")
+                logger.info(f"Developer API triggered search: {search_query}")
+
+                from backend.models_task.web_search import perform_web_search
+                try:
+                    raw_context = perform_web_search(search_query)
+                    if raw_context:
+                        grounding_rules = (
+                            "CURRENT / LIVE INFORMATION RULE:\n"
+                            "When web or live data is provided, treat the retrieved evidence as the factual boundary of your answer.\n"
+                            "Use only facts that are explicitly supported by the retrieved evidence.\n"
+                        )
+                        self.dev_system_msg = (
+                            self.dev_system_msg or "") + f"\n\n{grounding_rules}\n\nWeb Search Evidence:\n{raw_context}"
+
+                        if getattr(self, 'is_fast', False):
+                            response = run_fast_route(
+                                self, text, max_tokens=max_tok, task="developer_api")
+                        else:
+                            response = self._with_fallback(
+                                model_to_use,
+                                text,
+                                max_tokens=max_tok,
+                                task="developer_api",
+                            )
+                except Exception as e:
+                    logger.warning(f"Developer API search failed: {e}")
+
+            return response
+        except Exception as e:
+            return self._safe_error(e, "handle_developer_api")
+
     def handle_coding(self, text: str) -> str:
         """Handle coding/programming requests with full token budget."""
         try:
@@ -997,10 +1157,11 @@ To start chatting, please configure your API Keys in your Heros profile settings
                 "If the query does NOT require live data, answer it directly and normally."
             )
             enriched_text = f"{router_instruction}\n\nUser Message: {text}"
-            
+
             if getattr(self, 'is_fast', False):
                 from backend.fast import run_fast_route
-                response = run_fast_route(self, enriched_text, max_tokens=self._TOKEN_BUDGETS["coding"], task="coding")
+                response = run_fast_route(
+                    self, enriched_text, max_tokens=self._TOKEN_BUDGETS["coding"], task="coding")
             else:
                 response = self._with_fallback(
                     self.models["coding"],
@@ -1008,7 +1169,7 @@ To start chatting, please configure your API Keys in your Heros profile settings
                     max_tokens=self._TOKEN_BUDGETS["coding"],
                     task="coding",
                 )
-            
+
             if response and "SEARCH_REQUIRED:" in response:
                 search_query = response.split("SEARCH_REQUIRED:")[1].strip()
                 import logging
@@ -1030,11 +1191,12 @@ To start chatting, please configure your API Keys in your Heros profile settings
                 "If the query does NOT require live data, answer it directly and normally."
             )
             enriched_text = f"{router_instruction}\n\nUser Message: {text}"
-            
+
             max_tok = self._smart_token_budget("voice")
             if getattr(self, 'is_fast', False):
                 from backend.fast import run_fast_route
-                response = run_fast_route(self, enriched_text, max_tokens=max_tok, task="voice")
+                response = run_fast_route(
+                    self, enriched_text, max_tokens=max_tok, task="voice")
             else:
                 response = self._with_fallback(
                     self.models["voice_chat"],
@@ -1042,7 +1204,7 @@ To start chatting, please configure your API Keys in your Heros profile settings
                     max_tokens=max_tok,
                     task="voice",
                 )
-                
+
             if response and "SEARCH_REQUIRED:" in response:
                 search_query = response.split("SEARCH_REQUIRED:")[1].strip()
                 import logging
@@ -1064,11 +1226,12 @@ To start chatting, please configure your API Keys in your Heros profile settings
                 "If the query does NOT require live data, answer it directly and normally."
             )
             enriched_text = f"{router_instruction}\n\nUser Message: {text}"
-            
+
             max_tok = self._smart_token_budget("voice")
             if getattr(self, 'is_fast', False):
                 from backend.fast import run_fast_route
-                response = run_fast_route(self, enriched_text, max_tokens=max_tok, task="voice")
+                response = run_fast_route(
+                    self, enriched_text, max_tokens=max_tok, task="voice")
             else:
                 response = self._with_fallback(
                     self.models["voice_chat"],
@@ -1076,7 +1239,7 @@ To start chatting, please configure your API Keys in your Heros profile settings
                     max_tokens=max_tok,
                     task="voice",
                 )
-                
+
             if response and "SEARCH_REQUIRED:" in response:
                 search_query = response.split("SEARCH_REQUIRED:")[1].strip()
                 import logging
@@ -1182,7 +1345,7 @@ current information."""
             )
             enriched_text = f"{router_instruction}\n\nUser Message: {text}"
             max_tok = self._smart_token_budget("zeno_plus")
-            
+
             is_selected_text = "---\nSelected Text:\n" in text or "Selected Text:\n" in text
             is_page_context = "---\nWeb Page Content:\n" in text or "Web Page Content:\n" in text
 
@@ -1192,8 +1355,9 @@ current information."""
                 )
             else:
                 from backend.fast import run_fast_route
-                response = run_fast_route(self, enriched_text, max_tokens=max_tok, task="zeno_plus")
-                
+                response = run_fast_route(
+                    self, enriched_text, max_tokens=max_tok, task="zeno_plus")
+
             if response and "SEARCH_REQUIRED:" in response:
                 search_query = response.split("SEARCH_REQUIRED:")[1].strip()
                 import logging
@@ -1215,11 +1379,11 @@ current information."""
             )
             enriched_text = f"{router_instruction}\n\nUser Message: {text}"
             max_tok = self._smart_token_budget("zeno_eco")
-            
+
             response = self._with_fallback(
                 self.models["zeno_eco"], enriched_text, max_tokens=max_tok, task="zeno_eco"
             )
-            
+
             if response and "SEARCH_REQUIRED:" in response:
                 search_query = response.split("SEARCH_REQUIRED:")[1].strip()
                 import logging
@@ -1241,15 +1405,16 @@ current information."""
             )
             enriched_text = f"{router_instruction}\n\nUser Message: {text}"
             max_tok = self._smart_token_budget("zeno_voice")
-            
+
             if getattr(self, 'is_fast', False):
                 from backend.fast import run_fast_route
-                response = run_fast_route(self, enriched_text, max_tokens=max_tok, task="zeno_voice")
+                response = run_fast_route(
+                    self, enriched_text, max_tokens=max_tok, task="zeno_voice")
             else:
                 response = self._with_fallback(
                     self.models["zeno_voice"], enriched_text, max_tokens=max_tok, task="zeno_voice"
                 )
-                
+
             if response and "SEARCH_REQUIRED:" in response:
                 search_query = response.split("SEARCH_REQUIRED:")[1].strip()
                 import logging
@@ -1271,11 +1436,11 @@ current information."""
             )
             enriched_text = f"{router_instruction}\n\nUser Message: {text}"
             max_tok = self._smart_token_budget("zeno_shadow")
-            
+
             response = self._with_fallback(
                 self.models["zeno_shadow"], enriched_text, max_tokens=max_tok, task="zeno_shadow"
             )
-            
+
             if response and "SEARCH_REQUIRED:" in response:
                 search_query = response.split("SEARCH_REQUIRED:")[1].strip()
                 import logging
@@ -1383,12 +1548,14 @@ class Developer:
     directly on Groq or OpenRouter, returning status codes and raw error traces.
     """
 
-    def __init__(self, user, provider, model_name):
+    def __init__(self, user, provider, model_name, temperature=None, max_tokens=None):
         from .models import Api
         from .encryption import decrypt_api_key
         self.user = user
         self.provider = provider.lower()
         self.model_name = model_name
+        self.temperature = float(temperature) if temperature is not None else 0.7
+        self.max_tokens = int(max_tokens) if max_tokens is not None else 4096
         self.openrouter_url = "https://openrouter.ai/api/v1/chat/completions"
         self.groq_url = "https://api.groq.com/openai/v1/chat/completions"
 
@@ -1396,14 +1563,23 @@ class Developer:
         self.openrouter_api_key = None
         self.gemini_api_key = None
 
-        for api in Api.objects.filter(user=self.user, model_name__in=['Groq', 'OpenRouter', 'Gemini']):
-            if api.model_name == 'Groq':
-                self.groq_api_key = decrypt_api_key(api.api_key_encrypted)
-            elif api.model_name == 'OpenRouter':
-                self.openrouter_api_key = decrypt_api_key(
-                    api.api_key_encrypted)
-            elif api.model_name == 'Gemini':
-                self.gemini_api_key = decrypt_api_key(api.api_key_encrypted)
+        if self.user:
+            for api in Api.objects.filter(user=self.user, model_name__in=['Groq', 'OpenRouter', 'Gemini']):
+                if api.model_name == 'Groq':
+                    self.groq_api_key = decrypt_api_key(api.api_key_encrypted)
+                elif api.model_name == 'OpenRouter':
+                    self.openrouter_api_key = decrypt_api_key(
+                        api.api_key_encrypted)
+                elif api.model_name == 'Gemini':
+                    self.gemini_api_key = decrypt_api_key(api.api_key_encrypted)
+
+        from django.conf import settings
+        if not self.gemini_api_key:
+            self.gemini_api_key = getattr(settings, "GEMINI_API_KEY", None)
+        if not self.groq_api_key:
+            self.groq_api_key = getattr(settings, "GROQ_API_KEY", None)
+        if not self.openrouter_api_key:
+            self.openrouter_api_key = getattr(settings, "OPENROUTER_API_KEY", None)
 
     def build_system_prompt(self, mode: str) -> str:
         from .hero_model import Baymax
@@ -1470,7 +1646,13 @@ class Developer:
                     contents.append(
                         {"role": gemini_role, "parts": [{"text": content}]})
 
-            payload = {"contents": contents}
+            payload = {
+                "contents": contents,
+                "generationConfig": {
+                    "temperature": self.temperature,
+                    "maxOutputTokens": self.max_tokens
+                }
+            }
             if system_instruction:
                 payload["system_instruction"] = system_instruction
 
@@ -1511,8 +1693,8 @@ class Developer:
         payload = {
             "model": self.model_name,
             "messages": messages,
-            "temperature": 0.7,
-            "max_tokens": 4096
+            "temperature": self.temperature,
+            "max_tokens": self.max_tokens
         }
 
         try:

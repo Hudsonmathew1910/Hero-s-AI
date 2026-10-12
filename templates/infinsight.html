@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Infinsight | AI Data Analyst</title>
   <link rel="icon" type="image/png" href="{% static 'images/Hero_ai.png' %}" sizes="128x128"/>
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
   <link rel="stylesheet" href="{% static 'css/style.css' %}">
   <link rel="stylesheet" href="{% static 'css/inf.css' %}">
@@ -89,7 +89,7 @@
       width: 42px;
       height: 42px;
       border-radius: 12px;
-      background: linear-gradient(135deg, #6c63ff, #48d1cc);
+      background: var(--ins-accent, #0F4C75);
       display: flex;
       align-items: flex-start;
       justify-content: center;
@@ -98,7 +98,7 @@
       flex-shrink: 0;
     }
     .modal-brand-name {
-      font-family: 'Syne', sans-serif;
+      font-family: 'Inter', sans-serif;
       font-weight: 700;
       font-size: 1.25rem;
       color: var(--ins-text, #e8eaf0);
@@ -113,7 +113,7 @@
     [data-theme="light"] .modal-brand-tag  { color: #6b7280; }
 
     .modal-title {
-      font-family: 'Syne', sans-serif;
+      font-family: 'Inter', sans-serif;
       font-size: 1.45rem;
       font-weight: 700;
       color: var(--ins-text, #e8eaf0);
@@ -145,14 +145,14 @@
       border-radius: 7px;
       background: transparent;
       color: var(--ins-muted, #6b7280);
-      font-family: 'DM Sans', sans-serif;
+      font-family: 'Inter', sans-serif;
       font-size: 0.87rem;
       font-weight: 500;
       cursor: pointer;
       transition: all 0.2s ease;
     }
     .modal-tab.active {
-      background: linear-gradient(135deg, #6c63ff, #48d1cc);
+      background: var(--ins-accent, #0F4C75);
       color: #fff;
       font-weight: 600;
     }
@@ -179,7 +179,7 @@
       border: 1.5px solid var(--ins-border, rgba(255,255,255,0.1));
       border-radius: 10px;
       color: var(--ins-text, #e8eaf0);
-      font-family: 'DM Sans', sans-serif;
+      font-family: 'Inter', sans-serif;
       font-size: 0.92rem;
       outline: none;
       transition: border-color 0.2s ease, background 0.2s ease;
@@ -270,9 +270,9 @@
       padding: 0.85rem 1.5rem;
       border: none;
       border-radius: 11px;
-      background: linear-gradient(135deg, #6c63ff, #48d1cc);
+      background: var(--ins-accent, #0F4C75);
       color: #fff;
-      font-family: 'Syne', sans-serif;
+      font-family: 'Inter', sans-serif;
       font-size: 0.95rem;
       font-weight: 700;
       cursor: pointer;
@@ -329,7 +329,7 @@
       border-radius: 11px;
       background: transparent;
       color: var(--ins-text, #e8eaf0);
-      font-family: 'DM Sans', sans-serif;
+      font-family: 'Inter', sans-serif;
       font-size: 0.9rem;
       font-weight: 500;
       cursor: pointer;
@@ -395,7 +395,7 @@
       border: 1.5px solid var(--ins-border, rgba(255,255,255,0.1));
       border-radius: 8px;
       color: var(--ins-text, #e8eaf0);
-      font-family: 'DM Sans', sans-serif;
+      font-family: 'Inter', sans-serif;
       font-size: 0.8rem;
       outline: none;
       transition: border-color 0.2s;
@@ -409,7 +409,7 @@
     }
     .ins-apikey-save {
       padding: 0.5rem 0.75rem;
-      background: linear-gradient(135deg, #6c63ff, #48d1cc);
+      background: var(--ins-accent, #0F4C75);
       border: none;
       border-radius: 8px;
       color: #fff;
@@ -447,7 +447,7 @@
       width: 26px;
       height: 26px;
       border-radius: 50%;
-      background: linear-gradient(135deg, #6c63ff, #48d1cc);
+      background: var(--ins-accent, #0F4C75);
       display: flex;
       align-items: flex-start;
       justify-content: center;
@@ -472,11 +472,11 @@
     /* sign in btn (unauthenticated) */
     .ins-signin-btn {
       padding: 0.45rem 1rem;
-      background: linear-gradient(135deg, #6c63ff, #48d1cc);
+      background: var(--ins-accent, #0F4C75);
       border: none;
       border-radius: 8px;
       color: #fff;
-      font-family: 'Syne', sans-serif;
+      font-family: 'Inter', sans-serif;
       font-size: 0.82rem;
       font-weight: 700;
       cursor: pointer;
@@ -595,11 +595,19 @@
       </div>
       <div class="ins-apikey-row">
         <input
-          type="password"
+          type="text"
+          style="-webkit-text-security: disc; -moz-text-security: disc;"
           class="ins-apikey-input"
           id="sidebarGeminiKey"
           placeholder="AIza…"
           autocomplete="off"
+          autocorrect="off"
+          autocapitalize="off"
+          spellcheck="false"
+          data-lpignore="true"
+          data-1password-ignore="true"
+          data-form-type="other"
+          name="gemini_key_no_autofill"
         />
         <button class="ins-apikey-save" id="sidebarApikeySaveBtn" onclick="saveGeminiKey()">
           Save
@@ -707,6 +715,13 @@
             rows="1"
             onkeydown="handleInsKey(event)"
             oninput="insAutoResize(this); insToggleSend()"
+            autocomplete="off"
+            autocorrect="off"
+            autocapitalize="off"
+            spellcheck="false"
+            data-lpignore="true"
+            data-1password-ignore="true"
+            data-form-type="other"
           ></textarea>
           <button class="ins-send-btn" id="insSendBtn" onclick="sendInsMessage()" disabled>
             <i class="fa-solid fa-paper-plane"></i>

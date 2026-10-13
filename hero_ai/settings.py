@@ -91,6 +91,7 @@ if os.getenv('RENDER_EXTERNAL_URL'):
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 INSTALLED_APPS = [
+    'corsheaders',
     'jazzmin',
     'django.contrib.admin',
     'django.contrib.auth',
@@ -104,6 +105,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',  # Serve static files in production
     'hero_ai.middleware.RequestSizeLimitMiddleware',
@@ -402,4 +404,21 @@ JAZZMIN_UI_TWEAKS = {
         "success": "btn-success"
     }
 }
+
+# --------------------------------------------------------------------------
+# CORS (Cross-Origin Resource Sharing) Configuration
+# --------------------------------------------------------------------------
+# Allows browser frontend clients (e.g. your portfolio, user websites) to call
+# Hero AI API endpoints (/api/v1/ and /api/) without getting blocked by CORS.
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_HEADERS = [
+    'authorization',
+    'content-type',
+    'x-csrftoken',
+    'x-requested-with',
+    'accept',
+    'origin',
+]
+CORS_EXPOSE_HEADERS = ['content-type', 'content-length']
+
 

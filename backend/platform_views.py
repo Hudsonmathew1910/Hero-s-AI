@@ -44,6 +44,24 @@ def generate_api_key(request):
         from backend.models import Project
         project = Project.objects.filter(user=request.user_obj).first()
 
+    # Check if user already provided Gemini and OpenRouter keys
+    has_gemini = bool(_get_provider_key(request.user_obj, "gemini"))
+    has_openrouter = bool(_get_provider_key(request.user_obj, "openrouter"))
+
+    missing_providers = []
+    if not has_gemini:
+        missing_providers.append("Gemini")
+    if not has_openrouter:
+        missing_providers.append("OpenRouter")
+
+    if missing_providers:
+        missing_str = " & ".join(missing_providers)
+        return JsonResponse({
+            "success": False,
+            "error": f"Please configure your {missing_str} API key before creating a Heros secret key.",
+            "missing_keys": [p.lower() for p in missing_providers]
+        }, status=400)
+
     import datetime
     from django.utils import timezone
 
